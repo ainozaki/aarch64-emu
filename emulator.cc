@@ -21,10 +21,7 @@ Emulator::~Emulator() { f_.close(); }
 
 int Emulator::Execute() {
   char c;
-  while (!f_.eof()) {
-    f_.get(c);
-    std::cout << "Execute: " << c << std::endl;
-  }
+  cpu_->execute(0x91048c20);
   cpu_->show_regs();
   return 0;
 }

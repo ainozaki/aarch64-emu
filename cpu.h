@@ -9,6 +9,7 @@ public:
   ~Cpu() = default;
 
   void show_regs();
+  void execute(uint32_t inst);
 
 private:
   uint64_t xregs_[31];
