@@ -4,9 +4,11 @@ LFLAGS=
 
 SRC=\
 	arm.cc \
+	arm-op.cc \
 	emulator.cc
 HEADER=\
 	include/arm.h \
+	include/arm-op.h \
 	include/emulator.h \
 	include/utils.h
 
