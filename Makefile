@@ -1,13 +1,14 @@
 CC=clang++
-CXXFLAGS=-std=C++17 -O2 -Wall -I./
+CXXFLAGS=-O2 -Wall -I./include
 LFLAGS=
 
 SRC=\
-	cpu.cc \
+	arm.cc \
 	emulator.cc
 HEADER=\
-	cpu.h \
-	emulator.h
+	include/arm.h \
+	include/emulator.h \
+	include/utils.h
 
 SRC_OBJ=$(SRC:.cc=.o)
 TARGET = emu-aarch64 
@@ -16,7 +17,7 @@ all: $(SRC_OBJ)
 	$(CC) $(LFLAGS) -o $(TARGET) $^
 
 $(SRC_OBJ): %.o: %.cc $(HEADER)
-	$(CC) $(CPPFLAGS) -o $(<:.cc=.o) -c $<
+	$(CC) $(CXXFLAGS) -o $(<:.cc=.o) -c $<
 
 run: $(TARGET)
 	./$(TARGET)

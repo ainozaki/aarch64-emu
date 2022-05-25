@@ -3,7 +3,7 @@
 #include <iostream>
 #include <memory>
 
-#include "cpu.h"
+#include "arm.h"
 
 Emulator::Emulator(const char *filename) {
   cpu_ = std::make_unique<Cpu>(Cpu());

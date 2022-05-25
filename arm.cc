@@ -1,10 +1,11 @@
-#include "cpu.h"
+#include "arm.h"
 
 #include <bitset>
 #include <iomanip>
 #include <iostream>
 
 #include "op.h"
+#include "utils.h"
 
 // Data Processing Immediate
 #define OP_ADDSUB_IMM 0x22
@@ -45,17 +46,17 @@ void Cpu::execute(uint32_t inst) {
   uint64_t imm;
   char op, s, sf, sh;
 
-  opcode = (inst >> 23) & ((1 << 6) - 1);
+  opcode = SHIFT(inst, 23, 28);
   std::cout << "opcode: " << std::bitset<6>(opcode) << std::endl;
   switch (opcode) {
   case OP_ADDSUB_IMM:
-    rd = inst & ((1 << 5) - 1);
-    rn = (inst >> 5) & ((1 << 5) - 1);
-    imm12 = (inst >> 10) & ((1 << 12) - 1);
-    sh = (inst >> 22) & 1;
-    s = (inst >> 29) & 1;
-    op = (inst >> 30) & 1;
-    sf = (inst >> 31) & 1;
+    rd = SHIFT(inst, 0, 4);
+    rn = SHIFT(inst, 5, 9);
+    imm12 = SHIFT(inst, 10, 21);
+    sh = BIT(inst, 22);
+    s = BIT(inst, 29);
+    op = BIT(inst, 30);
+    sf = BIT(inst, 31);
 
     datasize = (sf == 1) ? 64 : 32;
     imm = imm12;
