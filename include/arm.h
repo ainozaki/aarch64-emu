@@ -28,7 +28,7 @@ public:
   void show_regs();
   void execute(uint32_t inst);
 
-  uint64_t xregs_[31];
+  int64_t xregs_[31] = {0};
   uint64_t pc_;
   uint64_t sp_el_[4];  /* Stack pointers*/
   uint64_t elr_el_[4]; /* Exception Linked Registers */

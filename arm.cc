@@ -30,7 +30,7 @@ void Cpu::data_processing_imm(uint32_t inst) {
   char op, s, sf, sh;
 
   op0 = bitutil::shift(inst, 23, 25);
-  std::cout << "op0(inst[23:25]): " << std::bitset<6>(op0) << std::endl;
+  // std::cout << "op0(inst[23:25]): " << std::bitset<6>(op0) << std::endl;
   switch (op0) {
   case 0b010:
     rd = bitutil::shift(inst, 0, 4);
@@ -42,26 +42,24 @@ void Cpu::data_processing_imm(uint32_t inst) {
     sf = bitutil::bit(inst, 31);
 
     datasize = (sf == 1) ? 64 : 32;
-    imm = imm12;
+    imm = bitutil::zero_extend(imm12, 12);
     if (sh) {
       imm = imm >> 12;
     }
 
     if (s == 0) {
-      if (op == 1) {
-        /* ADD */
-        xregs_[rd] = add_imm(xregs_[rn], imm, /*carry-in=*/0);
+      if (op == 0) {
+        xregs_[rd] = add_imm(xregs_[rn], imm, /*carry-in=*/0); /* ADD */
       } else {
-        /* SUB */
-        xregs_[rd] = add_imm(xregs_[rn], imm, /*carry-in=*/1);
+        xregs_[rd] = add_imm(xregs_[rn], ~imm, /*carry-in=*/1); /* SUB */
       }
     } else {
-      if (op == 1) {
-        /* ADDS */
-        xregs_[rd] = add_imm_s(xregs_[rn], imm, /*carry-in=*/0, cpsr_);
+      if (op == 0) {
+        xregs_[rd] =
+            add_imm_s(xregs_[rn], imm, /*carry-in=*/0, cpsr_); /* ADDS */
       } else {
-        /* SUBS */
-        xregs_[rd] = add_imm_s(xregs_[rn], ~imm, /*carry-in=*/1, cpsr_);
+        xregs_[rd] =
+            add_imm_s(xregs_[rn], ~imm, /*carry-in=*/1, cpsr_); /* SUBS */
       }
     }
     break;
@@ -116,5 +114,5 @@ void Cpu::execute(uint32_t inst) {
     branches(inst);
     break;
   }
-  show_regs();
+  // show_regs();
 }

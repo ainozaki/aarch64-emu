@@ -21,14 +21,7 @@ Emulator::~Emulator() { f_.close(); }
 
 int Emulator::Execute() {
   char c;
-  cpu_->execute(0x91048c20); /* ADD X0, X1, #0x123*/
-  cpu_->execute(0xf1000401); /* SUBS X1, X0, #0x1 */
+  cpu_->execute(0x91004001); /* ADD X1, X0, #0x10*/
+  cpu_->execute(0xd1000421); /* SUB X1, X1, #0x1 */
   return 0;
-}
-
-int main() {
-  const char *filename = "binary.txt";
-  Emulator emu(filename);
-  emu.Execute();
-  std::cout << "Finish emulating" << std::endl;
 }
