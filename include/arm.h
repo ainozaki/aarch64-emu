@@ -4,12 +4,13 @@
 
 struct CPSR {
   char buff[27];
-  char Q;
-  char V;
-  char C;
-  char Z;
-  char N;
+  uint8_t Q : 1;
+  uint8_t V : 1;
+  uint8_t C : 1;
+  uint8_t Z : 1;
+  uint8_t N : 1;
 };
+
 class Cpu {
 public:
   Cpu() = default;

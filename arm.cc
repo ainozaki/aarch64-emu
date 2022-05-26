@@ -24,9 +24,9 @@ void Cpu::show_regs() {
 
 void Cpu::data_processing_imm(uint32_t inst) {
   uint8_t op0, datasize;
-  uint16_t imm12;
+  int16_t imm12;
   uint32_t rd, rn;
-  uint64_t imm;
+  int64_t imm;
   char op, s, sf, sh;
 
   op0 = bitutil::shift(inst, 23, 25);

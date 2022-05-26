@@ -21,7 +21,7 @@ Emulator::~Emulator() { f_.close(); }
 
 int Emulator::Execute() {
   char c;
-  cpu_->execute(0x91004001); /* ADD X1, X0, #0x10*/
-  cpu_->execute(0xd1000421); /* SUB X1, X1, #0x1 */
+  cpu_->execute(0xf1004021); /* SUBS X1, X0, #0x10 */
+  cpu_->execute(0xb1004021); /* ADDS X1, X1, #0x10 */
   return 0;
 }

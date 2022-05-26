@@ -4,5 +4,5 @@
 
 struct CPSR;
 
-uint64_t add_imm(uint64_t x, uint64_t y, uint8_t carry_in);
-uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, struct CPSR &cpsr);
+int64_t add_imm(int64_t x, int64_t y, int8_t carry_in);
+int64_t add_imm_s(int64_t x, int64_t y, int8_t carry_in, CPSR &cpsr);

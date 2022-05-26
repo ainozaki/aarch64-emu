@@ -3,20 +3,28 @@
 #include <cstdint>
 #include <iostream>
 
-#include "arm.h"
+#include <stdio.h>
 
-uint64_t add_imm(uint64_t x, uint64_t y, uint8_t carry_in) {
+#include "arm.h"
+#include "utils.h"
+
+static inline void set_Nflag(CPSR &cpsr, int64_t val) {
+  cpsr.N = bitutil::bit(val, 63);
+}
+
+static inline void set_Zflag(CPSR &cpsr, int64_t val) { cpsr.Z = val == 0; }
+
+int64_t add_imm(int64_t x, int64_t y, int8_t carry_in) {
   return x + y + carry_in;
 }
 
-uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in,
-                   struct CPSR &cpsr) {
-  uint64_t result;
-  result = x + y;
-  cpsr.N = result >= 0 ? 1 : 0;
-  cpsr.Z = !result ? 1 : 0;
+int64_t add_imm_s(int64_t x, int64_t y, int8_t carry_in, CPSR &cpsr) {
+  int64_t result = x + y + carry_in;
+
+  set_Nflag(cpsr, result);
+  set_Zflag(cpsr, result);
   // cpsr.C
   // cpsr.V
-  std::cout << "CPSR: " << cpsr.N << cpsr.Z << std::endl;
-  return x + y;
+
+  return result;
 }

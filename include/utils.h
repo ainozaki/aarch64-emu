@@ -6,6 +6,7 @@ inline uint32_t shift(uint32_t inst, uint32_t bottom, uint32_t top) {
 }
 
 inline uint32_t bit(uint32_t inst, uint32_t bit) { return (inst >> bit) & 1; }
+inline int64_t bit(int64_t inst, int64_t bit) { return (inst >> bit) & 1; }
 
 inline uint64_t zero_extend(uint64_t val, uint8_t bit) {
   uint64_t zero = 0;
