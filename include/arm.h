@@ -1,5 +1,4 @@
-#ifndef CPU_H_
-#define CPU_H_
+#pragma once
 
 #include <cstdint>
 
@@ -34,7 +33,5 @@ public:
   uint64_t sp_el_[4];  /* Stack pointers*/
   uint64_t elr_el_[4]; /* Exception Linked Registers */
 
-  struct CPSR cpsr_; /* Current Program Status Register*/
+  CPSR cpsr_; /* Current Program Status Register*/
 };
-
-#endif // CPU_H_

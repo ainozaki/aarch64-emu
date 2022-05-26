@@ -1,5 +1,4 @@
-#ifndef EMULATOR_H_
-#define EMULATOR_H_
+#pragma once
 
 #include <cstdint>
 #include <fstream>
@@ -22,5 +21,3 @@ private:
   std::unique_ptr<Cpu> cpu_;
   uint8_t memory_[MEM_SIZE];
 };
-
-#endif // EMULATOR_H_

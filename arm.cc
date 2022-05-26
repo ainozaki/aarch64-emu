@@ -29,17 +29,17 @@ void Cpu::data_processing_imm(uint32_t inst) {
   uint64_t imm;
   char op, s, sf, sh;
 
-  op0 = SHIFT(inst, 23, 25);
+  op0 = bitutil::shift(inst, 23, 25);
   std::cout << "op0(inst[23:25]): " << std::bitset<6>(op0) << std::endl;
   switch (op0) {
   case 0b010:
-    rd = SHIFT(inst, 0, 4);
-    rn = SHIFT(inst, 5, 9);
-    imm12 = SHIFT(inst, 10, 21);
-    sh = BIT(inst, 22);
-    s = BIT(inst, 29);
-    op = BIT(inst, 30);
-    sf = BIT(inst, 31);
+    rd = bitutil::shift(inst, 0, 4);
+    rn = bitutil::shift(inst, 5, 9);
+    imm12 = bitutil::shift(inst, 10, 21);
+    sh = bitutil::bit(inst, 22);
+    s = bitutil::bit(inst, 29);
+    op = bitutil::bit(inst, 30);
+    sf = bitutil::bit(inst, 31);
 
     datasize = (sf == 1) ? 64 : 32;
     imm = imm12;
@@ -81,7 +81,7 @@ void Cpu::branches(uint32_t inst){};
 void Cpu::execute(uint32_t inst) {
   uint8_t op1;
 
-  op1 = SHIFT(inst, 25, 28);
+  op1 = bitutil::shift(inst, 25, 28);
   switch (op1) {
   case 0b0000:
     sme_encodings(inst);
