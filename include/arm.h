@@ -17,22 +17,22 @@ public:
   ~Cpu() = default;
 
 public:
-  void sme_encodings(uint32_t inst);
-  void unallocated(uint32_t inst);
-  void sve_encodings(uint32_t inst);
-  void loads_and_stores(uint32_t inst);
-  void data_processing_imm(uint32_t inst);
-  void data_processing_reg(uint32_t inst);
-  void data_processing_float(uint32_t inst);
-  void branches(uint32_t inst);
+  void disassemble_sme_encodings(uint32_t inst);
+  void disassemble_unallocated(uint32_t inst);
+  void disassemble_sve_encodings(uint32_t inst);
+  void disassemble_loads_and_stores(uint32_t inst);
+  void disassemble_data_processing_imm(uint32_t inst);
+  void disassemble_data_processing_reg(uint32_t inst);
+  void disassemble_data_processing_float(uint32_t inst);
+  void disassemble_branches(uint32_t inst);
 
   void show_regs();
   void execute(uint32_t inst);
 
-  int64_t xregs_[31] = {0};
-  uint64_t pc_;
-  uint64_t sp_el_[4];  /* Stack pointers*/
-  uint64_t elr_el_[4]; /* Exception Linked Registers */
+  int64_t xregs[31] = {0};
+  uint64_t pc;
+  uint64_t sp_el[4];  /* Stack pointers*/
+  uint64_t elr_el[4]; /* Exception Linked Registers */
 
-  CPSR cpsr_; /* Current Program Status Register*/
+  CPSR cpsr; /* Current Program Status Register*/
 };
