@@ -20,8 +20,9 @@ Emulator::Emulator(const char *filename) {
 Emulator::~Emulator() { f_.close(); }
 
 int Emulator::Execute() {
-  char c;
-  cpu_->execute(0xf1004021); /* SUBS X1, X0, #0x10 */
-  cpu_->execute(0xb1004021); /* ADDS X1, X1, #0x10 */
+  cpu_->execute(0x91004400); /* ADD X0, X0, #0x11 */
+  cpu_->execute(0x927c0001); /* AND X1, X0, #0x10 */
+  cpu_->execute(0xb27c0002); /* OOR X2, X0, #0x10 */
+
   return 0;
 }

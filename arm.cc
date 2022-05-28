@@ -23,26 +23,25 @@ void Cpu::show_regs() {
 }
 
 void Cpu::data_processing_imm(uint32_t inst) {
-  uint8_t op0, datasize;
-  int16_t imm12;
+  uint8_t op0, datasize, opc;
+  int16_t imm12, imms, immr;
   uint32_t rd, rn;
-  int64_t imm;
-  char op, s, sf, sh;
+  int64_t imm = 0;
+  char op, s, sf, sh, n;
 
   op0 = bitutil::shift(inst, 23, 25);
-  // std::cout << "op0(inst[23:25]): " << std::bitset<6>(op0) << std::endl;
+  rd = bitutil::shift(inst, 0, 4);
+  rn = bitutil::shift(inst, 5, 9);
+  sf = bitutil::bit(inst, 31);
+  datasize = (sf == 1) ? 64 : 32;
+
   switch (op0) {
   case 0b010:
-    rd = bitutil::shift(inst, 0, 4);
-    rn = bitutil::shift(inst, 5, 9);
     imm12 = bitutil::shift(inst, 10, 21);
-    sh = bitutil::bit(inst, 22);
+    imm = bitutil::zero_extend(imm12, 12);
     s = bitutil::bit(inst, 29);
     op = bitutil::bit(inst, 30);
-    sf = bitutil::bit(inst, 31);
-
-    datasize = (sf == 1) ? 64 : 32;
-    imm = bitutil::zero_extend(imm12, 12);
+    sh = bitutil::bit(inst, 22);
     if (sh) {
       imm = imm >> 12;
     }
@@ -61,6 +60,34 @@ void Cpu::data_processing_imm(uint32_t inst) {
         xregs_[rd] =
             add_imm_s(xregs_[rn], ~imm, /*carry-in=*/1, cpsr_); /* SUBS */
       }
+    }
+    break;
+  case 0b100:
+    imms = bitutil::shift(inst, 10, 15);
+    immr = bitutil::shift(inst, 16, 21);
+    n = bitutil::bit(inst, 22);
+    opc = bitutil::shift(inst, 29, 30);
+
+    imm = n >> 12 | imms >> 6 | immr;
+    std::cout << "imm12: " << bitutil::shift(inst, 10, 21) << std::endl;
+    std::cout << "inst:  " << std::bitset<32>(inst) << std::endl;
+
+    switch (opc) {
+    case 0b00:
+      std::cout << "AND: " << xregs_[rn] << " & " << imm << std::endl;
+      xregs_[rd] = xregs_[rn] & imm; /* AND */
+      break;
+    case 0b01:
+      std::cout << "ORR: " << xregs_[rn] << " | " << imm << std::endl;
+      xregs_[rd] = xregs_[rn] | imm; /* ORR */
+      break;
+    case 0b10:
+      std::cout << "EOR: " << xregs_[rn] << " ^ " << imm << std::endl;
+      xregs_[rd] = xregs_[rn] ^ imm; /* EOR */
+      break;
+    case 0b11:
+      xregs_[rd] = and_imm_s(xregs_[rn], imm, cpsr_); /* ANDS */
+      break;
     }
     break;
   default:
@@ -114,5 +141,5 @@ void Cpu::execute(uint32_t inst) {
     branches(inst);
     break;
   }
-  // show_regs();
+  show_regs();
 }

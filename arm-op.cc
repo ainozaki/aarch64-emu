@@ -28,3 +28,10 @@ int64_t add_imm_s(int64_t x, int64_t y, int8_t carry_in, CPSR &cpsr) {
 
   return result;
 }
+
+int64_t and_imm_s(int64_t x, int64_t y, CPSR &cpsr) {
+  int64_t result = x & y;
+  set_Nflag(cpsr, result);
+  set_Zflag(cpsr, result);
+  return result;
+}

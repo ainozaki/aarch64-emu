@@ -19,5 +19,5 @@ public:
 private:
   std::ifstream f_;
   std::unique_ptr<Cpu> cpu_;
-  uint8_t memory_[MEM_SIZE];
+  // uint8_t memory_[MEM_SIZE];
 };
