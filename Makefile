@@ -7,12 +7,14 @@ MAIN=main.cc
 SRC=\
 	arm.cc \
 	arm-op.cc \
+	decoder.cc \
 	emulator.cc
 SRC_TEST=\
 	tests/execute_unittest.cc
 HEADER=\
 	include/arm.h \
 	include/arm-op.h \
+	include/decoder.h \
 	include/emulator.h \
 	include/utils.h
 

@@ -2,13 +2,11 @@
 
 #include <cstdint>
 
-class Cpu;
+struct CPSR;
 
-/* Data Processing Immediate */
-void disassemble_pc_rel(uint32_t inst);
-void disassemble_add_sub_imm(uint32_t inst, Cpu *cpu);
-void disassemble_add_sub_imm_with_tags(uint32_t inst);
-void disassemble_logical_imm(uint32_t inst, Cpu *cpu);
-void disassemble_move_wide_imm(uint32_t inst);
-void disassemble_bitfield(uint32_t inst);
-void disassemble_extract(uint32_t inst);
+void set_Nflag(CPSR &cpsr, uint64_t val);
+void set_Zflag(CPSR &cpsr, uint64_t val);
+
+uint64_t add_imm(uint64_t x, uint64_t y, uint8_t carry_in);
+
+uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr);

@@ -17,15 +17,6 @@ public:
   ~Cpu() = default;
 
 public:
-  void disassemble_sme_encodings(uint32_t inst);
-  void disassemble_unallocated(uint32_t inst);
-  void disassemble_sve_encodings(uint32_t inst);
-  void disassemble_loads_and_stores(uint32_t inst);
-  void disassemble_data_processing_imm(uint32_t inst);
-  void disassemble_data_processing_reg(uint32_t inst);
-  void disassemble_data_processing_float(uint32_t inst);
-  void disassemble_branches(uint32_t inst);
-
   void show_regs();
   void execute(uint32_t inst);
 
