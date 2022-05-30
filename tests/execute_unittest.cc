@@ -32,7 +32,7 @@ TEST(Execute, AND_EOR){
 	EXPECT_EQ(0x11, cpu.xregs[0]);
 	EXPECT_EQ(0x10, cpu.xregs[1]);
 
-	cpu.execute(0xb27c0002); /* OOR X2, X0, #0x10 */
+	cpu.execute(0xb27c0002); /* ORR X2, X0, #0x10 */
 	EXPECT_EQ(0x11, cpu.xregs[0]);
 	EXPECT_EQ(0x11, cpu.xregs[2]);
 }

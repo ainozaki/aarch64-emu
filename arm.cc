@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include "arm-op.h"
-#include "decoder.h"
+#include "decode.h"
 #include "utils.h"
 
 void Cpu::show_regs() {

@@ -1,4 +1,4 @@
-#include "decoder.h"
+#include "decode.h"
 
 #include <cassert>
 #include <stdio.h>
@@ -6,6 +6,18 @@
 #include "arm-op.h"
 #include "arm.h"
 #include "utils.h"
+
+static inline uint64_t bitfield_replicate(uint64_t mask, uint8_t e) {
+  while (e < 64) {
+    mask |= mask << e;
+    e *= 2;
+  }
+  return mask;
+}
+
+static inline uint64_t bitmask64(uint8_t length) {
+  return ~0ULL >> (64 - length);
+}
 
 /* Data Processing Immediate */
 const decode_func decode_data_processing_imm_tbl[] = {
@@ -66,6 +78,30 @@ void decode_add_sub_imm(uint32_t inst, Cpu *cpu) {
 
 void decode_add_sub_imm_with_tags(uint32_t inst, Cpu *cpu){};
 
+static uint64_t decode_bit_masks(uint8_t n, uint8_t imms, uint8_t immr) {
+  uint64_t mask;
+  uint8_t e, levels, s, r;
+  int len;
+
+  assert(n < 2 && imms < 64 && immr < 64);
+
+  len = 31 - __builtin_clz((n << 6) | (~imms & 0x3f));
+  e = 1 << len;
+
+  levels = e - 1;
+  s = imms & levels;
+  r = immr & levels;
+
+  mask = bitmask64(s + 1);
+  if (r) {
+    mask = (mask >> r) | (mask << (e - r));
+    mask &= bitmask64(e);
+  }
+
+  mask = bitfield_replicate(mask, e);
+  return mask;
+}
+
 void decode_logical_imm(uint32_t inst, Cpu *cpu) {
   uint8_t rd, rn, imms, immr, opc;
   bool N, if_64bit;
@@ -80,7 +116,7 @@ void decode_logical_imm(uint32_t inst, Cpu *cpu) {
   opc = bitutil::shift(inst, 29, 30);
   if_64bit = bitutil::bit(inst, 31);
 
-  imm = imms; // TODO: implement DecodeBitMasks
+  imm = decode_bit_masks(N, imms, immr);
 
   if (!if_64bit && N != 0) {
     fprintf(stderr, "undefined\n");
@@ -88,7 +124,6 @@ void decode_logical_imm(uint32_t inst, Cpu *cpu) {
 
   switch (opc) {
   case 0b00:
-  case 0b11:
     result = cpu->xregs[rn] & imm; /* AND */
     break;
   case 0b01:
@@ -96,6 +131,13 @@ void decode_logical_imm(uint32_t inst, Cpu *cpu) {
     break;
   case 0b10:
     result = cpu->xregs[rn] ^ imm; /* EOR */
+    break;
+  case 0b11:
+    result = cpu->xregs[rn] & imm; /* ANDS */
+    cpu->cpsr.N = result < 0;
+    cpu->cpsr.Z = result == 0;
+    cpu->cpsr.C = 0;
+    cpu->cpsr.V = 0;
     break;
   default:
     assert(false);

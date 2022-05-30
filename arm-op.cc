@@ -18,11 +18,13 @@ uint64_t add_imm(uint64_t x, uint64_t y, uint8_t carry_in) {
 }
 
 uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr) {
-  int64_t result = x + y + carry_in;
+  uint64_t unsigned_sum = x + y + carry_in;
+  int64_t signed_sum = (int64_t)x + (int64_t)y + carry_in;
 
-  set_Nflag(cpsr, result);
-  set_Zflag(cpsr, result);
-  // cpsr.C
-  // cpsr.V
-  return result;
+  cpsr.N = signed_sum < 0;
+  cpsr.Z = unsigned_sum == 0;
+  cpsr.C = unsigned_sum < x;
+  cpsr.V = ((int64_t)x < 0 && (int64_t)y < 0 && signed_sum > 0) |
+           ((int64_t)x > 0 && (int64_t)y > 0 && signed_sum < 0);
+  return unsigned_sum;
 }
