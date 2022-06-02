@@ -4,25 +4,22 @@
 #include <memory>
 
 #include "arm.h"
+#include "mem.h"
 
-Emulator::Emulator(const char *filename) {
-  cpu_ = std::make_unique<Cpu>(Cpu());
+Emulator::Emulator() {
+  const char *file = "text";
+  uint64_t load_offset = 0x0;
 
-  f_.open(filename, std::ios_base::in | std::ios_base::binary);
-  if (!f_) {
-    std::cerr << "Cannot open " << filename << std::endl;
-    return;
-  }
-
-  std::cout << "Initialize Emulator" << std::endl;
+  printf("emu: start emulating\n");
+  mem.initialize_mainmem(file, load_offset);
 }
 
-Emulator::~Emulator() { f_.close(); }
+Emulator::~Emulator() { printf("emu: finish emulating\n"); }
 
 int Emulator::Execute() {
-  cpu_->execute(0x91004400); /* ADD X0, X0, #0x11 */
-  cpu_->execute(0x927c0001); /* AND X1, X0, #0x10 */
-  cpu_->execute(0xb27c0002); /* OOR X2, X0, #0x10 */
+  cpu.execute(0x91004400); /* ADD X0, X0, #0x11 */
+  cpu.execute(0x927c0001); /* AND X1, X0, #0x10 */
+  cpu.execute(0xb27c0002); /* OOR X2, X0, #0x10 */
 
   return 0;
 }

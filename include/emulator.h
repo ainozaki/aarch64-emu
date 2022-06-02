@@ -5,19 +5,19 @@
 #include <memory>
 #include <vector>
 
-#define MEM_SIZE 1024
+#include <arm.h>
+#include <mem.h>
 
-class Cpu;
+#define MEM_SIZE 1024
 
 class Emulator {
 public:
-  Emulator(const char *filename);
+  Emulator();
   ~Emulator();
 
   int Execute();
 
 private:
-  std::ifstream f_;
-  std::unique_ptr<Cpu> cpu_;
-  // uint8_t memory_[MEM_SIZE];
+  Cpu cpu;
+  Mem mem;
 };

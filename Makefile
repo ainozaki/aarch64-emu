@@ -8,7 +8,8 @@ SRC=\
 	arm.cc \
 	arm-op.cc \
 	decode.cc \
-	emulator.cc
+	emulator.cc \
+	mem.cc
 SRC_TEST=\
 	tests/execute_unittest.cc
 HEADER=\
@@ -16,6 +17,7 @@ HEADER=\
 	include/arm-op.h \
 	include/decode.h \
 	include/emulator.h \
+	include/mem.h \
 	include/utils.h
 
 TARGET = emu-aarch64

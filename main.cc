@@ -3,8 +3,6 @@
 #include <iostream>
 
 int main() {
-  const char *filename = "binary.txt";
-  Emulator emu(filename);
+  Emulator emu;
   emu.Execute();
-  std::cout << "Finish emulating" << std::endl;
 }
