@@ -1,10 +1,10 @@
-#include "decode.h"
+#include "arm_decode.h"
 
 #include <cassert>
 #include <stdio.h>
 
-#include "arm-op.h"
 #include "arm.h"
+#include "arm_op.h"
 #include "utils.h"
 
 static inline uint64_t bitfield_replicate(uint64_t mask, uint8_t e) {

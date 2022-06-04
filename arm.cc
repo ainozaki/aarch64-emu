@@ -5,8 +5,8 @@
 #include <iomanip>
 #include <iostream>
 
-#include "arm-op.h"
-#include "decode.h"
+#include "arm_decode.h"
+#include "arm_op.h"
 #include "utils.h"
 
 void Cpu::show_regs() {

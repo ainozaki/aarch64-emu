@@ -16,12 +16,14 @@ public:
   Cpu() = default;
   ~Cpu() = default;
 
+  uint64_t sp;
+  uint64_t pc;
+
 public:
   void show_regs();
   void execute(uint32_t inst);
 
   uint64_t xregs[31] = {0};
-  uint64_t pc;
   uint64_t sp_el[4];  /* Stack pointers*/
   uint64_t elr_el[4]; /* Exception Linked Registers */
 

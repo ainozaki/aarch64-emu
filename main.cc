@@ -2,7 +2,4 @@
 
 #include <iostream>
 
-int main() {
-  Emulator emu;
-  emu.Execute();
-}
+int main() { Emulator emu; }

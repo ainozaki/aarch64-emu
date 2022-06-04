@@ -6,16 +6,16 @@ LFLAGS_TEST=-L/usr/local/lib -lgtest -lgtest_main -pthread
 MAIN=main.cc
 SRC=\
 	arm.cc \
-	arm-op.cc \
-	decode.cc \
+	arm_decode.cc \
+	arm_op.cc \
 	emulator.cc \
 	mem.cc
 SRC_TEST=\
 	tests/execute_unittest.cc
 HEADER=\
 	include/arm.h \
-	include/arm-op.h \
-	include/decode.h \
+	include/arm_decode.h \
+	include/arm_op.h \
 	include/emulator.h \
 	include/mem.h \
 	include/utils.h

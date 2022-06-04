@@ -18,6 +18,6 @@ public:
   int Execute();
 
 private:
-  Cpu cpu;
-  Mem mem;
+  Cpu cpu_;
+  Mem mem_;
 };

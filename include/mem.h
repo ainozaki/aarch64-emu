@@ -2,14 +2,21 @@
 
 #include <cstdint>
 
+class Cpu;
+
 class Mem {
 public:
   Mem() = default;
-  ~Mem();
-  void initialize_mainmem(const char *file, const uint64_t load_offset);
+  ~Mem() = default;
+
+  int init_mem(const char *rawfile, Cpu &cpu);
+  void clean_mem();
+
+  void *get_ptr(uint64_t vaddr);
+  void write_8(uint64_t addr, uint8_t value);
+  uint8_t read_8(uint64_t addr);
 
 private:
-  const uint64_t size = 4 * 1024 * 1024;
-  const uint64_t base = 0x00;
   uint8_t *mem_;
+  uint8_t *text_;
 };
