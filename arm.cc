@@ -5,9 +5,16 @@
 #include <iomanip>
 #include <iostream>
 
-#include "arm_decode.h"
+#include "arm_decoder.h"
 #include "arm_op.h"
+#include "system.h"
 #include "utils.h"
+
+namespace core {
+
+namespace cpu {
+
+Cpu::Cpu(System *system) : decoder_(decode::Decoder(system)), system_(system) {}
 
 void Cpu::show_regs() {
   std::cout << "=================================================" << std::endl;
@@ -24,28 +31,8 @@ void Cpu::show_regs() {
   std::cout << "=================================================" << std::endl;
 }
 
-const decode_func decode_inst_tbl[] = {
-    decode_sme_encodings,
-    decode_unallocated,
-    decode_sve_encodings,
-    decode_unallocated,
-    decode_loads_and_stores,
-    decode_data_processing_reg,
-    decode_loads_and_stores,
-    decode_data_processing_float,
-    decode_data_processing_imm,
-    decode_data_processing_imm,
-    decode_branches,
-    decode_branches,
-    decode_loads_and_stores,
-    decode_data_processing_reg,
-    decode_loads_and_stores,
-    decode_data_processing_float,
-};
+void Cpu::execute(uint32_t inst) { decoder_.start(inst); }
 
-void Cpu::execute(uint32_t inst) {
-  uint8_t op1;
+} // namespace cpu
 
-  op1 = bitutil::shift(inst, 25, 28);
-  decode_inst_tbl[op1](inst, this);
-}
+} // namespace core

@@ -1,4 +1,4 @@
-#include "emulator.h"
+#include "system.h"
 
 #include <iostream>
 #include <memory>
@@ -8,29 +8,36 @@
 #include "arm.h"
 #include "mem.h"
 
-Emulator::Emulator() {
+namespace core {
+
+System::System() : cpu_(cpu::Cpu(this)), mem_(mem::Mem(this)) {
+  // Initialize
+  Init();
+
+  // execute
+  Execute();
+
+  // free
+  mem_.clean_mem();
+}
+
+System::~System() { printf("emu: finish emulating\n"); }
+
+void System::Init() {
   int err;
   const char *file = "raw-binary";
 
   printf("emu: start emulating\n");
 
   /// mem
-  err = mem_.init_mem(file, cpu_);
+  err = mem_.init_mem(file);
   if (err != 0) {
     fprintf(stderr, "emu: failed to initialize\n");
     return;
   }
-
-  /// execute
-  Execute();
-
-  /// free
-  mem_.clean_mem();
 }
 
-Emulator::~Emulator() { printf("emu: finish emulating\n"); }
-
-int Emulator::Execute() {
+int System::Execute() {
   // cpu_.execute(0x91004400); /* ADD X0, X0, #0x11 */
   // cpu_.execute(0x927c0001); /* AND X1, X0, #0x10 */
   // cpu_.execute(0xb27c0002); /* OOR X2, X0, #0x10 */
@@ -48,3 +55,5 @@ printf("emu: mem[%lu] = %d\n", addr, data);
   */
   return 0;
 }
+
+} // namespace core

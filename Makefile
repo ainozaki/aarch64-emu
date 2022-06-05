@@ -6,18 +6,18 @@ LFLAGS_TEST=-L/usr/local/lib -lgtest -lgtest_main -pthread
 MAIN=main.cc
 SRC=\
 	arm.cc \
-	arm_decode.cc \
+	arm_decoder.cc \
 	arm_op.cc \
-	emulator.cc \
-	mem.cc
+	mem.cc \
+	system.cc
 SRC_TEST=\
 	tests/execute_unittest.cc
 HEADER=\
 	include/arm.h \
-	include/arm_decode.h \
+	include/arm_decoder.h \
 	include/arm_op.h \
-	include/emulator.h \
 	include/mem.h \
+	include/system.h \
 	include/utils.h
 
 TARGET = emu-aarch64

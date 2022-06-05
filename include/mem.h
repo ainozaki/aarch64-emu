@@ -2,14 +2,20 @@
 
 #include <cstdint>
 
-class Cpu;
+#include "arm.h"
+
+namespace core {
+
+class System;
+
+namespace mem {
 
 class Mem {
 public:
-  Mem() = default;
+  Mem(System *system);
   ~Mem() = default;
 
-  int init_mem(const char *rawfile, Cpu &cpu);
+  int init_mem(const char *rawfile);
   void clean_mem();
 
   void *get_ptr(uint64_t vaddr);
@@ -25,4 +31,10 @@ public:
 private:
   uint8_t *mem_;
   uint8_t *text_;
+
+  System *system_;
 };
+
+} // namespace mem
+
+} // namespace core

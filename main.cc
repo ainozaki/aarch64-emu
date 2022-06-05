@@ -1,5 +1,5 @@
-#include "emulator.h"
+#include "system.h"
 
 #include <iostream>
 
-int main() { Emulator emu; }
+int main() { core::System system; }

@@ -6,9 +6,16 @@
 #include <cstdint>
 
 #include <arm.h>
+#include <system.h>
+
+namespace core {
+
+namespace mem {
 
 const uint32_t text_section_size = 1024 * 1024 * 1024; /// 1MB
 const uint32_t mem_size = 1024 * 1024 * 1024;          /// 1MB
+
+Mem::Mem(System *system) : system_(system) {}
 
 void Mem::clean_mem() {
   free(text_);
@@ -16,7 +23,7 @@ void Mem::clean_mem() {
   printf("mem: free mainmem\n");
 }
 
-int Mem::init_mem(const char *rawfile, Cpu &cpu) {
+int Mem::init_mem(const char *rawfile) {
   FILE *fp;
   size_t readlen;
 
@@ -32,14 +39,14 @@ int Mem::init_mem(const char *rawfile, Cpu &cpu) {
   printf("mem: load file %s, size %lu\n", rawfile, readlen);
   fclose(fp);
 
-  cpu.pc = (uint64_t)text_;
+  system_->cpu().pc = (uint64_t)text_;
   printf("mem: set initial PC\n");
   printf("mem: PC = %p\n", text_);
 
   /// mem
   mem_ = (uint8_t *)malloc(mem_size);
   printf("mem: malloc mainmem size %u at %p\n", mem_size, mem_);
-  cpu.sp = (uint64_t)(mem_ + mem_size - 1);
+  system_->cpu().sp = (uint64_t)(mem_ + mem_size - 1);
   printf("mem: set initial SP\n");
   printf("mem: SP = %p\n", mem_ + mem_size);
 
@@ -75,3 +82,7 @@ uint16_t Mem::read_16(uint64_t addr) { return *(uint16_t *)get_ptr(addr); }
 uint32_t Mem::read_32(uint64_t addr) { return *(uint32_t *)get_ptr(addr); }
 
 uint64_t Mem::read_64(uint64_t addr) { return *(uint64_t *)get_ptr(addr); }
+
+} // namespace mem
+
+} // namespace core
