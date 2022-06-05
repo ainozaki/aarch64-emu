@@ -53,7 +53,25 @@ void Mem::write_8(uint64_t addr, uint8_t value) {
   *(uint8_t *)paddr = value;
 }
 
-uint8_t Mem::read_8(uint64_t addr) {
+void Mem::write_16(uint64_t addr, uint16_t value) {
   void *paddr = get_ptr(addr);
-  return *(uint8_t *)paddr;
+  *(uint16_t *)paddr = value;
 }
+
+void Mem::write_32(uint64_t addr, uint32_t value) {
+  void *paddr = get_ptr(addr);
+  *(uint32_t *)paddr = value;
+}
+
+void Mem::write_64(uint64_t addr, uint64_t value) {
+  void *paddr = get_ptr(addr);
+  *(uint64_t *)paddr = value;
+}
+
+uint8_t Mem::read_8(uint64_t addr) { return *(uint8_t *)get_ptr(addr); }
+
+uint16_t Mem::read_16(uint64_t addr) { return *(uint16_t *)get_ptr(addr); }
+
+uint32_t Mem::read_32(uint64_t addr) { return *(uint32_t *)get_ptr(addr); }
+
+uint64_t Mem::read_64(uint64_t addr) { return *(uint64_t *)get_ptr(addr); }

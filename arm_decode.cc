@@ -5,6 +5,7 @@
 
 #include "arm.h"
 #include "arm_op.h"
+#include "mem.h"
 #include "utils.h"
 
 static inline uint64_t bitfield_replicate(uint64_t mask, uint8_t e) {
@@ -19,7 +20,13 @@ static inline uint64_t bitmask64(uint8_t length) {
   return ~0ULL >> (64 - length);
 }
 
-/* Data Processing Immediate */
+static void unsupported() { fprintf(stderr, "unsuported inst\n"); }
+
+static void unallocated() { fprintf(stderr, "unallocated inst\n"); }
+
+/*
+         Data Processing Immediate
+*/
 const decode_func decode_data_processing_imm_tbl[] = {
     decode_pc_rel,      decode_pc_rel,
     decode_add_sub_imm, decode_add_sub_imm_with_tags,
@@ -158,7 +165,132 @@ void decode_pc_rel(uint32_t inst, Cpu *cpu){};
 void decode_sme_encodings(uint32_t inst, Cpu *cpu){};
 void decode_unallocated(uint32_t inst, Cpu *cpu){};
 void decode_sve_encodings(uint32_t inst, Cpu *cpu){};
-void decode_loads_and_stores(uint32_t inst, Cpu *cpu){};
+
+/*
+         load/store
+*/
+
+/*
+         All load/store
+
+         31    28  27   26  25  24 23 22 21  16 15  12 11 10 9              0
+         +-------+---+-----+---+-----+--+------+------+-----+---------------+
+         | op0   | 1 | op1 | 0 | op2 |  |  op3 |      | op4 |               |
+         +-------+---+-----+---+-----+--+------+------+-----+---------------+
+*/
+void decode_loads_and_stores(uint32_t inst, Cpu *cpu) {
+  uint8_t op;
+  op = bitutil::shift(inst, 28, 29);
+  switch (op) {
+  case 0b00:
+    unsupported();
+    break;
+  case 0b01:
+    unsupported();
+    break;
+  case 0b10:
+    unsupported();
+    break;
+  case 0b11:
+    decode_ldst_register(inst, cpu);
+    break;
+  }
+}
+
+void decode_ldst_register(uint32_t inst, Cpu *cpu) {
+  uint8_t op;
+  op = (bitutil::bit(inst, 21)) << 2 | bitutil::shift(inst, 10, 11);
+  decode_ldst_reg_tbl[op](inst, cpu);
+}
+
+void decode_ldst_reg_unscaled_imm(uint32_t inst, Cpu *cpu) {
+  printf("ldst_reg_unscaled_imm\n");
+}
+void decode_ldst_reg_imm_post_indexed(uint32_t inst, Cpu *cpu) {
+  printf("ldst_reg_imm_post_indexed\n");
+}
+void decode_ldst_reg_unpriviledged(uint32_t inst, Cpu *cpu) {
+  printf("ldst_reg_unpriviledged\n");
+}
+void decode_ldst_reg_imm_pre_indexed(uint32_t inst, Cpu *cpu) {
+  printf("ldst_reg_imm_pre_indexed\n");
+}
+void decode_ldst_atomic_memory_op(uint32_t inst, Cpu *cpu) {
+  printf("ldst_reg_atomic_memory_op\n");
+}
+void decode_ldst_reg_pac(uint32_t inst, Cpu *cpu) { printf("ldst_reg_pac\n"); }
+
+/*
+         Load/store register (reister offset)
+
+         31   30 29 27 26  25 24 23 22 21  20   16 15 13 12  11 10 9  5 4   0
+         +------+-----+---+----+------+---+-------+-----+---+-----+----+----+
+         | size | 111 | V | 00 | opc  | 1 |   Rm  | opt | S | 10  | Rn | Rt |
+         +------+-----+---+----+------+---+-------+-----+---+-----+----+----+
+
+         @size:
+                        10: 32bit
+                        11: 64bit
+         @V: simd
+         @Rm: offset register
+         @opt: extend type
+                        000->UXTB
+                        001->UXTH
+                        010->UXTW
+                        011->UXTX
+                        100->SXTB
+                        101->SXTH
+                        110->SXTW
+                        111->SXTX
+         @S: if S=1 then shift |size|
+         @Rn: base register or stack pointer
+         @Rt: register to be transfered
+
+*/
+void decode_ldst_reg_reg_offset(uint32_t inst, Cpu *cpu) {
+  bool vector, shift;
+  uint8_t size, opc, rm, rn, rt;
+
+  rt = bitutil::shift(inst, 0, 4);
+  rn = bitutil::shift(inst, 5, 9);
+  rm = bitutil::shift(inst, 16, 20);
+  vector = bitutil::bit(inst, 26);
+  shift = bitutil::bit(inst, 12);
+  size = bitutil::shift(inst, 30, 31);
+  opc = bitutil::shift(inst, 22, 23);
+
+  if (vector) {
+    unsupported();
+  } else {
+    switch (opc) {
+    case 0b00:
+      printf("store\n");
+      break;
+    case 0b01:
+      printf("loadu\n");
+      if (shift) {
+        unsupported();
+      } else {
+        if (size == 0b10) {
+          cpu->xregs[rt] = read_32(cpu->xregs[rn] + cpu->xregs[rm]);
+        } else {
+          cpu->xregs[rt] = read_64(cpu->xregs[rn] + cpu->xregs[rm]);
+        }
+      }
+      break;
+    case 0b10:
+      printf("loads\n");
+      break;
+    case 0b11:
+      printf("load ?\n");
+      if (size >= 0b10) {
+        unallocated();
+      }
+      break;
+    }
+  }
+}
+
 void decode_data_processing_reg(uint32_t inst, Cpu *cpu){};
 void decode_data_processing_float(uint32_t inst, Cpu *cpu){};
 void decode_branches(uint32_t inst, Cpu *cpu){};
