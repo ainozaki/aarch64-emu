@@ -13,6 +13,11 @@ namespace core {
 namespace decode {
 
 namespace {
+
+static void unsupported() { fprintf(stderr, "unsuported inst\n"); }
+
+static void unallocated() { fprintf(stderr, "unallocated inst\n"); }
+
 static inline uint64_t bitfield_replicate(uint64_t mask, uint8_t e) {
   while (e < 64) {
     mask |= mask << e;
@@ -25,9 +30,77 @@ static inline uint64_t bitmask64(uint8_t length) {
   return ~0ULL >> (64 - length);
 }
 
-static void unsupported() { fprintf(stderr, "unsuported inst\n"); }
+enum class ExtendType {
+  UXTB,
+  UXTH,
+  UXTW,
+  UXTX,
+  SXTB,
+  SXTH,
+  SXTW,
+  SXTX,
+};
 
-static void unallocated() { fprintf(stderr, "unallocated inst\n"); }
+const ExtendType extendtype_tbl[] = {
+    ExtendType::UXTB, ExtendType::UXTH, ExtendType::UXTW, ExtendType::UXTX,
+    ExtendType::SXTB, ExtendType::SXTH, ExtendType::SXTW, ExtendType::SXTX,
+};
+
+// signed/unsigned extend
+static inline uint64_t extend(uint64_t val, uint8_t len, bool if_unsigned) {
+  if (if_unsigned) {
+    return val & (1 << (len - 1));
+  } else {
+    return bitutil::bit(val, len) ? (val | 0xffffffffffffffff << len) : val;
+  }
+}
+
+// ExtendReg() in ARM
+// Perform a value extension and shift
+uint64_t shift_and_extend(uint64_t val, uint64_t shift, ExtendType exttype) {
+  bool if_unsigned;
+  uint8_t len;
+
+  assert(shift >= 0 && shift <= 4);
+  if (shift) {
+    val = val << shift;
+  }
+  switch (exttype) {
+  case ExtendType::UXTB:
+    if_unsigned = true;
+    len = 8;
+    break;
+  case ExtendType::UXTH:
+    if_unsigned = true;
+    len = 16;
+    break;
+  case ExtendType::UXTW:
+    if_unsigned = true;
+    len = 32;
+    break;
+  case ExtendType::UXTX:
+    if_unsigned = true;
+    len = 64;
+    break;
+  case ExtendType::SXTB:
+    if_unsigned = false;
+    len = 8;
+    break;
+  case ExtendType::SXTH:
+    if_unsigned = false;
+    len = 16;
+    break;
+  case ExtendType::SXTW:
+    if_unsigned = false;
+    len = 32;
+    break;
+  case ExtendType::SXTX:
+    if_unsigned = false;
+    len = 64;
+    break;
+  }
+  return extend(val, len, if_unsigned);
+}
 
 } // namespace
 
@@ -57,9 +130,6 @@ void Decoder::start(uint32_t inst) {
   (this->*decode_inst_tbl[op1])(inst);
 }
 
-/*
-         Data Processing Immediate
-*/
 void Decoder::decode_data_processing_imm(uint32_t inst) {
   uint8_t op0;
   op0 = bitutil::shift(inst, 23, 25);
@@ -71,6 +141,39 @@ void Decoder::decode_data_processing_imm(uint32_t inst) {
   };
   (this->*decode_data_processing_imm_tbl[op0])(inst);
 }
+
+void Decoder::decode_loads_and_stores(uint32_t inst) {
+  uint8_t op;
+  op = bitutil::shift(inst, 28, 29);
+  switch (op) {
+  case 0b00:
+    unsupported();
+    break;
+  case 0b01:
+    unsupported();
+    break;
+  case 0b10:
+    unsupported();
+    break;
+  case 0b11:
+    Decoder::decode_ldst_register(inst);
+    break;
+  }
+}
+
+void Decoder::decode_data_processing_reg(uint32_t inst){};
+void Decoder::decode_data_processing_float(uint32_t inst){};
+void Decoder::decode_branches(uint32_t inst){};
+void Decoder::decode_pc_rel(uint32_t inst){};
+void Decoder::decode_sme_encodings(uint32_t inst){};
+void Decoder::decode_unallocated(uint32_t inst){};
+void Decoder::decode_sve_encodings(uint32_t inst){};
+
+/*
+====================================================
+         Data Processing Immediate
+====================================================
+*/
 
 void Decoder::decode_add_sub_imm(uint32_t inst) {
   uint8_t rd, rn;
@@ -195,41 +298,11 @@ void Decoder::decode_move_wide_imm(uint32_t inst){};
 void Decoder::decode_bitfield(uint32_t inst){};
 void Decoder::decode_extract(uint32_t inst){};
 
-void Decoder::decode_pc_rel(uint32_t inst){};
-void Decoder::decode_sme_encodings(uint32_t inst){};
-void Decoder::decode_unallocated(uint32_t inst){};
-void Decoder::decode_sve_encodings(uint32_t inst){};
-
 /*
-         load/store
+====================================================
+         Loads and stores
+====================================================
 */
-
-/*
-         All load/store
-
-         31    28  27   26  25  24 23 22 21  16 15  12 11 10 9              0
-         +-------+---+-----+---+-----+--+------+------+-----+---------------+
-         | op0   | 1 | op1 | 0 | op2 |  |  op3 |      | op4 |               |
-         +-------+---+-----+---+-----+--+------+------+-----+---------------+
-*/
-void Decoder::decode_loads_and_stores(uint32_t inst) {
-  uint8_t op;
-  op = bitutil::shift(inst, 28, 29);
-  switch (op) {
-  case 0b00:
-    unsupported();
-    break;
-  case 0b01:
-    unsupported();
-    break;
-  case 0b10:
-    unsupported();
-    break;
-  case 0b11:
-    Decoder::decode_ldst_register(inst);
-    break;
-  }
-}
 
 void Decoder::decode_ldst_register(uint32_t inst) {
   uint8_t op;
@@ -273,19 +346,13 @@ void Decoder::decode_ldst_reg_pac(uint32_t inst) { printf("ldst_reg_pac\n"); }
          +------+-----+---+----+------+---+-------+-----+---+-----+----+----+
 
          @size:
+                        00:  8bit
+                        01: 16bit
                         10: 32bit
                         11: 64bit
          @V: simd
          @Rm: offset register
          @opt: extend type
-                        000->UXTB
-                        001->UXTH
-                        010->UXTW
-                        011->UXTX
-                        100->SXTB
-                        101->SXTH
-                        110->SXTW
-                        111->SXTX
          @S: if S=1 then shift |size|
          @Rn: base register or stack pointer
          @Rt: register to be transfered
@@ -293,53 +360,47 @@ void Decoder::decode_ldst_reg_pac(uint32_t inst) { printf("ldst_reg_pac\n"); }
 */
 void Decoder::decode_ldst_reg_reg_offset(uint32_t inst) {
   bool vector, shift;
-  uint8_t size, opc, rm, rn, rt;
+  uint8_t size, scale, opc, opt, rm, rn, rt;
+  uint64_t offset;
 
-  rt = bitutil::shift(inst, 0, 4);
-  rn = bitutil::shift(inst, 5, 9);
-  rm = bitutil::shift(inst, 16, 20);
-  vector = bitutil::bit(inst, 26);
-  shift = bitutil::bit(inst, 12);
   size = bitutil::shift(inst, 30, 31);
+  scale = size;
+  vector = bitutil::bit(inst, 26);
   opc = bitutil::shift(inst, 22, 23);
+  rm = bitutil::shift(inst, 16, 20);
+  opt = bitutil::shift(inst, 13, 15);
+  shift = bitutil::bit(inst, 12);
+  rn = bitutil::shift(inst, 5, 9);
+  rt = bitutil::shift(inst, 0, 4);
 
   if (vector) {
     unsupported();
   } else {
     switch (opc) {
     case 0b00:
-      printf("store\n");
+      /* store */
+      // TODO: option = 0b011
+      offset = shift_and_extend(system_->cpu().xregs[rm], scale,
+                                extendtype_tbl[opt]);
+      system_->mem().write(size, system_->cpu().xregs[rn] + offset,
+                           system_->cpu().xregs[rt]);
       break;
-    case 0b01:
-      printf("loadu\n");
-      if (shift) {
-        unsupported();
-      } else {
-        if (size == 0b10) {
-          system_->cpu().xregs[rt] = system_->mem().read_32(
-              system_->cpu().xregs[rn] + system_->cpu().xregs[rm]);
-        } else {
-          system_->cpu().xregs[rt] = system_->mem().read_64(
-              system_->cpu().xregs[rn] + system_->cpu().xregs[rm]);
-        }
-      }
-      break;
-    case 0b10:
-      printf("loads\n");
-      break;
-    case 0b11:
+    case 0b11: /* loads */
       printf("load ?\n");
       if (size >= 0b10) {
         unallocated();
       }
+    case 0b01: /* loadu */
+    case 0b10: /* loads */
+               // TODO: option = 0b011
+      offset = shift_and_extend(system_->cpu().xregs[rm], scale,
+                                extendtype_tbl[opt]);
+      system_->cpu().xregs[rt] =
+          system_->mem().read(size, system_->cpu().xregs[rn] + offset);
       break;
     }
   }
 }
-
-void Decoder::decode_data_processing_reg(uint32_t inst){};
-void Decoder::decode_data_processing_float(uint32_t inst){};
-void Decoder::decode_branches(uint32_t inst){};
 
 } // namespace decode
 } // namespace core

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <cassert>
 #include <cstdint>
 
 #include <arm.h>
@@ -55,6 +56,21 @@ int Mem::init_mem(const char *rawfile) {
 
 void *Mem::get_ptr(uint64_t vaddr) { return vaddr + mem_; }
 
+void Mem::write(uint8_t size, uint64_t addr, uint64_t value) {
+  switch (size) {
+  case 0:
+    return write_8(addr, value);
+  case 1:
+    return write_16(addr, value);
+  case 2:
+    return write_32(addr, value);
+  case 3:
+    return write_64(addr, value);
+  default:
+    assert(false);
+  }
+}
+
 void Mem::write_8(uint64_t addr, uint8_t value) {
   void *paddr = get_ptr(addr);
   *(uint8_t *)paddr = value;
@@ -73,6 +89,21 @@ void Mem::write_32(uint64_t addr, uint32_t value) {
 void Mem::write_64(uint64_t addr, uint64_t value) {
   void *paddr = get_ptr(addr);
   *(uint64_t *)paddr = value;
+}
+
+uint64_t Mem::read(uint8_t size, uint64_t addr) {
+  switch (size) {
+  case 0:
+    return read_8(addr);
+  case 1:
+    return read_16(addr);
+  case 2:
+    return read_32(addr);
+  case 3:
+    return read_64(addr);
+  default:
+    assert(false);
+  }
 }
 
 uint8_t Mem::read_8(uint64_t addr) { return *(uint8_t *)get_ptr(addr); }
