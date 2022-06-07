@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 
 #include "arm.h"
@@ -64,39 +65,56 @@ void *Mem::get_ptr(uint64_t vaddr) {
   return vaddr + mem_;
 }
 
-void Mem::write(uint8_t size, uint64_t addr, uint64_t value) {
+void Mem::write(uint8_t size, uint64_t vaddr, uint64_t value) {
+  void *paddr;
+  paddr = get_ptr(vaddr);
+  if (!paddr) {
+    return;
+  }
+  LOG_CPU("mem: write: vaddr=0x%lx paddr=0x%p\n", vaddr, paddr);
   switch (size) {
   case 0:
-    return write_8(addr, value);
+    return write_8(paddr, value);
   case 1:
-    return write_16(addr, value);
+    return write_16(paddr, value);
   case 2:
-    return write_32(addr, value);
+    return write_32(paddr, value);
   case 3:
-    return write_64(addr, value);
+    return write_64(paddr, value);
   default:
     assert(false);
   }
 }
 
-void Mem::write_8(uint64_t addr, uint8_t value) {
-  void *paddr = get_ptr(addr);
-  *(uint8_t *)paddr = value;
+void Mem::write_8(void *paddr, uint8_t value) {
+  uint8_t *p = (uint8_t *)paddr;
+  p[0] = (uint8_t)value;
 }
 
-void Mem::write_16(uint64_t addr, uint16_t value) {
-  void *paddr = get_ptr(addr);
-  *(uint16_t *)paddr = value;
+void Mem::write_16(void *paddr, uint16_t value) {
+  uint8_t *p = (uint8_t *)paddr;
+  p[0] = value;
+  p[1] = (uint8_t)(value >> 8);
 }
 
-void Mem::write_32(uint64_t addr, uint32_t value) {
-  void *paddr = get_ptr(addr);
-  *(uint32_t *)paddr = value;
+void Mem::write_32(void *paddr, uint32_t value) {
+  uint8_t *p = (uint8_t *)paddr;
+  p[0] = value;
+  p[1] = (uint8_t)(value >> 8);
+  p[2] = (uint8_t)(value >> 16);
+  p[3] = (uint8_t)(value >> 24);
 }
 
-void Mem::write_64(uint64_t addr, uint64_t value) {
-  void *paddr = get_ptr(addr);
-  *(uint64_t *)paddr = value;
+void Mem::write_64(void *paddr, uint64_t value) {
+  uint8_t *p = (uint8_t *)paddr;
+  p[0] = value;
+  p[1] = (uint8_t)(value >> 8);
+  p[2] = (uint8_t)(value >> 16);
+  p[3] = (uint8_t)(value >> 24);
+  p[4] = (uint8_t)(value >> 32);
+  p[5] = (uint8_t)(value >> 40);
+  p[6] = (uint8_t)(value >> 48);
+  p[7] = (uint8_t)(value >> 56);
 }
 
 uint64_t Mem::read(uint8_t size, uint64_t addr) {
@@ -121,13 +139,29 @@ uint64_t Mem::read(uint8_t size, uint64_t addr) {
   }
 }
 
-uint8_t Mem::read_8(void *addr) { return *(uint8_t *)addr; }
+uint8_t Mem::read_8(void *paddr) { return *(uint8_t *)paddr; }
 
-uint16_t Mem::read_16(void *addr) { return *(uint16_t *)addr; }
+uint16_t Mem::read_16(void *paddr) {
+  uint8_t *p = (uint8_t *)paddr;
+  return (uint8_t)*p | ((uint8_t) * (p + 1)) << 8;
+}
 
-uint32_t Mem::read_32(void *addr) { return *(uint32_t *)addr; }
+uint32_t Mem::read_32(void *paddr) {
+  uint8_t *p = (uint8_t *)paddr;
+  return (uint8_t)*p | ((uint8_t) * (p + 1)) << 8 |
+         ((uint8_t) * (p + 2)) << 16 | ((uint8_t) * (p + 3)) << 24;
+}
 
-uint64_t Mem::read_64(void *addr) { return *(uint64_t *)addr; }
+uint64_t Mem::read_64(void *paddr) {
+  uint8_t *p = (uint8_t *)paddr;
+  uint64_t value;
+  value = (uint8_t)*p | ((uint8_t) * (p + 1)) << 8 |
+          ((uint8_t) * (p + 2)) << 16 | ((uint8_t) * (p + 3)) << 24;
+  for (int i = 4; i < 8; i++) {
+    value += ((uint8_t) * (p + i)) * std::pow(2, 8 * i);
+  }
+  return value;
+}
 
 } // namespace mem
 

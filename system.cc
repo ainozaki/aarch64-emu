@@ -44,6 +44,10 @@ int System::Execute() {
   cpu_.execute(0xf84043e0); /* LDR X0, [SP, #4] */
   cpu_.execute(0xf8616be0); /* LDR X0, [SP, X1] */
 
+  uint64_t value = 0xffffffffffffffff;
+  mem_.write(3, 1024, value);
+  printf("read: 0x%lx\n", mem_.read(3, 1024));
+
   /*
 uint8_t data;
 uint64_t addr;
