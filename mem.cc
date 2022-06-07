@@ -6,8 +6,9 @@
 #include <cassert>
 #include <cstdint>
 
-#include <arm.h>
-#include <system.h>
+#include "arm.h"
+#include "log.h"
+#include "system.h"
 
 namespace core {
 
@@ -37,7 +38,7 @@ int Mem::init_mem(const char *rawfile) {
     return -1;
   }
   readlen = fread(text_, 1, text_section_size, fp);
-  printf("mem: load file %s, size %lu\n", rawfile, readlen);
+  printf("mem: load file %s, size 0x%lx\n", rawfile, readlen);
   fclose(fp);
 
   system_->cpu().pc = (uint64_t)text_;
@@ -46,15 +47,22 @@ int Mem::init_mem(const char *rawfile) {
 
   /// mem
   mem_ = (uint8_t *)malloc(mem_size);
-  printf("mem: malloc mainmem size %u at %p\n", mem_size, mem_);
-  system_->cpu().sp = (uint64_t)(mem_ + mem_size - 1);
+  printf("mem: malloc mainmem size 0x%x  %p - %p\n", mem_size, mem_,
+         mem_ + mem_size - 1);
+  system_->cpu().xregs[31] = (uint64_t)(mem_size - 1024);
   printf("mem: set initial SP\n");
-  printf("mem: SP = %p\n", mem_ + mem_size);
+  printf("mem: SP = 0x%lx\n", system_->cpu().xregs[31]);
 
   return 0;
 }
 
-void *Mem::get_ptr(uint64_t vaddr) { return vaddr + mem_; }
+void *Mem::get_ptr(uint64_t vaddr) {
+  if (vaddr >= mem_size) {
+    fprintf(stderr, "=====Warning:memory access out of range=====\n");
+    return NULL;
+  }
+  return vaddr + mem_;
+}
 
 void Mem::write(uint8_t size, uint64_t addr, uint64_t value) {
   switch (size) {
@@ -92,27 +100,34 @@ void Mem::write_64(uint64_t addr, uint64_t value) {
 }
 
 uint64_t Mem::read(uint8_t size, uint64_t addr) {
+  void *paddr;
+
+  paddr = get_ptr(addr);
+  if (!paddr) {
+    return 0;
+  }
+  LOG_CPU("mem: read: vaddr=0x%lx paddr=0x%p\n", addr, paddr);
   switch (size) {
   case 0:
-    return read_8(addr);
+    return read_8(paddr);
   case 1:
-    return read_16(addr);
+    return read_16(paddr);
   case 2:
-    return read_32(addr);
+    return read_32(paddr);
   case 3:
-    return read_64(addr);
+    return read_64(paddr);
   default:
     assert(false);
   }
 }
 
-uint8_t Mem::read_8(uint64_t addr) { return *(uint8_t *)get_ptr(addr); }
+uint8_t Mem::read_8(void *addr) { return *(uint8_t *)addr; }
 
-uint16_t Mem::read_16(uint64_t addr) { return *(uint16_t *)get_ptr(addr); }
+uint16_t Mem::read_16(void *addr) { return *(uint16_t *)addr; }
 
-uint32_t Mem::read_32(uint64_t addr) { return *(uint32_t *)get_ptr(addr); }
+uint32_t Mem::read_32(void *addr) { return *(uint32_t *)addr; }
 
-uint64_t Mem::read_64(uint64_t addr) { return *(uint64_t *)get_ptr(addr); }
+uint64_t Mem::read_64(void *addr) { return *(uint64_t *)addr; }
 
 } // namespace mem
 

@@ -28,10 +28,10 @@ private:
   void write_16(uint64_t addr, uint16_t value);
   void write_32(uint64_t addr, uint32_t value);
   void write_64(uint64_t addr, uint64_t value);
-  uint8_t read_8(uint64_t addr);
-  uint16_t read_16(uint64_t addr);
-  uint32_t read_32(uint64_t addr);
-  uint64_t read_64(uint64_t addr);
+  uint8_t read_8(void *addr);
+  uint16_t read_16(void *addr);
+  uint32_t read_32(void *addr);
+  uint64_t read_64(void *addr);
 
   uint8_t *mem_;
   uint8_t *text_;

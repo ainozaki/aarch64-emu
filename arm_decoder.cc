@@ -5,6 +5,7 @@
 
 #include "arm.h"
 #include "arm_op.h"
+#include "log.h"
 #include "mem.h"
 #include "system.h"
 #include "utils.h"
@@ -46,41 +47,28 @@ const ExtendType extendtype_tbl[] = {
     ExtendType::SXTB, ExtendType::SXTH, ExtendType::SXTW, ExtendType::SXTX,
 };
 
-// signed/unsigned extend
-static inline uint64_t extend(uint64_t val, uint8_t len, bool if_unsigned) {
-  if (if_unsigned) {
-    return val & (1 << (len - 1));
-  } else {
-    return bitutil::bit(val, len) ? (val | 0xffffffffffffffff << len) : val;
-  }
+// signed extend
+static inline uint64_t signed_extend(uint64_t val, uint8_t len) {
+  return bitutil::bit(val, len) ? (val | 0xffffffffffffffff << len) : val;
 }
 
 // ExtendReg() in ARM
 // Perform a value extension and shift
-uint64_t shift_and_extend(uint64_t val, uint64_t shift, ExtendType exttype) {
+uint64_t shift_and_extend(uint64_t val, bool shift, uint8_t scale,
+                          ExtendType exttype) {
   bool if_unsigned;
   uint8_t len;
 
-  assert(shift >= 0 && shift <= 4);
   if (shift) {
-    val = val << shift;
+    assert(scale >= 0 && scale <= 4);
+    val = val << scale;
   }
   switch (exttype) {
   case ExtendType::UXTB:
-    if_unsigned = true;
-    len = 8;
-    break;
   case ExtendType::UXTH:
-    if_unsigned = true;
-    len = 16;
-    break;
   case ExtendType::UXTW:
-    if_unsigned = true;
-    len = 32;
-    break;
   case ExtendType::UXTX:
     if_unsigned = true;
-    len = 64;
     break;
   case ExtendType::SXTB:
     if_unsigned = false;
@@ -99,7 +87,13 @@ uint64_t shift_and_extend(uint64_t val, uint64_t shift, ExtendType exttype) {
     len = 64;
     break;
   }
-  return extend(val, len, if_unsigned);
+  // printf("shift_and_extend: val=%lu, shift=%d, scale=%d, len=%d\n", val,
+  // shift, scale, len);
+  if (if_unsigned) {
+    return val;
+  } else {
+    return signed_extend(val, len);
+  }
 }
 
 } // namespace
@@ -306,36 +300,46 @@ void Decoder::decode_extract(uint32_t inst){};
 
 void Decoder::decode_ldst_register(uint32_t inst) {
   uint8_t op;
-  op = (bitutil::bit(inst, 21)) << 2 | bitutil::shift(inst, 10, 11);
-  const decode_func decode_ldst_reg_tbl[] = {
-      &Decoder::decode_ldst_reg_unscaled_imm,
-      &Decoder::decode_ldst_reg_imm_post_indexed,
-      &Decoder::decode_ldst_reg_unpriviledged,
-      &Decoder::decode_ldst_reg_imm_pre_indexed,
-      &Decoder::decode_ldst_atomic_memory_op,
-      &Decoder::decode_ldst_reg_pac,
-      &Decoder::decode_ldst_reg_reg_offset,
-      &Decoder::decode_ldst_reg_pac,
-  };
-  (this->*decode_ldst_reg_tbl[op])(inst);
+
+  if (bitutil::bit(inst, 24)) {
+    decode_ldst_reg_unsigned_imm(inst);
+  } else {
+    op = (bitutil::bit(inst, 21)) << 2 | bitutil::shift(inst, 10, 11);
+    const decode_func decode_ldst_reg_tbl[] = {
+        &Decoder::decode_ldst_reg_unscaled_imm,
+        &Decoder::decode_ldst_reg_imm_post_indexed,
+        &Decoder::decode_ldst_reg_unpriviledged,
+        &Decoder::decode_ldst_reg_imm_pre_indexed,
+        &Decoder::decode_ldst_atomic_memory_op,
+        &Decoder::decode_ldst_reg_pac,
+        &Decoder::decode_ldst_reg_reg_offset,
+        &Decoder::decode_ldst_reg_pac,
+    };
+    (this->*decode_ldst_reg_tbl[op])(inst);
+  }
 }
 
+void Decoder::decode_ldst_reg_unsigned_imm(uint32_t inst) {
+  LOG_CPU("load_store: ldst_reg_unsigned_imm\n");
+}
 void Decoder::decode_ldst_reg_unscaled_imm(uint32_t inst) {
-  printf("ldst_reg_unscaled_imm\n");
+  LOG_CPU("load_store: ldst_reg_unscaled_imm\n");
 }
 void Decoder::decode_ldst_reg_imm_post_indexed(uint32_t inst) {
-  printf("ldst_reg_imm_post_indexed\n");
+  LOG_CPU("load_store: ldst_reg_imm_post_indexed\n");
 }
 void Decoder::decode_ldst_reg_unpriviledged(uint32_t inst) {
-  printf("ldst_reg_unpriviledged\n");
+  LOG_CPU("load_store: ldst_reg_unpriviledged\n");
 }
 void Decoder::decode_ldst_reg_imm_pre_indexed(uint32_t inst) {
-  printf("ldst_reg_imm_pre_indexed\n");
+  LOG_CPU("load_store: ldst_reg_imm_pre_indexed\n");
 }
 void Decoder::decode_ldst_atomic_memory_op(uint32_t inst) {
-  printf("ldst_reg_atomic_memory_op\n");
+  LOG_CPU("load_store: ldst_reg_atomic_memory_op\n");
 }
-void Decoder::decode_ldst_reg_pac(uint32_t inst) { printf("ldst_reg_pac\n"); }
+void Decoder::decode_ldst_reg_pac(uint32_t inst) {
+  LOG_CPU("load_store: ldst_reg_pca\n");
+}
 
 /*
          Load/store register (reister offset)
@@ -380,21 +384,27 @@ void Decoder::decode_ldst_reg_reg_offset(uint32_t inst) {
     case 0b00:
       /* store */
       // TODO: option = 0b011
-      offset = shift_and_extend(system_->cpu().xregs[rm], scale,
+      offset = shift_and_extend(system_->cpu().xregs[rm], shift, scale,
                                 extendtype_tbl[opt]);
       system_->mem().write(size, system_->cpu().xregs[rn] + offset,
                            system_->cpu().xregs[rt]);
+      LOG_CPU("load_store: register offset: store: rt %d [rn] %lu offset %lu\n",
+              rt, system_->cpu().xregs[rn], offset);
       break;
     case 0b11: /* loads */
-      printf("load ?\n");
       if (size >= 0b10) {
         unallocated();
       }
     case 0b01: /* loadu */
     case 0b10: /* loads */
                // TODO: option = 0b011
-      offset = shift_and_extend(system_->cpu().xregs[rm], scale,
+      offset = shift_and_extend(system_->cpu().xregs[rm], shift, scale,
                                 extendtype_tbl[opt]);
+      LOG_CPU(
+          "load_store: register offset: load: rt=%d, rn=%d, [rn]=0x%lx, rm=%d, "
+          "[rm]=0x%lx, offset=%lu vaddr=0x%lx\n",
+          rt, rn, system_->cpu().xregs[rn], rm, system_->cpu().xregs[rm],
+          offset, system_->cpu().xregs[rn] + offset);
       system_->cpu().xregs[rt] =
           system_->mem().read(size, system_->cpu().xregs[rn] + offset);
       break;

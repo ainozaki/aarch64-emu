@@ -24,6 +24,7 @@ public:
   */
   void decode_loads_and_stores(uint32_t inst);
   void decode_ldst_register(uint32_t inst);
+  void decode_ldst_reg_unsigned_imm(uint32_t inst);
   void decode_ldst_reg_unscaled_imm(uint32_t inst);
   void decode_ldst_reg_imm_post_indexed(uint32_t inst);
   void decode_ldst_reg_unpriviledged(uint32_t inst);
