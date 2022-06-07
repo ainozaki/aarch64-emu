@@ -42,14 +42,16 @@ enum class ExtendType {
   SXTX,
 };
 
+const int size_tbl[] = {8, 16, 32, 64};
+
 const ExtendType extendtype_tbl[] = {
     ExtendType::UXTB, ExtendType::UXTH, ExtendType::UXTW, ExtendType::UXTX,
     ExtendType::SXTB, ExtendType::SXTH, ExtendType::SXTW, ExtendType::SXTX,
 };
 
 // signed extend
-static inline uint64_t signed_extend(uint64_t val, uint8_t len) {
-  return bitutil::bit(val, len) ? (val | 0xffffffffffffffff << len) : val;
+static inline uint64_t signed_extend(uint64_t val, uint8_t topbit) {
+  return bitutil::bit(val, topbit) ? (val | 0xffffffffffffffff << topbit) : val;
 }
 
 // ExtendReg() in ARM
@@ -320,11 +322,96 @@ void Decoder::decode_ldst_register(uint32_t inst) {
 }
 
 void Decoder::decode_ldst_reg_unsigned_imm(uint32_t inst) {
-  LOG_CPU("load_store: ldst_reg_unsigned_imm\n");
+  LOG_CPU("load_store: reg_unsigned_imm\n");
 }
+
+/*
+         Load/store register (unscaled immediate)
+
+         31   30 29 27 26  25 24 23 22 21  20      12 11 10  9  5 4   0
+         +------+-----+---+----+------+---+----------+-----+-----+-----+
+         | size | 111 | V | 00 | opc  | 0 |   imm9   | 00  |  Rn |  Rt |
+         +------+-----+---+----+------+---+----------+-----+-----+-----+
+
+         @size:
+                        00:  8bit
+                        01: 16bit
+                        10: 32bit
+                        11: 64bit
+         @V: simd
+         @Rm: offset register
+         @opt: extend type
+         @S: if S=1 then shift |size|
+         @Rn: base register or stack pointer
+         @Rt: register to be transfered
+
+*/
+
 void Decoder::decode_ldst_reg_unscaled_imm(uint32_t inst) {
-  LOG_CPU("load_store: ldst_reg_unscaled_imm\n");
+  bool vector;
+  uint8_t size, opc, rn, rt;
+  uint64_t imm9, offset;
+
+  size = bitutil::shift(inst, 30, 31);
+  vector = bitutil::bit(inst, 26);
+  opc = bitutil::shift(inst, 22, 23);
+  imm9 = bitutil::shift(inst, 12, 20);
+  rn = bitutil::shift(inst, 5, 9);
+  rt = bitutil::shift(inst, 0, 4);
+
+  if (vector) {
+    unsupported();
+  } else {
+    offset = signed_extend(imm9, 9);
+    switch (opc) {
+    case 0b00:
+      /* store */
+      /* STURB, STURH, STUR(32-bit, 64-bit) */
+      LOG_CPU("load_store: register: unscaled imm: store: rt=%d, rn=%d, "
+              "offset=%lu, size=%d\n",
+              rt, rn, offset, size_tbl[size]);
+      system_->mem().write(size, system_->cpu().xregs[rn] + offset,
+                           system_->cpu().xregs[rt]);
+      break;
+    case 0b01:
+      /* loadu */
+      /* LDURB, LDURH, LDUR(32-bit, 64-bit) */
+      // TODO: load only lower-32bit when size != 0b11
+      LOG_CPU("LDUR{B,H,}: rt=%d, rn=%d, offset=%lu, size=%d\n", rt, rn, offset,
+              size_tbl[size]);
+      system_->cpu().xregs[rt] =
+          system_->mem().read(size, system_->cpu().xregs[rn] + offset);
+      break;
+    case 0b10:
+      /* LDURSB, LDURSH, LDURSW(64bit variant), PRFUM */
+      if (size == 3) {
+        unsupported(); // PRFUM
+        break;
+      }
+      LOG_CPU("LDURS{B,H,W}: rt=%d, rn=%d, offset=%lu, size=%d\n", rt, rn,
+              offset, size_tbl[size]);
+      system_->cpu().xregs[rt] = signed_extend(
+          system_->mem().read(size, system_->cpu().xregs[rn] + offset),
+          size_tbl[size]);
+      break;
+    case 0b11:
+      if (size >= 2) {
+        unallocated();
+      }
+      /* LDURSB, LDURSH (32bit variant) */
+      if (size == 3) {
+        // TODO: load only lower-32bit when size
+        LOG_CPU("LDURS{B,H} rt=%d, rn=%d, offset=%lu, size=%d\n", rt, rn,
+                offset, size_tbl[size]);
+        system_->cpu().xregs[rt] = signed_extend(
+            system_->mem().read(size, system_->cpu().xregs[rn] + offset),
+            size_tbl[size]);
+        break;
+      }
+    }
+  }
 }
+
 void Decoder::decode_ldst_reg_imm_post_indexed(uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_imm_post_indexed\n");
 }
