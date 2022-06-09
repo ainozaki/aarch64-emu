@@ -54,6 +54,10 @@ static inline uint64_t signed_extend(uint64_t val, uint8_t topbit) {
   return bitutil::bit(val, topbit) ? (val | 0xffffffffffffffff << topbit) : val;
 }
 
+static inline uint32_t signed_extend32(uint32_t val, uint8_t topbit) {
+  return bitutil::bit(val, topbit) ? (val | 0xffffffff << topbit) : val;
+}
+
 // ExtendReg() in ARM
 // Perform a value extension and shift
 uint64_t shift_and_extend(uint64_t val, bool shift, uint8_t scale,
@@ -308,10 +312,10 @@ void Decoder::decode_ldst_register(uint32_t inst) {
   } else {
     op = (bitutil::bit(inst, 21)) << 2 | bitutil::shift(inst, 10, 11);
     const decode_func decode_ldst_reg_tbl[] = {
-        &Decoder::decode_ldst_reg_unscaled_imm,
-        &Decoder::decode_ldst_reg_imm_post_indexed,
+        &Decoder::decode_ldst_reg_immediate,
+        &Decoder::decode_ldst_reg_immediate,
         &Decoder::decode_ldst_reg_unpriviledged,
-        &Decoder::decode_ldst_reg_imm_pre_indexed,
+        &Decoder::decode_ldst_reg_immediate,
         &Decoder::decode_ldst_atomic_memory_op,
         &Decoder::decode_ldst_reg_pac,
         &Decoder::decode_ldst_reg_reg_offset,
@@ -327,99 +331,123 @@ void Decoder::decode_ldst_reg_unsigned_imm(uint32_t inst) {
 
 /*
          Load/store register (unscaled immediate)
+         Load/store register (immediate pre-indexed)
 
-         31   30 29 27 26  25 24 23 22 21  20      12 11 10  9  5 4   0
-         +------+-----+---+----+------+---+----------+-----+-----+-----+
-         | size | 111 | V | 00 | opc  | 0 |   imm9   | 00  |  Rn |  Rt |
-         +------+-----+---+----+------+---+----------+-----+-----+-----+
+         31   30 29 27 26  25 24 23 22 21  20      12 11  10 9   5 4   0
+         +------+-----+---+----+------+---+----------+------+-----+-----+
+         | size | 111 | V | 00 | opc  | 0 |   imm9   | idx  |  Rn |  Rt |
+         +------+-----+---+----+------+---+----------+------+-----+-----+
 
-         @size:
-                        00:  8bit
-                        01: 16bit
-                        10: 32bit
-                        11: 64bit
+         @size: 00:8bit, 01:16bit, 10:32bit, 11:64bit
          @V: simd
          @Rm: offset register
          @opt: extend type
          @S: if S=1 then shift |size|
+         @idx: 00:unscaled immediate, 01:post-indexed, 11:pre-indexed
          @Rn: base register or stack pointer
          @Rt: register to be transfered
 
 */
 
-void Decoder::decode_ldst_reg_unscaled_imm(uint32_t inst) {
+void Decoder::decode_ldst_reg_immediate(uint32_t inst) {
   bool vector;
-  uint8_t size, opc, rn, rt;
+  uint8_t size, opc, rn, rt, idx;
   uint64_t imm9, offset;
+  bool post_indexed, writeback;
 
   size = bitutil::shift(inst, 30, 31);
   vector = bitutil::bit(inst, 26);
   opc = bitutil::shift(inst, 22, 23);
   imm9 = bitutil::shift(inst, 12, 20);
+  idx = bitutil::shift(inst, 10, 11);
   rn = bitutil::shift(inst, 5, 9);
   rt = bitutil::shift(inst, 0, 4);
+
+  switch (idx) {
+  case 0:
+  case 2:
+    post_indexed = false;
+    writeback = false;
+    break;
+  case 1:
+    post_indexed = true;
+    writeback = true;
+    break;
+  case 3:
+    post_indexed = false;
+    writeback = true;
+    break;
+  }
 
   if (vector) {
     unsupported();
   } else {
-    offset = signed_extend(imm9, 9);
+
+    if (post_indexed) {
+      offset = 0;
+    } else {
+      offset = signed_extend(imm9, 9);
+    }
+
     switch (opc) {
     case 0b00:
-      /* store */
-      /* STURB, STURH, STUR(32-bit, 64-bit) */
-      LOG_CPU("load_store: register: unscaled imm: store: rt=%d, rn=%d, "
-              "offset=%lu, size=%d\n",
-              rt, rn, offset, size_tbl[size]);
+      /* STR */
+      LOG_CPU("load_store: register: STR: size=%d, rt=%d, rn=%d, "
+              "offset=%lu\n",
+              size_tbl[size], rt, rn, offset);
       system_->mem().write(size, system_->cpu().xregs[rn] + offset,
                            system_->cpu().xregs[rt]);
       break;
     case 0b01:
-      /* loadu */
-      /* LDURB, LDURH, LDUR(32-bit, 64-bit) */
-      // TODO: load only lower-32bit when size != 0b11
-      LOG_CPU("LDUR{B,H,}: rt=%d, rn=%d, offset=%lu, size=%d\n", rt, rn, offset,
-              size_tbl[size]);
-      system_->cpu().xregs[rt] =
-          system_->mem().read(size, system_->cpu().xregs[rn] + offset);
+      /* LDR (unsigned) */
+      LOG_CPU("load_store: register: LDR(unsigned): size=%d, rt=%d, rn=%d, "
+              "offset=%lu\n",
+              size_tbl[size], rt, rn, offset);
+      if (size == 3) {
+        system_->cpu().xregs[rt] =
+            system_->mem().read(size, system_->cpu().xregs[rn] + offset);
+      } else {
+        system_->cpu().update_lower32(
+            rt, system_->mem().read(size, system_->cpu().xregs[rn] + offset));
+      }
       break;
     case 0b10:
-      /* LDURSB, LDURSH, LDURSW(64bit variant), PRFUM */
+      /* LDR (signed 64bit) */
       if (size == 3) {
-        unsupported(); // PRFUM
+        unsupported();
         break;
       }
-      LOG_CPU("LDURS{B,H,W}: rt=%d, rn=%d, offset=%lu, size=%d\n", rt, rn,
-              offset, size_tbl[size]);
+      LOG_CPU("load_store: register: LDR(signed 64bit): size=%d, rt=%d, rn=%d, "
+              "offset=%lu\n",
+              size_tbl[size], rt, rn, offset);
       system_->cpu().xregs[rt] = signed_extend(
           system_->mem().read(size, system_->cpu().xregs[rn] + offset),
           size_tbl[size]);
       break;
     case 0b11:
+      /* LDR (signed 32bit) */
       if (size >= 2) {
         unallocated();
       }
-      /* LDURSB, LDURSH (32bit variant) */
-      if (size == 3) {
-        // TODO: load only lower-32bit when size
-        LOG_CPU("LDURS{B,H} rt=%d, rn=%d, offset=%lu, size=%d\n", rt, rn,
-                offset, size_tbl[size]);
-        system_->cpu().xregs[rt] = signed_extend(
-            system_->mem().read(size, system_->cpu().xregs[rn] + offset),
-            size_tbl[size]);
-        break;
-      }
+      LOG_CPU("load_store: register: LDR(signed 32bit): size=%d, rt=%d, rn=%d, "
+              "offset=%lu\n",
+              size_tbl[size], rt, rn, offset);
+      system_->cpu().update_lower32(
+          rt, signed_extend32(
+                  system_->mem().read(size, system_->cpu().xregs[rn] + offset),
+                  size_tbl[size]));
+      break;
+    }
+
+    if (writeback) {
+      LOG_CPU("\twriteback address\n");
+      system_->cpu().xregs[rn] = system_->cpu().xregs[rn] + offset;
     }
   }
 }
 
-void Decoder::decode_ldst_reg_imm_post_indexed(uint32_t inst) {
-  LOG_CPU("load_store: ldst_reg_imm_post_indexed\n");
-}
 void Decoder::decode_ldst_reg_unpriviledged(uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_unpriviledged\n");
-}
-void Decoder::decode_ldst_reg_imm_pre_indexed(uint32_t inst) {
-  LOG_CPU("load_store: ldst_reg_imm_pre_indexed\n");
 }
 void Decoder::decode_ldst_atomic_memory_op(uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_atomic_memory_op\n");

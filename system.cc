@@ -43,6 +43,7 @@ int System::Execute() {
   cpu_.execute(0x91001021); /* ADD X1, X1, #4 */
   cpu_.execute(0xf84043e0); /* LDR X0, [SP, #4] */
   cpu_.execute(0xf8616be0); /* LDR X0, [SP, X1] */
+  cpu_.execute(0xf8403fe0); /* LDR X0, [SP, #3]! */
 
   uint64_t value = 0xffffffffffffffff;
   mem_.write(3, 1024, value);

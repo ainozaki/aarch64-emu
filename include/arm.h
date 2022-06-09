@@ -24,6 +24,8 @@ public:
   Cpu(System *system);
   ~Cpu() = default;
 
+  void update_lower32(uint8_t reg, uint32_t value);
+
   uint64_t pc;
 
 public:

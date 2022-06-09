@@ -33,6 +33,10 @@ void Cpu::show_regs() {
 
 void Cpu::execute(uint32_t inst) { decoder_.start(inst); }
 
+void Cpu::update_lower32(uint8_t reg, uint32_t value) {
+  xregs[reg] = (xregs[reg] & (uint64_t)0xffffffff << 32) | value;
+}
+
 } // namespace cpu
 
 } // namespace core

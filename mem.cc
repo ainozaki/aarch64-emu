@@ -71,7 +71,7 @@ void Mem::write(uint8_t size, uint64_t vaddr, uint64_t value) {
   if (!paddr) {
     return;
   }
-  LOG_CPU("mem: write: vaddr=0x%lx paddr=0x%p\n", vaddr, paddr);
+  LOG_CPU("\tmem: write: vaddr=0x%lx paddr=0x%p\n", vaddr, paddr);
   switch (size) {
   case 0:
     return write_8(paddr, value);
@@ -124,7 +124,7 @@ uint64_t Mem::read(uint8_t size, uint64_t addr) {
   if (!paddr) {
     return 0;
   }
-  LOG_CPU("mem: read: vaddr=0x%lx paddr=0x%p\n", addr, paddr);
+  LOG_CPU("\tmem: read: vaddr=0x%lx paddr=0x%p\n", addr, paddr);
   switch (size) {
   case 0:
     return read_8(paddr);
