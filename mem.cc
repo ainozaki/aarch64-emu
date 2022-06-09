@@ -86,18 +86,18 @@ void Mem::write(uint8_t size, uint64_t vaddr, uint64_t value) {
   }
 }
 
-void Mem::write_8(void *paddr, uint8_t value) {
+void Mem::write_8(void *paddr, const uint8_t value) {
   uint8_t *p = (uint8_t *)paddr;
   p[0] = (uint8_t)value;
 }
 
-void Mem::write_16(void *paddr, uint16_t value) {
+void Mem::write_16(void *paddr, const uint16_t value) {
   uint8_t *p = (uint8_t *)paddr;
   p[0] = value;
   p[1] = (uint8_t)(value >> 8);
 }
 
-void Mem::write_32(void *paddr, uint32_t value) {
+void Mem::write_32(void *paddr, const uint32_t value) {
   uint8_t *p = (uint8_t *)paddr;
   p[0] = value;
   p[1] = (uint8_t)(value >> 8);
@@ -105,7 +105,7 @@ void Mem::write_32(void *paddr, uint32_t value) {
   p[3] = (uint8_t)(value >> 24);
 }
 
-void Mem::write_64(void *paddr, uint64_t value) {
+void Mem::write_64(void *paddr, const uint64_t value) {
   uint8_t *p = (uint8_t *)paddr;
   p[0] = value;
   p[1] = (uint8_t)(value >> 8);
@@ -117,7 +117,7 @@ void Mem::write_64(void *paddr, uint64_t value) {
   p[7] = (uint8_t)(value >> 56);
 }
 
-uint64_t Mem::read(uint8_t size, uint64_t addr) {
+uint64_t Mem::read(uint8_t size, const uint64_t addr) {
   void *paddr;
 
   paddr = get_ptr(addr);
@@ -139,28 +139,22 @@ uint64_t Mem::read(uint8_t size, uint64_t addr) {
   }
 }
 
-uint8_t Mem::read_8(void *paddr) { return *(uint8_t *)paddr; }
+uint8_t Mem::read_8(const void *paddr) { return *(uint8_t *)paddr; }
 
-uint16_t Mem::read_16(void *paddr) {
+uint16_t Mem::read_16(const void *paddr) {
   uint8_t *p = (uint8_t *)paddr;
-  return (uint8_t)*p | ((uint8_t) * (p + 1)) << 8;
+  return p[0] | p[1] << 8;
 }
 
-uint32_t Mem::read_32(void *paddr) {
+uint32_t Mem::read_32(const void *paddr) {
   uint8_t *p = (uint8_t *)paddr;
-  return (uint8_t)*p | ((uint8_t) * (p + 1)) << 8 |
-         ((uint8_t) * (p + 2)) << 16 | ((uint8_t) * (p + 3)) << 24;
+  return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24 | uint64_t(p[4]) << 32;
 }
 
-uint64_t Mem::read_64(void *paddr) {
+uint64_t Mem::read_64(const void *paddr) {
   uint8_t *p = (uint8_t *)paddr;
-  uint64_t value;
-  value = (uint8_t)*p | ((uint8_t) * (p + 1)) << 8 |
-          ((uint8_t) * (p + 2)) << 16 | ((uint8_t) * (p + 3)) << 24;
-  for (int i = 4; i < 8; i++) {
-    value += ((uint8_t) * (p + i)) * std::pow(2, 8 * i);
-  }
-  return value;
+  return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24 | uint64_t(p[4]) << 32 |
+         uint64_t(p[5]) << 40 | uint64_t(p[6]) << 48 | uint64_t(p[7]) << 56;
 }
 
 } // namespace mem
