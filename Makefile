@@ -3,34 +3,29 @@ CXXFLAGS=-O2 -Wall -I./include
 LFLAGS=
 LFLAGS_TEST=-L/usr/local/lib -lgtest -lgtest_main -pthread
 
-MAIN=main.cc
-SRC=\
-	arm.cc \
-	arm_decoder.cc \
-	arm_op.cc \
-	mem.cc \
-	system.cc
-SRC_TEST=\
-	tests/execute_unittest.cc
-HEADER=\
-	include/arm.h \
-	include/arm_decoder.h \
-	include/arm_op.h \
-	include/mem.h \
-	include/system.h \
-	include/utils.h
+TARGET = \
+	arm.o \
+	arm_decoder.o \
+	arm_op.o \
+	mem.o \
+	system.o
+TEST_TARGET = \
+	tests/execute_unittest.o
 
-TARGET = emu-aarch64
-TEST_TARGET = test
+all: emu-aarch64
+test: emu-test
 
-all: $(SRC) $(HEADER)
-	$(CC) $(CXXFLAGS) $(SRC) $(MAIN) -o $(TARGET)  $(LFLAGS)
+emu-aarch64: $(TARGET) main.o
+	$(CXX) -o $@ $^
+
+emu-test: $(TARGET) $(TEST_TARGET)
+	$(CXX) -o $@ $^
+
+%.o: %.cc
+	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
 run:
 	./$(TARGET)
-
-test: $(SRC) $(SRC_TEST) $(HEADER)
-	$(CC) $(CXXFLAGS) $(SRC) $(SRC_TEST) -o $(TEST_TARGET) $(LFLAGS) $(LFLAGS_TEST)
 
 run-test:
 	./$(TEST_TARGET)
@@ -39,6 +34,6 @@ format: $(SRC) $(HEADER) $(MAIN)
 	clang-format -i $^
 
 clean:
-	rm -f $(TARGET) $(TEST_TARGET) *.o
+	rm -f $(TARGET) $(TEST_TARGET) *.o emu-aarch64
 
-.PHONY: all test run format clean
+.PHONY: all test run run-test format clean
