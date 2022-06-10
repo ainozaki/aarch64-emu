@@ -28,7 +28,6 @@ public:
 
 public:
   void show_regs();
-  void execute(uint32_t inst);
 
   /* map SP to xregs[31] */
   uint64_t xregs[32] = {0};

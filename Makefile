@@ -1,27 +1,35 @@
-CC=clang++
-CXXFLAGS=-O2 -Wall -I./include
-LFLAGS=
-LFLAGS_TEST=-L/usr/local/lib -lgtest -lgtest_main -pthread
+CXXFLAGS=-O2 -Wall -Wextra -I./include -pthread -DNDEBUG -fsanitize=address
+LDFLAGS= -fsanitize=address
+LDFLAGS_TEST=$(LDFLAGS) -L/usr/local/lib -lgtest -lgtest_main
 
-TARGET = \
-	arm.o \
-	arm_op.o \
-	mem.o \
-	system.o
-TEST_TARGET = \
-	tests/execute_unittest.o
+SRC = \
+	arm.cc \
+	arm_op.cc \
+	mem.cc \
+	system.cc
+TEST_SRC = \
+	tests/execute_unittest.cc
 
-all: emu-aarch64
-test: emu-test
+OBJ=$(SRC:.cc=.o)
+DEP=$(SRC:.cc=.d)
+TEST_OBJ=$(TEST_SRC:.cc=.o)
 
-emu-aarch64: $(TARGET) main.o
-	$(CXX) -o $@ $^
+TARGET = emu-aarch64
+TEST_TARGET = emu-test
 
-emu-test: $(TARGET) $(TEST_TARGET)
-	$(CXX) -o $@ $^
+all: $(TARGET)
+test: $(TEST_TARGET)
+
+$(TARGET): $(OBJ) main.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+$(TEST_TARGET): $(OBJ) $(TEST_OBJ)
+	$(CXX) -o $@ $^ $(LDFLAGS_TEST)
 
 %.o: %.cc
-	$(CXX) -c $< -o $@ $(CXXFLAGS)
+	$(CXX) $(CXXFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
+
+-include $(DEP)
 
 run:
 	./$(TARGET)
@@ -33,6 +41,8 @@ format: $(SRC) $(HEADER) $(MAIN)
 	clang-format -i $^
 
 clean:
-	rm -f $(TARGET) $(TEST_TARGET) *.o emu-aarch64
+	rm -f $(TARGET) $(TEST_TARGET) $(OBJ) $(TEST_OBJ) $(DEP) main.o main.d
 
 .PHONY: all test run run-test format clean
+
+.SECONDARY: $(OBJ)

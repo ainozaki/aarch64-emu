@@ -36,6 +36,8 @@ private:
   uint8_t *mem_;
   uint8_t *text_;
 
+	uint64_t key;
+
   System *system_;
 };
 

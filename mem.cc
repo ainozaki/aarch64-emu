@@ -136,6 +136,7 @@ uint64_t Mem::read(uint8_t size, const uint64_t addr) {
     return read_64(paddr);
   default:
     assert(false);
+    return -1;
   }
 }
 

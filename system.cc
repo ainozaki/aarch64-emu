@@ -153,7 +153,7 @@ uint64_t shift_and_extend(uint64_t val, bool shift, uint8_t scale,
   }
 }
 
-} // namespace anonymous
+} // namespace
 
 void System::decode_start(uint32_t inst) {
   uint8_t op1;
@@ -210,13 +210,17 @@ void System::decode_loads_and_stores(uint32_t inst) {
   }
 }
 
-void System::decode_data_processing_reg(uint32_t inst){};
-void System::decode_data_processing_float(uint32_t inst){};
-void System::decode_branches(uint32_t inst){};
-void System::decode_pc_rel(uint32_t inst){};
-void System::decode_sme_encodings(uint32_t inst){};
-void System::decode_unallocated(uint32_t inst){};
-void System::decode_sve_encodings(uint32_t inst){};
+void System::decode_data_processing_reg(uint32_t inst) {
+  LOG_CPU("%d\n", inst);
+}
+void System::decode_data_processing_float(uint32_t inst) {
+  LOG_CPU("%d\n", inst);
+}
+void System::decode_branches(uint32_t inst) { LOG_CPU("%d\n", inst); }
+void System::decode_pc_rel(uint32_t inst) { LOG_CPU("%d\n", inst); }
+void System::decode_sme_encodings(uint32_t inst) { LOG_CPU("%d\n", inst); }
+void System::decode_unallocated(uint32_t inst) { LOG_CPU("%d\n", inst); }
+void System::decode_sve_encodings(uint32_t inst) { LOG_CPU("%d\n", inst); }
 
 /*
 ====================================================
@@ -245,12 +249,10 @@ void System::decode_add_sub_imm(uint32_t inst) {
   if (setflag) {
     if (if_sub) {
       /* SUBS */
-      result = add_imm_s(cpu_.xregs[rn], ~imm, /*carry-in=*/1,
-                         cpu_.cpsr);
+      result = add_imm_s(cpu_.xregs[rn], ~imm, /*carry-in=*/1, cpu_.cpsr);
     } else {
       /* ADDS */
-      result = add_imm_s(cpu_.xregs[rn], imm, /*carry-in=*/0,
-                         cpu_.cpsr);
+      result = add_imm_s(cpu_.xregs[rn], imm, /*carry-in=*/0, cpu_.cpsr);
     }
   } else {
     if (if_sub) {
@@ -269,7 +271,9 @@ void System::decode_add_sub_imm(uint32_t inst) {
   }
 }
 
-void System::decode_add_sub_imm_with_tags(uint32_t inst){};
+void System::decode_add_sub_imm_with_tags(uint32_t inst) {
+  LOG_CPU("%d\n", inst);
+}
 
 static uint64_t decode_bit_masks(uint8_t n, uint8_t imms, uint8_t immr) {
   uint64_t mask;
@@ -327,7 +331,7 @@ void System::decode_logical_imm(uint32_t inst) {
     break;
   case 0b11:
     result = cpu_.xregs[rn] & imm; /* ANDS */
-    cpu_.cpsr.N = result < 0;
+    cpu_.cpsr.N = (int64_t)result < 0;
     cpu_.cpsr.Z = result == 0;
     cpu_.cpsr.C = 0;
     cpu_.cpsr.V = 0;
@@ -343,9 +347,9 @@ void System::decode_logical_imm(uint32_t inst) {
   }
 }
 
-void System::decode_move_wide_imm(uint32_t inst){};
-void System::decode_bitfield(uint32_t inst){};
-void System::decode_extract(uint32_t inst){};
+void System::decode_move_wide_imm(uint32_t inst) { LOG_CPU("%d\n", inst); }
+void System::decode_bitfield(uint32_t inst) { LOG_CPU("%d\n", inst); }
+void System::decode_extract(uint32_t inst) { LOG_CPU("%d\n", inst); }
 
 /*
 ====================================================
@@ -376,6 +380,7 @@ void System::decode_ldst_register(uint32_t inst) {
 
 void System::decode_ldst_reg_unsigned_imm(uint32_t inst) {
   LOG_CPU("load_store: reg_unsigned_imm\n");
+  LOG_CPU("%d\n", inst);
 }
 
 /*
@@ -444,8 +449,7 @@ void System::decode_ldst_reg_immediate(uint32_t inst) {
       LOG_CPU("load_store: register: STR: size=%d, rt=%d, rn=%d, "
               "offset=%lu\n",
               size_tbl[size], rt, rn, offset);
-      mem_.write(size, cpu_.xregs[rn] + offset,
-                           cpu_.xregs[rt]);
+      mem_.write(size, cpu_.xregs[rn] + offset, cpu_.xregs[rt]);
       break;
     case 0b01:
       /* LDR (unsigned) */
@@ -453,11 +457,9 @@ void System::decode_ldst_reg_immediate(uint32_t inst) {
               "offset=%lu\n",
               size_tbl[size], rt, rn, offset);
       if (size == 3) {
-        cpu_.xregs[rt] =
-            mem_.read(size, cpu_.xregs[rn] + offset);
+        cpu_.xregs[rt] = mem_.read(size, cpu_.xregs[rn] + offset);
       } else {
-        cpu_.update_lower32(
-            rt, mem_.read(size, cpu_.xregs[rn] + offset));
+        cpu_.update_lower32(rt, mem_.read(size, cpu_.xregs[rn] + offset));
       }
       break;
     case 0b10:
@@ -469,9 +471,8 @@ void System::decode_ldst_reg_immediate(uint32_t inst) {
       LOG_CPU("load_store: register: LDR(signed 64bit): size=%d, rt=%d, rn=%d, "
               "offset=%lu\n",
               size_tbl[size], rt, rn, offset);
-      cpu_.xregs[rt] = signed_extend(
-          mem_.read(size, cpu_.xregs[rn] + offset),
-          size_tbl[size]);
+      cpu_.xregs[rt] = signed_extend(mem_.read(size, cpu_.xregs[rn] + offset),
+                                     size_tbl[size]);
       break;
     case 0b11:
       /* LDR (signed 32bit) */
@@ -482,9 +483,8 @@ void System::decode_ldst_reg_immediate(uint32_t inst) {
               "offset=%lu\n",
               size_tbl[size], rt, rn, offset);
       cpu_.update_lower32(
-          rt, signed_extend32(
-                  mem_.read(size, cpu_.xregs[rn] + offset),
-                  size_tbl[size]));
+          rt, signed_extend32(mem_.read(size, cpu_.xregs[rn] + offset),
+                              size_tbl[size]));
       break;
     }
 
@@ -497,12 +497,15 @@ void System::decode_ldst_reg_immediate(uint32_t inst) {
 
 void System::decode_ldst_reg_unpriviledged(uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_unpriviledged\n");
+  LOG_CPU("%d\n", inst);
 }
 void System::decode_ldst_atomic_memory_op(uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_atomic_memory_op\n");
+  LOG_CPU("%d\n", inst);
 }
 void System::decode_ldst_reg_pac(uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_pca\n");
+  LOG_CPU("%d\n", inst);
 }
 
 /*
@@ -548,10 +551,9 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
     case 0b00:
       /* store */
       // TODO: option = 0b011
-      offset = shift_and_extend(cpu_.xregs[rm], shift, scale,
-                                extendtype_tbl[opt]);
-      mem_.write(size, cpu_.xregs[rn] + offset,
-                           cpu_.xregs[rt]);
+      offset =
+          shift_and_extend(cpu_.xregs[rm], shift, scale, extendtype_tbl[opt]);
+      mem_.write(size, cpu_.xregs[rn] + offset, cpu_.xregs[rt]);
       LOG_CPU("load_store: register offset: store: rt %d [rn] %lu offset %lu\n",
               rt, cpu_.xregs[rn], offset);
       break;
@@ -559,18 +561,18 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
       if (size >= 0b10) {
         unallocated();
       }
+      break;
     case 0b01: /* loadu */
     case 0b10: /* loads */
                // TODO: option = 0b011
-      offset = shift_and_extend(cpu_.xregs[rm], shift, scale,
-                                extendtype_tbl[opt]);
+      offset =
+          shift_and_extend(cpu_.xregs[rm], shift, scale, extendtype_tbl[opt]);
       LOG_CPU(
           "load_store: register offset: load: rt=%d, rn=%d, [rn]=0x%lx, rm=%d, "
           "[rm]=0x%lx, offset=%lu vaddr=0x%lx\n",
-          rt, rn, cpu_.xregs[rn], rm, cpu_.xregs[rm],
-          offset, cpu_.xregs[rn] + offset);
-      cpu_.xregs[rt] =
-          mem_.read(size, cpu_.xregs[rn] + offset);
+          rt, rn, cpu_.xregs[rn], rm, cpu_.xregs[rm], offset,
+          cpu_.xregs[rn] + offset);
+      cpu_.xregs[rt] = mem_.read(size, cpu_.xregs[rn] + offset);
       break;
     }
   }

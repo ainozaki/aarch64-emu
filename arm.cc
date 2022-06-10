@@ -30,8 +30,6 @@ void Cpu::show_regs() {
   std::cout << "=================================================" << std::endl;
 }
 
-void Cpu::execute(uint32_t inst) {}
-
 void Cpu::update_lower32(uint8_t reg, uint32_t value) {
   xregs[reg] = (xregs[reg] & (uint64_t)0xffffffff << 32) | value;
 }
