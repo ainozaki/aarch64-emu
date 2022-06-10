@@ -5,7 +5,6 @@ LFLAGS_TEST=-L/usr/local/lib -lgtest -lgtest_main -pthread
 
 TARGET = \
 	arm.o \
-	arm_decoder.o \
 	arm_op.o \
 	mem.o \
 	system.o

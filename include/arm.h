@@ -2,8 +2,6 @@
 
 #include <cstdint>
 
-#include "arm_decoder.h"
-
 namespace core {
 
 class System;
@@ -38,8 +36,6 @@ public:
   uint64_t elr_el[4]; /* Exception Linked Registers */
 
   CPSR cpsr; /* Current Program Status Register*/
-
-  decode::Decoder decoder_;
 
   System *system_;
 };
