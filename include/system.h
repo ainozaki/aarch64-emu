@@ -22,6 +22,7 @@ public:
   void Init();
 
   int Execute();
+	void decode_start(uint32_t inst);
 
   cpu::Cpu &cpu() { return cpu_; }
   mem::Mem &mem() { return mem_; }
@@ -29,8 +30,6 @@ public:
 private:
   cpu::Cpu cpu_;
   mem::Mem mem_;
-
-	void decode_start(uint32_t inst);
 
   void decode_sme_encodings(uint32_t inst);
   void decode_unallocated(uint32_t inst);

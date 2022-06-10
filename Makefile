@@ -1,18 +1,17 @@
 CXXFLAGS=-O2 -Wall -Wextra -I./include -pthread -DNDEBUG -fsanitize=address
 LDFLAGS= -fsanitize=address
-LDFLAGS_TEST=$(LDFLAGS) -L/usr/local/lib -lgtest -lgtest_main
+LDFLAGS_TEST= $(LDFLAGS) -L/usr/local/lib -lgtest -lgtest_main -lpthread
 
 SRC = \
 	arm.cc \
-	arm_op.cc \
 	mem.cc \
 	system.cc
 TEST_SRC = \
 	tests/execute_unittest.cc
 
 OBJ=$(SRC:.cc=.o)
-DEP=$(SRC:.cc=.d)
 TEST_OBJ=$(TEST_SRC:.cc=.o)
+DEP=$(SRC:.cc=.d) $(TEST_SRC:.cc=.d)
 
 TARGET = emu-aarch64
 TEST_TARGET = emu-test

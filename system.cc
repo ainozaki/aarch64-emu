@@ -7,7 +7,6 @@
 #include <stdio.h>
 
 #include "arm.h"
-#include "arm_op.h"
 #include "log.h"
 #include "mem.h"
 #include "utils.h"
@@ -17,15 +16,12 @@ namespace core {
 System::System() : cpu_(cpu::Cpu(this)), mem_(mem::Mem(this)) {
   // Initialize
   Init();
+}
 
-  // execute
-  Execute();
-
+System::~System() {
   // free
   mem_.clean_mem();
 }
-
-System::~System() { printf("emu: finish emulating\n"); }
 
 void System::Init() {
   int err;
@@ -66,6 +62,23 @@ printf("emu: mem[%lu] = %d\n", addr, data);
 
 namespace {
 
+const int size_tbl[] = {8, 16, 32, 64};
+
+enum class ExtendType {
+  UXTB,
+  UXTH,
+  UXTW,
+  UXTX,
+  SXTB,
+  SXTH,
+  SXTW,
+  SXTX,
+};
+
+const ExtendType extendtype_tbl[] = {
+    ExtendType::UXTB, ExtendType::UXTH, ExtendType::UXTW, ExtendType::UXTX,
+    ExtendType::SXTB, ExtendType::SXTH, ExtendType::SXTW, ExtendType::SXTX,
+};
 static void unsupported() { fprintf(stderr, "unsuported inst\n"); }
 
 static void unallocated() { fprintf(stderr, "unallocated inst\n"); }
@@ -82,75 +95,12 @@ static inline uint64_t bitmask64(uint8_t length) {
   return ~0ULL >> (64 - length);
 }
 
-enum class ExtendType {
-  UXTB,
-  UXTH,
-  UXTW,
-  UXTX,
-  SXTB,
-  SXTH,
-  SXTW,
-  SXTX,
-};
-
-const int size_tbl[] = {8, 16, 32, 64};
-
-const ExtendType extendtype_tbl[] = {
-    ExtendType::UXTB, ExtendType::UXTH, ExtendType::UXTW, ExtendType::UXTX,
-    ExtendType::SXTB, ExtendType::SXTH, ExtendType::SXTW, ExtendType::SXTX,
-};
-
-// signed extend
 static inline uint64_t signed_extend(uint64_t val, uint8_t topbit) {
   return bitutil::bit(val, topbit) ? (val | 0xffffffffffffffff << topbit) : val;
 }
 
 static inline uint32_t signed_extend32(uint32_t val, uint8_t topbit) {
   return bitutil::bit(val, topbit) ? (val | 0xffffffff << topbit) : val;
-}
-
-// ExtendReg() in ARM
-// Perform a value extension and shift
-uint64_t shift_and_extend(uint64_t val, bool shift, uint8_t scale,
-                          ExtendType exttype) {
-  bool if_unsigned = false;
-  uint8_t len = 0;
-
-  if (shift) {
-    assert(scale >= 0 && scale <= 4);
-    val = val << scale;
-  }
-  switch (exttype) {
-  case ExtendType::UXTB:
-  case ExtendType::UXTH:
-  case ExtendType::UXTW:
-  case ExtendType::UXTX:
-    if_unsigned = true;
-    break;
-  case ExtendType::SXTB:
-    if_unsigned = false;
-    len = 8;
-    break;
-  case ExtendType::SXTH:
-    if_unsigned = false;
-    len = 16;
-    break;
-  case ExtendType::SXTW:
-    if_unsigned = false;
-    len = 32;
-    break;
-  case ExtendType::SXTX:
-    if_unsigned = false;
-    len = 64;
-    break;
-  }
-  // printf("shift_and_extend: val=%lu, shift=%d, scale=%d, len=%d\n", val,
-  // shift, scale, len);
-  if (if_unsigned) {
-    return val;
-  } else {
-    return signed_extend(val, len);
-  }
 }
 
 } // namespace
@@ -228,6 +178,39 @@ void System::decode_sve_encodings(uint32_t inst) { LOG_CPU("%d\n", inst); }
 ====================================================
 */
 
+static uint64_t add_imm(uint64_t x, uint64_t y, uint8_t carry_in) {
+  return x + y + carry_in;
+}
+
+static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in,
+                          core::cpu::CPSR &cpsr) {
+  uint64_t unsigned_sum = x + y + carry_in;
+  int64_t signed_sum = (int64_t)x + (int64_t)y + carry_in;
+
+  cpsr.N = signed_sum < 0;
+  cpsr.Z = unsigned_sum == 0;
+  cpsr.C = unsigned_sum < x;
+  cpsr.V = ((int64_t)x < 0 && (int64_t)y < 0 && signed_sum > 0) |
+           ((int64_t)x > 0 && (int64_t)y > 0 && signed_sum < 0);
+  return unsigned_sum;
+}
+
+/*
+         Add/substract (immediate)
+
+           31   30   29 28    23  22  21          10 9   5 4   0
+         +----+----+---+--------+----+--------------+-----+-----+
+         | sf | op | S | 100010 | sh |     imm12    |  Rn |  Rd |
+         +----+----+---+--------+----+--------------+-----+-----+
+
+         @sf: 0->32bit, 1->64bit
+         @op: 0->ADD, 1->SUB
+         @S: set flag
+         @sh: if sh=1 then LSL #12
+         @Rn: source gp regiter or sp
+         @Rd: destination gp register or sp
+
+*/
 void System::decode_add_sub_imm(uint32_t inst) {
   uint8_t rd, rn;
   uint16_t imm;
@@ -506,6 +489,48 @@ void System::decode_ldst_atomic_memory_op(uint32_t inst) {
 void System::decode_ldst_reg_pac(uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_pca\n");
   LOG_CPU("%d\n", inst);
+}
+
+// ExtendReg() in ARM
+// Perform a value extension and shift
+static uint64_t shift_and_extend(uint64_t val, bool shift, uint8_t scale,
+                                 ExtendType exttype) {
+  bool if_unsigned = false;
+  uint8_t len = 0;
+
+  if (shift) {
+    assert(scale >= 0 && scale <= 4);
+    val = val << scale;
+  }
+  switch (exttype) {
+  case ExtendType::UXTB:
+  case ExtendType::UXTH:
+  case ExtendType::UXTW:
+  case ExtendType::UXTX:
+    if_unsigned = true;
+    break;
+  case ExtendType::SXTB:
+    if_unsigned = false;
+    len = 8;
+    break;
+  case ExtendType::SXTH:
+    if_unsigned = false;
+    len = 16;
+    break;
+  case ExtendType::SXTW:
+    if_unsigned = false;
+    len = 32;
+    break;
+  case ExtendType::SXTX:
+    if_unsigned = false;
+    len = 64;
+    break;
+  }
+  if (if_unsigned) {
+    return val;
+  } else {
+    return signed_extend(val, len);
+  }
 }
 
 /*
