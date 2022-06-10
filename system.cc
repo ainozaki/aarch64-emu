@@ -330,7 +330,61 @@ void System::decode_logical_imm(uint32_t inst) {
   }
 }
 
-void System::decode_move_wide_imm(uint32_t inst) { LOG_CPU("%d\n", inst); }
+/*
+         Move wide (immediate)
+
+           31   30 29 28    23 22 21 20           5 4   0
+         +----+------+--------+-----+--------------+-----+
+         | sf |  opc | 100101 |  hw |     imm16    |  Rd |
+         +----+------+--------+-----+--------------+-----+
+
+         @sf: 0->32bit, 1->64bit
+         @opc: 0->N, 1->unallocated, 2->Z, 3->K
+         @hw:
+         @Rd: destination gp register or sp
+
+*/
+void System::decode_move_wide_imm(uint32_t inst) {
+  uint8_t opc, hw, rd, shift;
+  bool if_64bit;
+  uint64_t imm;
+
+  rd = bitutil::shift(inst, 0, 4);
+  imm = bitutil::shift(inst, 5, 20);
+  hw = bitutil::shift(inst, 21, 22);
+  opc = bitutil::shift(inst, 29, 30);
+  if_64bit = bitutil::bit(inst, 31);
+
+  if (opc == 1 || ((if_64bit == 0) & (hw >= 2))) {
+    unallocated();
+  }
+
+  shift = hw * 16;
+  imm = imm << shift;
+
+  switch (opc) {
+  case 0: /* MOVN */
+    imm = ~imm;
+    [[fallthrough]];
+  case 2: /* MOVZ */
+    if (if_64bit) {
+      cpu_.xregs[rd] = imm;
+    } else {
+      cpu_.xregs[rd] = bitutil::clear_upper32(imm);
+    }
+    break;
+  case 3: /* MOVK */
+    if (if_64bit) {
+      cpu_.xregs[rd] = (cpu_.xregs[rd] & 0xffffffffffff0000) | imm;
+    } else {
+      cpu_.xregs[rd] = (cpu_.xregs[rd] & 0x00000000ffff0000) | imm;
+    }
+    break;
+  default:
+    assert(false);
+  }
+}
+
 void System::decode_bitfield(uint32_t inst) { LOG_CPU("%d\n", inst); }
 void System::decode_extract(uint32_t inst) { LOG_CPU("%d\n", inst); }
 
