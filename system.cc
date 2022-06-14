@@ -213,7 +213,7 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in,
 */
 void System::decode_add_sub_imm(uint32_t inst) {
   uint8_t rd, rn;
-  uint16_t imm;
+  uint64_t imm;
   bool shift, setflag, if_sub, if_64bit;
   uint64_t result;
 
@@ -232,17 +232,22 @@ void System::decode_add_sub_imm(uint32_t inst) {
   if (setflag) {
     if (if_sub) {
       /* SUBS */
+      LOG_CPU("SUBS: rd=%d, xregs[rn]=%lu, imm=%ld\n", rd, cpu_.xregs[rn],
+              ~imm);
       result = add_imm_s(cpu_.xregs[rn], ~imm, /*carry-in=*/1, cpu_.cpsr);
     } else {
       /* ADDS */
+      LOG_CPU("ADDS: rd=%d, xregs[rn]=%lu, imm=%ld\n", rd, cpu_.xregs[rn], imm);
       result = add_imm_s(cpu_.xregs[rn], imm, /*carry-in=*/0, cpu_.cpsr);
     }
   } else {
     if (if_sub) {
       /* SUB */
+      LOG_CPU("SUB: rd=%d, xregs[rn]=%lu, imm=%ld\n", rd, cpu_.xregs[rn], ~imm);
       result = add_imm(cpu_.xregs[rn], ~imm, /*carry-in=*/1);
     } else {
       /* ADD */
+      LOG_CPU("ADD: rd=%d, xregs[rn]=%lu, imm=%ld\n", rd, cpu_.xregs[rn], imm);
       result = add_imm(cpu_.xregs[rn], imm, /*carry-in=*/0);
     }
   }
@@ -361,6 +366,7 @@ void System::decode_move_wide_imm(uint32_t inst) {
 
   shift = hw * 16;
   imm = imm << shift;
+  LOG_CPU("MOV rd=%d, imm=%lu\n", rd, imm);
 
   switch (opc) {
   case 0: /* MOVN */

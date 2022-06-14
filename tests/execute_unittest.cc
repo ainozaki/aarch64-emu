@@ -24,12 +24,12 @@ TEST(DataProcessingImm, ADD_SUB){
 TEST(DataProcessingImm, MoveWide){
 	core::System sys;
 
-  sys.decode_start(0x91004000); /* MOV X2, #0xf000f000f000f000 */
-	EXPECT_EQ(0xf000f000f000f000, sys.cpu().xregs[2]);
+  sys.decode_start(0x91404042); /* ADD X2, X2, 0x10, LSL #12 */
+	EXPECT_EQ(0x10000, sys.cpu().xregs[2]);
   
-	sys.decode_start(0xd1000400); /* MOVK W2, #0x0 */
-	EXPECT_EQ(0xf000f000f0000000, sys.cpu().xregs[0]);
+	sys.decode_start(0x72800002); /* MOVK W2, #0 */
+	EXPECT_EQ(0x10000, sys.cpu().xregs[2]);
 
-  sys.decode_start(0xf1004021); /* MOVZ W2, #0x0 */
-	EXPECT_EQ(0, sys.cpu().xregs[1]);
+  sys.decode_start(0x52800002); /* MOVZ W2, #0 */
+	EXPECT_EQ(0, sys.cpu().xregs[2]);
 }

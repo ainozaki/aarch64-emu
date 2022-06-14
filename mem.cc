@@ -27,20 +27,22 @@ void Mem::clean_mem() {
 }
 
 int Mem::init_mem(const char *rawfile) {
-  FILE *fp;
-  size_t readlen;
+  // FILE *fp;
+  // size_t readlen;
 
   /// text
   text_ = (uint8_t *)calloc(1, text_section_size);
-  fp = fopen(rawfile, "r");
-  if (!fp) {
-    fprintf(stderr, "mem: cannot open file %s\n", rawfile);
-    free(text_);
-    return -1;
-  }
-  readlen = fread(text_, 1, text_section_size, fp);
-  printf("mem: load file %s, size 0x%lx\n", rawfile, readlen);
-  fclose(fp);
+  /*
+fp = fopen(rawfile, "r");
+if (!fp) {
+fprintf(stderr, "mem: cannot open file %s\n", rawfile);
+free(text_);
+return -1;
+}
+readlen = fread(text_, 1, text_section_size, fp);
+printf("mem: load file %s, size 0x%lx\n", rawfile, readlen);
+fclose(fp);
+  */
 
   system_->cpu().pc = (uint64_t)text_;
   printf("mem: set initial PC\n");
