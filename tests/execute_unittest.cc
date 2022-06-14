@@ -54,3 +54,28 @@ TEST(DataProcessingImm, Logical){
 	EXPECT_EQ(0, sys.cpu().cpsr.N);
 	EXPECT_EQ(1, sys.cpu().cpsr.Z);
 }
+
+TEST(DataProcessingImm, Bitfield){
+	core::System sys;
+
+  sys.decode_start(0xd2801e22); /* MOV X2, #0x00f1 */
+  sys.decode_start(0xd2820203); /* MOV X3, #0x1010 */
+	EXPECT_EQ(0xf1, sys.cpu().xregs[2]);
+	EXPECT_EQ(0x1010, sys.cpu().xregs[3]);
+
+  sys.decode_start(0x93781c43); /* SBFI X3, X2, #8, #8 */
+	EXPECT_EQ(0xfffffffffffff100, sys.cpu().xregs[3]);
+
+  sys.decode_start(0xd2820203); /* MOV X3, #0x1010 */
+  sys.decode_start(0xb3781c43); /* BFI X3, X2, #8, #8 */
+	EXPECT_EQ(0xf110, sys.cpu().xregs[3]);
+
+  sys.decode_start(0xd2820203); /* MOV X3, #0x1010 */
+  sys.decode_start(0xd3781c43); /* BFI X3, X2, #8, #8 */
+	EXPECT_EQ(0xf100, sys.cpu().xregs[3]);
+}
+/*
+   8:	93781c43 	sbfiz	x3, x2, #8, #8
+   c:	b3781c43 	bfi	x3, x2, #8, #8
+  10:	d3781c43 	ubfiz	x3, x2, #8, #8
+	*/

@@ -316,7 +316,8 @@ void System::decode_logical_imm(uint32_t inst) {
   imm = decode_bit_masks(N, imms, immr);
 
   if (!if_64bit & (N == 1)) {
-    fprintf(stderr, "undefined\n");
+    unallocated();
+    return;
   }
 
   switch (opc) {
@@ -411,7 +412,66 @@ void System::decode_move_wide_imm(uint32_t inst) {
   }
 }
 
-void System::decode_bitfield(uint32_t inst) { LOG_CPU("%d\n", inst); }
+/*
+         Bitfield Move
+
+           31   30 29 28    23 22  21   16 15  10 9  5 4   0
+         +----+------+--------+---+-------+------+----+-----+
+         | sf |  opc | 100110 | N |  immr | imms | Rn |  Rd |
+         +----+------+--------+---+-------+------+----+-----+
+
+         @sf: 0->32bit, 1->64bit
+         @opc: 0->SBFM, 1->BFM, 2->UBFM, 3->unallocated
+
+*/
+void System::decode_bitfield(uint32_t inst) {
+  uint8_t rd, rn, imms, immr, opc, to, from, len;
+  bool N, if_64bit;
+  uint32_t imm;
+
+  rd = bitutil::shift(inst, 0, 4);
+  rn = bitutil::shift(inst, 5, 9);
+  imms = bitutil::shift(inst, 10, 15);
+  immr = bitutil::shift(inst, 16, 21);
+  N = bitutil::bit(inst, 22);
+  opc = bitutil::shift(inst, 29, 30);
+  if_64bit = bitutil::bit(inst, 31);
+
+  if (opc == 3 && !if_64bit & (N == 1) && if_64bit & (N == 0)) {
+    unallocated();
+    return;
+  }
+  if (imms >= immr) {
+    len = imms - immr + 1;
+    from = immr;
+    to = 0;
+  } else {
+    len = imms + 1;
+    from = 0;
+    to = if_64bit ? 64 - immr : 32 - immr;
+  }
+  imm = bitutil::shift(cpu_.xregs[rn], from, from + len - 1) << to;
+
+  switch (opc) {
+  case 0:
+    LOG_CPU("SBFM, to=%d, from=%d, len=%d\n", to, from, len);
+    cpu_.xregs[rd] = 0;
+    cpu_.xregs[rd] = signed_extend(imm, /*topbit=*/to + len - 1);
+    break;
+  case 1:
+    LOG_CPU("BFM\n");
+    cpu_.xregs[rd] = imm | (cpu_.xregs[rd] & ((1 << to) - 1)) |
+                     bitutil::extract_x_to_63(cpu_.xregs[rd], to + len);
+    break;
+  case 2:
+    LOG_CPU("UBFM\n");
+    cpu_.xregs[rd] = imm;
+    break;
+  default:
+    assert(false);
+  }
+}
+
 void System::decode_extract(uint32_t inst) { LOG_CPU("%d\n", inst); }
 
 /*
