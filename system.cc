@@ -83,14 +83,6 @@ static void unsupported() { fprintf(stderr, "unsuported inst\n"); }
 
 static void unallocated() { fprintf(stderr, "unallocated inst\n"); }
 
-static inline uint64_t bitfield_replicate(uint64_t mask, uint8_t e) {
-  while (e < 64) {
-    mask |= mask << e;
-    e *= 2;
-  }
-  return mask;
-}
-
 static inline uint64_t bitmask64(uint8_t length) {
   return ~0ULL >> (64 - length);
 }
@@ -263,6 +255,14 @@ void System::decode_add_sub_imm_with_tags(uint32_t inst) {
   LOG_CPU("%d\n", inst);
 }
 
+static uint64_t bitfield_replicate(uint64_t mask, uint8_t e) {
+  while (e < 64) {
+    mask |= mask << e;
+    e *= 2;
+  }
+  return mask;
+}
+
 static uint64_t decode_bit_masks(uint8_t n, uint8_t imms, uint8_t immr) {
   uint64_t mask;
   uint8_t e, levels, s, r;
@@ -287,6 +287,18 @@ static uint64_t decode_bit_masks(uint8_t n, uint8_t imms, uint8_t immr) {
   return mask;
 }
 
+/*
+         Logical (immediate)
+
+           31   30 29 28    23 22  21   16 15  10 9  5 4   0
+         +----+------+--------+---+-------+------+----+-----+
+         | sf |  opc | 100100 | N |  immr | imms | Rn |  Rd |
+         +----+------+--------+---+-------+------+----+-----+
+
+         @sf: 0->32bit, 1->64bit
+         @opc: 0->AND, 1->ORR, 2->EOR, 3->ANDS
+*/
+
 void System::decode_logical_imm(uint32_t inst) {
   uint8_t rd, rn, imms, immr, opc;
   bool N, if_64bit;
@@ -303,23 +315,31 @@ void System::decode_logical_imm(uint32_t inst) {
 
   imm = decode_bit_masks(N, imms, immr);
 
-  if (!if_64bit && N != 0) {
+  if (!if_64bit & (N == 1)) {
     fprintf(stderr, "undefined\n");
   }
 
   switch (opc) {
   case 0b00:
+    LOG_CPU("AND: [rn]=%lu, imm=%d\n", cpu_.xregs[rn], imm);
     result = cpu_.xregs[rn] & imm; /* AND */
     break;
   case 0b01:
+    LOG_CPU("ORR: [rn]=%lu, imm=%d\n", cpu_.xregs[rn], imm);
     result = cpu_.xregs[rn] | imm; /* ORR */
     break;
   case 0b10:
+    LOG_CPU("EOR: [rn]=%lu, imm=%d\n", cpu_.xregs[rn], imm);
     result = cpu_.xregs[rn] ^ imm; /* EOR */
     break;
   case 0b11:
+    LOG_CPU("ANDS: [rn]=%lu, imm=%d\n", cpu_.xregs[rn], imm);
     result = cpu_.xregs[rn] & imm; /* ANDS */
-    cpu_.cpsr.N = (int64_t)result < 0;
+    if (if_64bit) {
+      cpu_.cpsr.N = (int64_t)result < 0;
+    } else {
+      cpu_.cpsr.N = (int32_t)result < 0;
+    }
     cpu_.cpsr.Z = result == 0;
     cpu_.cpsr.C = 0;
     cpu_.cpsr.V = 0;
