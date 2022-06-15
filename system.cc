@@ -88,11 +88,11 @@ static inline uint64_t bitmask64(uint8_t length) {
 }
 
 static inline uint64_t signed_extend(uint64_t val, uint8_t topbit) {
-  return bitutil::bit(val, topbit) ? (val | 0xffffffffffffffff << topbit) : val;
+  return bitutil::bit(val, topbit) ? (val | ~uint64_t(0) << topbit) : val;
 }
 
 static inline uint32_t signed_extend32(uint32_t val, uint8_t topbit) {
-  return bitutil::bit(val, topbit) ? (val | 0xffffffff << topbit) : val;
+  return bitutil::bit(val, topbit) ? (val | ~uint32_t(0) << topbit) : val;
 }
 
 } // namespace
@@ -402,9 +402,9 @@ void System::decode_move_wide_imm(uint32_t inst) {
     break;
   case 3: /* MOVK */
     if (if_64bit) {
-      cpu_.xregs[rd] = (cpu_.xregs[rd] & 0xffffffffffff0000) | imm;
+      cpu_.xregs[rd] = (cpu_.xregs[rd] & bitutil::mask(48) << 16) | imm;
     } else {
-      cpu_.xregs[rd] = (cpu_.xregs[rd] & 0x00000000ffff0000) | imm;
+      cpu_.xregs[rd] = (cpu_.xregs[rd] & bitutil::mask(16) << 16) | imm;
     }
     break;
   default:
@@ -437,7 +437,7 @@ void System::decode_bitfield(uint32_t inst) {
   opc = bitutil::shift(inst, 29, 30);
   if_64bit = bitutil::bit(inst, 31);
 
-  if (opc == 3 && !if_64bit & (N == 1) && if_64bit & (N == 0)) {
+  if ((opc == 3) && (!if_64bit & (N == 1)) && (if_64bit & (N == 0))) {
     unallocated();
     return;
   }
@@ -461,7 +461,7 @@ void System::decode_bitfield(uint32_t inst) {
   case 1:
     LOG_CPU("BFM\n");
     cpu_.xregs[rd] = imm | (cpu_.xregs[rd] & ((1 << to) - 1)) |
-                     bitutil::extract_x_to_63(cpu_.xregs[rd], to + len);
+                     (cpu_.xregs[rd] & (bitutil::mask(len) << to));
     break;
   case 2:
     LOG_CPU("UBFM\n");

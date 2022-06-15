@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert> 
+
 namespace bitutil {
 
 inline uint32_t shift(uint32_t inst, uint32_t bottom, uint32_t top) {
@@ -15,8 +17,12 @@ inline uint64_t zero_extend(uint64_t val, uint8_t bit) {
   return (val & ((1 << bit) - 1)) | zero;
 }
 
-inline uint64_t extract_x_to_63(uint64_t inst, uint8_t x){
-	return ((inst >> x) & (1 << (64 - x))) << x;
+inline uint64_t mask(size_t n){
+	assert(0 <= n <= 64);
+	if (n == 64){
+		return ~uint64_t(0);
+	}
+	return (uint64_t(1) << n) - 1;
 }
 
 } // namespace bitutil
