@@ -60,6 +60,9 @@ private:
   void decode_move_wide_imm(uint32_t inst);
   void decode_bitfield(uint32_t inst);
   void decode_extract(uint32_t inst);
+
+	/* Branches, Exception Generating and System instructions */
+	void decode_unconditional_branch_imm(uint32_t inst);
 };
 
 typedef void (System::*decode_func)(uint32_t inst);

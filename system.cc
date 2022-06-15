@@ -149,7 +149,20 @@ void System::decode_data_processing_reg(uint32_t inst) {
 void System::decode_data_processing_float(uint32_t inst) {
   LOG_CPU("%d\n", inst);
 }
-void System::decode_branches(uint32_t inst) { LOG_CPU("%d\n", inst); }
+
+void System::decode_branches(uint32_t inst) {
+  uint8_t op;
+  op = bitutil::shift(inst, 29, 31);
+  switch (op) {
+  case 0:
+  case 4:
+    decode_unconditional_branch_imm(inst);
+    break;
+  default:
+    unsupported();
+    break;
+  }
+}
 void System::decode_pc_rel(uint32_t inst) { LOG_CPU("%d\n", inst); }
 void System::decode_sme_encodings(uint32_t inst) { LOG_CPU("%d\n", inst); }
 void System::decode_unallocated(uint32_t inst) { LOG_CPU("%d\n", inst); }
@@ -732,6 +745,35 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
       break;
     }
   }
+}
+
+/*
+===========================================================
+   Branches, Exception Generating and System instructions
+===========================================================
+*/
+
+/*
+         Unconditional branch (immediate)
+
+           31   30  26 25                                  0
+         +----+-------+------------------------------------+
+         | op | 00101 |             imm26                  |
+         +----+-------+------------------------------------+
+
+         @op: 0->B, 1->BL
+
+*/
+void System::decode_unconditional_branch_imm(uint32_t inst) {
+  uint64_t offset;
+  uint32_t imm26;
+
+  imm26 = bitutil::shift(inst, 0, 25);
+
+  offset = signed_extend(imm26 << 2, 27);
+
+  LOG_CPU("B: pc=0x%lx\n", cpu_.pc + offset);
+  // cpu_.set_pc(cpu_.pc + offset);
 }
 
 } // namespace core
