@@ -28,7 +28,10 @@ public:
   mem::Mem &mem() { return mem_; }
 
 private:
-  cpu::Cpu cpu_;
+	uint32_t fetch();
+	void execute_loop();
+  
+	cpu::Cpu cpu_;
   mem::Mem mem_;
 
   void decode_sme_encodings(uint32_t inst);

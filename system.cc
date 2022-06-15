@@ -16,6 +16,8 @@ namespace core {
 System::System() : cpu_(cpu::Cpu(this)), mem_(mem::Mem(this)) {
   // Initialize
   Init();
+
+  execute_loop();
 }
 
 System::~System() {
@@ -37,27 +39,16 @@ void System::Init() {
   }
 }
 
-int System::Execute() {
-  // cpu_.execute(0x927c0001); /* AND X1, X0, #0x10 */
-  // cpu_.execute(0xb27c0002); /* OOR X2, X0, #0x10 */
-  decode_start(0x91001021); /* ADD X1, X1, #4 */
-  decode_start(0xf84043e0); /* LDR X0, [SP, #4] */
-  decode_start(0xf8616be0); /* LDR X0, [SP, X1] */
-  decode_start(0xf8403fe0); /* LDR X0, [SP, #3]! */
+uint32_t System::fetch() { return mem_.read_inst(cpu_.pc); }
 
-  uint64_t value = 0xffffffffffffffff;
-  mem_.write(3, 1024, value);
-  printf("read: 0x%lx\n", mem_.read(3, 1024));
+void System::execute_loop() {
+  uint32_t inst;
 
-  /*
-uint8_t data;
-uint64_t addr;
-addr = 100;
-mem_.write_8(addr, 0x11);
-data = mem_.read_8(addr);
-printf("emu: mem[%lu] = %d\n", addr, data);
-  */
-  return 0;
+  while (cpu_.pc < (uint64_t)mem_.text_end) {
+    inst = fetch();
+    decode_start(inst);
+    cpu_.increment_pc();
+  }
 }
 
 namespace {

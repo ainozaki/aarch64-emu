@@ -22,6 +22,11 @@ public:
 
   void write(uint8_t size, uint64_t addr, uint64_t value);
   uint64_t read(uint8_t size, uint64_t addr);
+	uint32_t read_inst(uint64_t pc);
+
+  uint8_t *mem_;
+  uint8_t *text_;
+  uint8_t *text_end;
 
 private:
   void write_8(void *addr, const uint8_t value);
@@ -32,9 +37,6 @@ private:
   uint16_t read_16(const void *addr);
   uint32_t read_32(const void *addr);
   uint64_t read_64(const void *addr);
-
-  uint8_t *mem_;
-  uint8_t *text_;
 
 	uint64_t key;
 

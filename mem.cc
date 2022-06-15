@@ -27,22 +27,21 @@ void Mem::clean_mem() {
 }
 
 int Mem::init_mem(const char *rawfile) {
-  // FILE *fp;
-  // size_t readlen;
+  FILE *fp;
+  size_t readlen;
 
   /// text
   text_ = (uint8_t *)calloc(1, text_section_size);
-  /*
-fp = fopen(rawfile, "r");
-if (!fp) {
-fprintf(stderr, "mem: cannot open file %s\n", rawfile);
-free(text_);
-return -1;
-}
-readlen = fread(text_, 1, text_section_size, fp);
-printf("mem: load file %s, size 0x%lx\n", rawfile, readlen);
-fclose(fp);
-  */
+  fp = fopen(rawfile, "r");
+  if (!fp) {
+    fprintf(stderr, "mem: cannot open file %s\n", rawfile);
+    free(text_);
+    return -1;
+  }
+  readlen = fread(text_, 1, text_section_size, fp);
+  text_end = text_ + readlen;
+  printf("mem: load file %s, size 0x%lx\n", rawfile, readlen);
+  fclose(fp);
 
   system_->cpu().pc = (uint64_t)text_;
   printf("mem: set initial PC\n");
@@ -140,6 +139,11 @@ uint64_t Mem::read(uint8_t size, const uint64_t addr) {
     assert(false);
     return -1;
   }
+}
+
+uint32_t Mem::read_inst(uint64_t pc) {
+  uint8_t *p = (uint8_t *)pc;
+  return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24 | uint64_t(p[4]) << 32;
 }
 
 uint8_t Mem::read_8(const void *paddr) { return *(uint8_t *)paddr; }
