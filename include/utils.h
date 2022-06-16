@@ -22,6 +22,7 @@ inline uint64_t mask(size_t n){
 	if (n == 64){
 		return ~uint64_t(0);
 	}
+	printf("mask = 0x%lx\n", (uint64_t(1) << n) - 1);
 	return (uint64_t(1) << n) - 1;
 }
 

@@ -3,15 +3,15 @@
 #include "system.h"
 
 TEST(DataProcessingImm, ADD_SUB){
-	core::System sys;
+	core::System sys("raw-binary");
 
   sys.decode_start(0x91004000); /* ADD X0, X0, #0x10 */
 	EXPECT_EQ(0x10, sys.cpu().xregs[0]);
   sys.decode_start(0xd1000400); /* SUB X0, X0, #0x1 */
 	EXPECT_EQ(0x0f, sys.cpu().xregs[0]);
 
-  sys.decode_start(0xf1004021); /* SUBS X1, X0, #0x10 */
-	EXPECT_EQ(-0x10, sys.cpu().xregs[1]);
+  sys.decode_start(0xf1004021); /* SUBS X1, X1, #0x10 */
+	EXPECT_EQ(-0x10, (int64_t)sys.cpu().xregs[1]);
 	EXPECT_EQ(1, sys.cpu().cpsr.N);
 	EXPECT_EQ(0, sys.cpu().cpsr.Z);
 
@@ -22,7 +22,7 @@ TEST(DataProcessingImm, ADD_SUB){
 }
 
 TEST(DataProcessingImm, MoveWide){
-	core::System sys;
+	core::System sys("raw-binary");
 
   sys.decode_start(0x91404042); /* ADD X2, X2, 0x10, LSL #12 */
 	EXPECT_EQ(0x10000, sys.cpu().xregs[2]);
@@ -35,7 +35,7 @@ TEST(DataProcessingImm, MoveWide){
 }
 
 TEST(DataProcessingImm, Logical){
-	core::System sys;
+	core::System sys("raw-binary");
 
   sys.decode_start(0xd2802201); /* MOV X1, #0x110 */
 	EXPECT_EQ(0x110, sys.cpu().xregs[1]);
@@ -56,7 +56,7 @@ TEST(DataProcessingImm, Logical){
 }
 
 TEST(DataProcessingImm, Bitfield){
-	core::System sys;
+	core::System sys("raw-binary");
 
   sys.decode_start(0xd2801e22); /* MOV X2, #0x00f1 */
   sys.decode_start(0xd2820203); /* MOV X3, #0x1010 */
@@ -74,8 +74,12 @@ TEST(DataProcessingImm, Bitfield){
   sys.decode_start(0xd3781c43); /* BFI X3, X2, #8, #8 */
 	EXPECT_EQ(0xf100, sys.cpu().xregs[3]);
 }
-/*
-   8:	93781c43 	sbfiz	x3, x2, #8, #8
-   c:	b3781c43 	bfi	x3, x2, #8, #8
-  10:	d3781c43 	ubfiz	x3, x2, #8, #8
-	*/
+
+TEST(Branch, UnconditionalBranchImm){
+	core::System sys("tests/raw-binary-branch");
+	sys.execute_loop();
+
+	EXPECT_EQ(0x1, sys.cpu().xregs[1]);
+	EXPECT_NE(0x2, sys.cpu().xregs[2]);
+	EXPECT_EQ(0x3, sys.cpu().xregs[3]);
+}

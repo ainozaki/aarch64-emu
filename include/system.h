@@ -16,12 +16,13 @@ namespace core {
 
 class System {
 public:
-  System();
+  System(const char *filename);
   ~System();
 
-  void Init();
+  void Init(const char *filename);
 
   int Execute();
+	void execute_loop();
 	void decode_start(uint32_t inst);
 
   cpu::Cpu &cpu() { return cpu_; }
@@ -29,7 +30,6 @@ public:
 
 private:
 	uint32_t fetch();
-	void execute_loop();
   
 	cpu::Cpu cpu_;
   mem::Mem mem_;

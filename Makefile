@@ -31,7 +31,7 @@ $(TEST_TARGET): $(OBJ) $(TEST_OBJ)
 -include $(DEP)
 
 run:
-	./$(TARGET)
+	./$(TARGET) raw-binary
 
 run-test:
 	./$(TEST_TARGET)

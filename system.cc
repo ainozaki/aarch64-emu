@@ -13,11 +13,9 @@
 
 namespace core {
 
-System::System() : cpu_(cpu::Cpu(this)), mem_(mem::Mem(this)) {
+System::System(const char *filename) : cpu_(cpu::Cpu(this)), mem_(mem::Mem(this)) {
   // Initialize
-  Init();
-
-  execute_loop();
+  Init(filename);
 }
 
 System::~System() {
@@ -25,16 +23,15 @@ System::~System() {
   mem_.clean_mem();
 }
 
-void System::Init() {
+void System::Init(const char *filename) {
   int err;
-  const char *file = "raw-binary";
 
   printf("emu: start emulating\n");
 
   /// mem
-  err = mem_.init_mem(file);
+  err = mem_.init_mem(filename);
   if (err != 0) {
-    fprintf(stderr, "emu: failed to initialize\n");
+    fprintf(stderr, "emu: failed to initialize mem\n");
     return;
   }
 }
@@ -772,8 +769,8 @@ void System::decode_unconditional_branch_imm(uint32_t inst) {
 
   offset = signed_extend(imm26 << 2, 27);
 
-  LOG_CPU("B: pc=0x%lx\n", cpu_.pc + offset);
-  // cpu_.set_pc(cpu_.pc + offset);
+  LOG_CPU("B: pc=0x%lx offset=0x%lx\n", cpu_.pc + offset, offset);
+  cpu_.set_pc(cpu_.pc - 4 + offset);
 }
 
 } // namespace core

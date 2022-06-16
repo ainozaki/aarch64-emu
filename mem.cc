@@ -29,31 +29,31 @@ void Mem::clean_mem() {
 int Mem::init_mem(const char *rawfile) {
   FILE *fp;
   size_t readlen;
-
-  /// text
-  text_ = (uint8_t *)calloc(1, text_section_size);
-  fp = fopen(rawfile, "r");
-  if (!fp) {
-    fprintf(stderr, "mem: cannot open file %s\n", rawfile);
-    free(text_);
-    return -1;
-  }
-  readlen = fread(text_, 1, text_section_size, fp);
-  text_end = text_ + readlen;
-  printf("mem: load file %s, size 0x%lx\n", rawfile, readlen);
-  fclose(fp);
-
-  system_->cpu().pc = (uint64_t)text_;
-  printf("mem: set initial PC\n");
-  printf("mem: PC = %p\n", text_);
-
-  /// mem
+  
+	/// mem
   mem_ = (uint8_t *)malloc(mem_size);
   printf("mem: malloc mainmem size 0x%x  %p - %p\n", mem_size, mem_,
          mem_ + mem_size - 1);
   system_->cpu().xregs[31] = (uint64_t)(mem_size - 1024);
   printf("mem: set initial SP\n");
   printf("mem: SP = 0x%lx\n", system_->cpu().xregs[31]);
+
+  /// text
+  text_ = (uint8_t *)calloc(1, text_section_size);
+  fp = fopen(rawfile, "r");
+  if (!fp) {
+    fprintf(stderr, "mem: cannot open file %s. Proceed without text code.\n", rawfile);
+    free(text_);
+    return -1;
+  }
+  readlen = fread(text_, 1, text_section_size, fp);
+  text_end = text_ + readlen - 1;
+  printf("mem: load file %s, size 0x%lx\n", rawfile, readlen);
+  fclose(fp);
+
+  system_->cpu().pc = (uint64_t)text_;
+  printf("mem: set initial PC\n");
+  printf("mem: PC = %p\n", text_);
 
   return 0;
 }
