@@ -62,6 +62,7 @@ private:
   void decode_extract(uint32_t inst);
 
 	/* Branches, Exception Generating and System instructions */
+	void decode_conditional_branch_imm(uint32_t inst);
 	void decode_unconditional_branch_imm(uint32_t inst);
   void decode_compare_and_branch_imm(uint32_t inst);
 };

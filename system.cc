@@ -158,6 +158,9 @@ void System::decode_branches(uint32_t inst) {
   case 4:
     decode_unconditional_branch_imm(inst);
     break;
+  case 2:
+    decode_conditional_branch_imm(inst);
+    break;
   case 1:
   case 5:
     if (bitutil::bit(inst, 25) == 0) {
@@ -165,7 +168,7 @@ void System::decode_branches(uint32_t inst) {
     } else {
       unsupported();
     }
-		break;
+    break;
   default:
     unsupported();
     break;
@@ -762,6 +765,96 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
 */
 
 /*
+         Conditional branch (immediate)
+
+           31    25  24  23                   5  4    3   0
+         +---------+----+----------------------+----+------+
+         | 0101010 | o1 |        imm19         | o0 | cond |
+         +---------+----+----------------------+----+------+
+
+         @o1: 1->unallocated
+                                 @o0: 0->B.cond, 1->BC.cond
+
+*/
+static bool check_b_flag(uint8_t cond, core::cpu::CPSR &cpsr) {
+  switch (cond) {
+  case 0:
+    return cpsr.Z == 1;
+    break;
+  case 1:
+    return cpsr.Z == 0;
+    break;
+  case 2:
+    return cpsr.C == 1;
+    break;
+  case 3:
+    return cpsr.C == 0;
+    break;
+  case 4:
+    return cpsr.N == 1;
+    break;
+  case 5:
+    return cpsr.N == 0;
+    break;
+  case 6:
+    return cpsr.V == 1;
+    break;
+  case 7:
+    return cpsr.V == 0;
+    break;
+  case 8:
+    return (cpsr.C == 1) & (cpsr.Z == 0);
+    break;
+  case 9:
+    return (cpsr.C == 0) | (cpsr.Z == 1);
+    break;
+  case 10:
+    return cpsr.N == cpsr.V;
+    break;
+  case 11:
+    return cpsr.N != cpsr.V;
+    break;
+  case 12:
+    return (cpsr.Z == 0) | (cpsr.N == cpsr.V);
+    break;
+  case 13:
+    return (cpsr.Z == 1) | (cpsr.N != cpsr.V);
+    break;
+  case 14:
+    return true;
+    break;
+  case 15:
+    return true;
+    break;
+  }
+  return false;
+}
+
+void System::decode_unconditional_branch_imm(uint32_t inst) {
+  uint64_t offset;
+  uint32_t imm19;
+  uint8_t o1, o0, cond;
+
+  o1 = bitutil::bit(inst, 24);
+  imm19 = bitutil::shift(inst, 5, 23);
+  o0 = bitutil::bit(inst, 4);
+  cond = bitutil::shift(inst, 0, 3);
+
+  if (o1 == 1) {
+    unallocated();
+  }
+
+  if (o0 == 0) {
+    if (check_b_flag(cond, cpu_.cpsr)) {
+      offset = signed_extend(imm19 << 2, 20);
+      LOG_CPU("B.cond: pc=0x%lx offset=0x%lx, cond=0x%x\n", cpu_.pc + offset,
+              offset, cond);
+      cpu_.set_pc(cpu_.pc - 4 + offset);
+    }
+  }
+}
+
+/*
          Unconditional branch (immediate)
 
            31   30  26 25                                  0
@@ -772,7 +865,7 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
          @op: 0->Branch, 1->Branch with Link
 
 */
-void System::decode_unconditional_branch_imm(uint32_t inst) {
+void System::decode_conditional_branch_imm(uint32_t inst) {
   uint64_t offset;
   uint32_t imm26;
   uint8_t op;
@@ -833,11 +926,11 @@ void System::decode_compare_and_branch_imm(uint32_t inst) {
     }
     break;
   }
-	
-	if (if_jump){
-  	offset = signed_extend(imm19 << 2, 20);
-  	cpu_.set_pc(cpu_.pc - 4 + offset);
-	}
+
+  if (if_jump) {
+    offset = signed_extend(imm19 << 2, 20);
+    cpu_.set_pc(cpu_.pc - 4 + offset);
+  }
 }
 
 } // namespace core
