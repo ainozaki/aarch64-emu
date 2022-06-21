@@ -761,18 +761,28 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
          | op | 00101 |             imm26                  |
          +----+-------+------------------------------------+
 
-         @op: 0->B, 1->BL
+         @op: 0->Branch, 1->Branch with Link
 
 */
 void System::decode_unconditional_branch_imm(uint32_t inst) {
   uint64_t offset;
   uint32_t imm26;
+	uint8_t op;
 
+	op = bitutil::bit(inst, 31);
   imm26 = bitutil::shift(inst, 0, 25);
 
   offset = signed_extend(imm26 << 2, 27);
 
-  LOG_CPU("B: pc=0x%lx offset=0x%lx\n", cpu_.pc + offset, offset);
+	switch (op){
+		case 0:
+  		LOG_CPU("B: pc=0x%lx offset=0x%lx\n", cpu_.pc + offset, offset);
+			break;
+		case 1:
+  		LOG_CPU("BL: pc=0x%lx offset=0x%lx\n", cpu_.pc + offset, offset);
+			cpu_.xregs[30] = cpu_.pc;
+			break;
+	}
   cpu_.set_pc(cpu_.pc - 4 + offset);
 }
 

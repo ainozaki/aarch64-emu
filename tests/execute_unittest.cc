@@ -87,4 +87,5 @@ TEST(Branch, UnconditionalBranchImm){
 	EXPECT_EQ(0x1, sys.cpu().xregs[1]);
 	EXPECT_NE(0x2, sys.cpu().xregs[2]);
 	EXPECT_EQ(0x3, sys.cpu().xregs[3]);
+	EXPECT_EQ(0x4, sys.cpu().xregs[4]);
 }
