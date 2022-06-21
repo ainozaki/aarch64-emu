@@ -15,8 +15,9 @@ DEP=$(SRC:.cc=.d) $(TEST_SRC:.cc=.d)
 
 TARGET = emu-aarch64
 TEST_TARGET = emu-test
+BIN = out.bin
 
-all: $(TARGET)
+all: $(TARGET) $(BIN)
 test: $(TEST_TARGET)
 
 $(TARGET): $(OBJ) main.o
@@ -28,10 +29,13 @@ $(TEST_TARGET): $(OBJ) $(TEST_OBJ)
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
+$(BIN): extract_text.sh
+	bash $< sample.s
+
 -include $(DEP)
 
 run:
-	./$(TARGET) raw-binary
+	./$(TARGET) $(BIN)
 
 run-test:
 	./$(TEST_TARGET)
@@ -40,7 +44,7 @@ format: $(SRC) $(HEADER) $(MAIN)
 	clang-format -i $^
 
 clean:
-	rm -f $(TARGET) $(TEST_TARGET) $(OBJ) $(TEST_OBJ) $(DEP) main.o main.d
+	rm -f $(TARGET) $(TEST_TARGET) $(OBJ) $(TEST_OBJ) $(DEP) main.o main.d $(BIN) tmp.o
 
 .PHONY: all test run run-test format clean
 
