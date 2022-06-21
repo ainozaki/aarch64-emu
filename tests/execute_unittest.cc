@@ -79,13 +79,17 @@ TEST(DataProcessingImm, Bitfield){
 	EXPECT_EQ(0xf100, sys.cpu().xregs[3]);
 }
 
-TEST(Branch, UnconditionalBranchImm){
+TEST(Branch, BranchImm){
 	core::System sys("tests/test_branch.bin");
 	sys.Init();
 	sys.execute_loop();
 
+	// B, BL
 	EXPECT_EQ(0x1, sys.cpu().xregs[1]);
 	EXPECT_NE(0x2, sys.cpu().xregs[2]);
 	EXPECT_EQ(0x3, sys.cpu().xregs[3]);
 	EXPECT_EQ(0x4, sys.cpu().xregs[4]);
+	// CBZ, CBNZ
+	EXPECT_NE(0x5, sys.cpu().xregs[5]);
+	EXPECT_EQ(0x6, sys.cpu().xregs[6]);
 }

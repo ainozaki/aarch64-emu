@@ -63,6 +63,7 @@ private:
 
 	/* Branches, Exception Generating and System instructions */
 	void decode_unconditional_branch_imm(uint32_t inst);
+  void decode_compare_and_branch_imm(uint32_t inst);
 };
 
 typedef void (System::*decode_func)(uint32_t inst);

@@ -10,3 +10,9 @@ subdummy:
 	MOVZ X4, #3
 sub:
 	MOVZ X4, #4
+	CBZ X4, cbzdummy
+	CBNZ X4, cbzjump
+cbzdummy:
+	MOVZ X5, #4
+cbzjump:
+	MOVZ X6, #6

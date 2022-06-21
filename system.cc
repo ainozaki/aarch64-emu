@@ -158,6 +158,14 @@ void System::decode_branches(uint32_t inst) {
   case 4:
     decode_unconditional_branch_imm(inst);
     break;
+  case 1:
+  case 5:
+    if (bitutil::bit(inst, 25) == 0) {
+      decode_compare_and_branch_imm(inst);
+    } else {
+      unsupported();
+    }
+		break;
   default:
     unsupported();
     break;
@@ -767,23 +775,69 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
 void System::decode_unconditional_branch_imm(uint32_t inst) {
   uint64_t offset;
   uint32_t imm26;
-	uint8_t op;
+  uint8_t op;
 
-	op = bitutil::bit(inst, 31);
+  op = bitutil::bit(inst, 31);
   imm26 = bitutil::shift(inst, 0, 25);
 
   offset = signed_extend(imm26 << 2, 27);
 
-	switch (op){
-		case 0:
-  		LOG_CPU("B: pc=0x%lx offset=0x%lx\n", cpu_.pc + offset, offset);
-			break;
-		case 1:
-  		LOG_CPU("BL: pc=0x%lx offset=0x%lx\n", cpu_.pc + offset, offset);
-			cpu_.xregs[30] = cpu_.pc;
-			break;
-	}
+  switch (op) {
+  case 0:
+    LOG_CPU("B: pc=0x%lx offset=0x%lx\n", cpu_.pc + offset, offset);
+    break;
+  case 1:
+    LOG_CPU("BL: pc=0x%lx offset=0x%lx\n", cpu_.pc + offset, offset);
+    cpu_.xregs[30] = cpu_.pc;
+    break;
+  }
   cpu_.set_pc(cpu_.pc - 4 + offset);
+}
+
+/*
+         Compare and branch (immediate)
+
+           31   30   25  24   23                 5  4      0
+         +----+--------+----+-------------------------------+
+         | sh | 011010 | op |          imm19       |   Rt   |
+         +----+--------+----+-------------------------------+
+
+         @sh: 0->32bit, 1->64bit
+                                 @op: 0->CBZ, 1->CBNZ
+
+*/
+void System::decode_compare_and_branch_imm(uint32_t inst) {
+  uint64_t offset;
+  uint32_t imm19;
+  uint8_t op, if_64bit, rt;
+  bool if_jump = false;
+
+  if_64bit = bitutil::bit(inst, 31);
+  op = bitutil::bit(inst, 24);
+  imm19 = bitutil::shift(inst, 5, 23);
+  rt = bitutil::shift(inst, 0, 4);
+
+  switch (op) {
+  case 0: // CBZ
+    if (if_64bit) {
+      if_jump = cpu_.xregs[rt] == 0;
+    } else {
+      if_jump = (uint32_t)cpu_.xregs[rt] == 0;
+    }
+    break;
+  case 1: // CBNZ
+    if (if_64bit) {
+      if_jump = cpu_.xregs[rt] != 0;
+    } else {
+      if_jump = (uint32_t)cpu_.xregs[rt] != 0;
+    }
+    break;
+  }
+	
+	if (if_jump){
+  	offset = signed_extend(imm19 << 2, 20);
+  	cpu_.set_pc(cpu_.pc - 4 + offset);
+	}
 }
 
 } // namespace core
