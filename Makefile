@@ -8,17 +8,18 @@ SRC = \
 	system.cc
 TEST_SRC = \
 	tests/execute_unittest.cc
+TEST_AS = tests/test_branch.s
 
 OBJ=$(SRC:.cc=.o)
 TEST_OBJ=$(TEST_SRC:.cc=.o)
 DEP=$(SRC:.cc=.d) $(TEST_SRC:.cc=.d)
+BIN = $(TEST_AS:.s=.bin)
 
 TARGET = emu-aarch64
 TEST_TARGET = emu-test
-BIN = out.bin
 
-all: $(TARGET) $(BIN)
-test: $(TEST_TARGET)
+all: $(TARGET)
+test: $(TEST_TARGET) $(BIN)
 
 $(TARGET): $(OBJ) main.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
@@ -29,8 +30,8 @@ $(TEST_TARGET): $(OBJ) $(TEST_OBJ)
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
-$(BIN): extract_text.sh
-	bash $< sample.s
+%.bin: %.s
+	bash extract_text.sh $< $@
 
 -include $(DEP)
 
@@ -44,7 +45,7 @@ format: $(SRC) $(HEADER) $(MAIN)
 	clang-format -i $^
 
 clean:
-	rm -f $(TARGET) $(TEST_TARGET) $(OBJ) $(TEST_OBJ) $(DEP) main.o main.d $(BIN) tmp.o
+	rm -f $(TARGET) $(TEST_TARGET) $(OBJ) $(TEST_OBJ) $(DEP) main.o main.d $(BIN) tests/tmp.o tmp.o
 
 .PHONY: all test run run-test format clean
 

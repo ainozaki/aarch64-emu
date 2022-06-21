@@ -6,11 +6,10 @@
 #include <vector>
 
 #include <arm.h>
+#include <const.h>
 #include <mem.h>
 
 #define MEM_SIZE 1024
-
-
 
 namespace core {
 
@@ -19,7 +18,7 @@ public:
   System(const char *filename);
   ~System();
 
-  void Init(const char *filename);
+  SystemResult Init();
 
   int Execute();
 	void execute_loop();
@@ -33,6 +32,7 @@ private:
   
 	cpu::Cpu cpu_;
   mem::Mem mem_;
+	const char *filename_;
 
   void decode_sme_encodings(uint32_t inst);
   void decode_unallocated(uint32_t inst);

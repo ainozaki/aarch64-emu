@@ -16,27 +16,27 @@ namespace core {
 typedef __attribute__((mode(TI))) unsigned int uint128_t;
 typedef __attribute__((mode(TI))) int int128_t;
 
-System::System(const char *filename) : cpu_(cpu::Cpu(this)), mem_(mem::Mem(this)) {
-  // Initialize
-  Init(filename);
-}
+System::System(const char *filename)
+    : cpu_(cpu::Cpu(this)), mem_(mem::Mem(this)), filename_(filename) {}
 
 System::~System() {
   // free
   mem_.clean_mem();
 }
 
-void System::Init(const char *filename) {
-  int err;
+SystemResult System::Init() {
+  SystemResult err;
 
   printf("emu: start emulating\n");
 
   /// mem
-  err = mem_.init_mem(filename);
-  if (err != 0) {
+  err = mem_.init_mem(filename_);
+  if (err != SystemResult::Success) {
     fprintf(stderr, "emu: failed to initialize mem\n");
-    return;
+    return SystemResult::ErrorMemory;
   }
+
+  return SystemResult::Success;
 }
 
 uint32_t System::fetch() { return mem_.read_inst(cpu_.pc); }
@@ -182,10 +182,9 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in,
                           core::cpu::CPSR &cpsr) {
   uint128_t unsigned_sum = x + y + carry_in;
   int128_t signed_sum = (int64_t)x + (int64_t)y + carry_in;
-	uint64_t result = unsigned_sum & bitutil::mask(64);
+  uint64_t result = unsigned_sum & bitutil::mask(64);
 
   cpsr.N = bitutil::bit64(result, 63);
-	printf("cpsr.N = %d\n", bitutil::bit(result, 63));
   cpsr.Z = result == 0;
   cpsr.C = unsigned_sum != result;
   cpsr.V = signed_sum != (int64_t)result;

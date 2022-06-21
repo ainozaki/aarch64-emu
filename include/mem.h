@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "arm.h"
+#include "const.h"
 
 namespace core {
 
@@ -15,7 +16,7 @@ public:
   Mem(System *system);
   ~Mem() = default;
 
-  int init_mem(const char *rawfile);
+	SystemResult init_mem(const char *rawfile);
   void clean_mem();
 
   void *get_ptr(uint64_t vaddr);
@@ -39,6 +40,7 @@ private:
   uint64_t read_64(const void *addr);
 
 	uint64_t key;
+	bool no_text = false;
 
   System *system_;
 };

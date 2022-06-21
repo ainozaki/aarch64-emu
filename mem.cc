@@ -21,16 +21,18 @@ const uint32_t mem_size = 1024 * 1024 * 1024;          /// 1MB
 Mem::Mem(System *system) : system_(system) {}
 
 void Mem::clean_mem() {
-  free(text_);
+  if (!no_text) {
+    free(text_);
+  }
   free(mem_);
   printf("mem: free mainmem\n");
 }
 
-int Mem::init_mem(const char *rawfile) {
+SystemResult Mem::init_mem(const char *rawfile) {
   FILE *fp;
   size_t readlen;
-  
-	/// mem
+
+  /// mem
   mem_ = (uint8_t *)malloc(mem_size);
   printf("mem: malloc mainmem size 0x%x  %p - %p\n", mem_size, mem_,
          mem_ + mem_size - 1);
@@ -39,12 +41,19 @@ int Mem::init_mem(const char *rawfile) {
   printf("mem: SP = 0x%lx\n", system_->cpu().xregs[31]);
 
   /// text
+  if (!rawfile) {
+    no_text = true;
+    fprintf(stdout, "mem: Proceed without text code.\n");
+    return SystemResult::Success;
+  }
+
   text_ = (uint8_t *)calloc(1, text_section_size);
   fp = fopen(rawfile, "r");
   if (!fp) {
-    fprintf(stderr, "mem: cannot open file %s. Proceed without text code.\n", rawfile);
+    no_text = true;
+    fprintf(stderr, "mem: cannot open file %s.\n", rawfile);
     free(text_);
-    return -1;
+    return SystemResult::ErrorMemory;
   }
   readlen = fread(text_, 1, text_section_size, fp);
   text_end = text_ + readlen - 1;
@@ -55,7 +64,7 @@ int Mem::init_mem(const char *rawfile) {
   printf("mem: set initial PC\n");
   printf("mem: PC = %p\n", text_);
 
-  return 0;
+  return SystemResult::Success;
 }
 
 void *Mem::get_ptr(uint64_t vaddr) {
