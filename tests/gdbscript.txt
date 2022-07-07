@@ -1,33 +1,14 @@
-define run
-	printf "QQQINP 0x%lx\n", $w0
-	si
-	printf "QQQANS 0x%0lx\n", $w1
-  printf "QQQFLG %c %c %c %c\n", ($cpsr >> 31) & 1 ? 'N' : '-', ($cpsr >> 30) & 1 ? 'Z' : '-', ($cpsr >> 29) & 1 ? 'C' : '-', ($cpsr >> 28) & 1 ? 'V' : '-'
-end
-
 define step1
-c
-printf "QQQIMM 0x0\n"
-run
-printf "QQQIMM 0x1\n"
-run
-printf "QQQIMM 0x7ff\n"
-run
-printf "QQQIMM 0x800\n"
-run
-printf "QQQIMM 0x801\n"
-run
-printf "QQQIMM 0xfff\n"
-run
+	printf "QQQW123 0x%lx 0x%lx 0x%lx\n", $w1, $w2, $w3
+  printf "QQQFLG %c %c %c %c\n", ($cpsr >> 31) & 1 ? 'N' : '-', ($cpsr >> 30) & 1 ? 'Z' : '-', ($cpsr >> 29) & 1 ? 'C' : '-', ($cpsr >> 28) & 1 ? 'V' : '-'
+	si
 end
 
 b test_as
 set verbose off
 display/i $pc
 start
-step1
-step1
-step1
+c
 step1
 step1
 step1

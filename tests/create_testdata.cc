@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-extern "C" uint32_t adds_as(uint32_t);
+extern "C" void init_reg();
 extern "C" uint32_t test_as(uint32_t);
 
 void create_as_adds(){
@@ -27,6 +27,7 @@ void create_as_adds(){
 		}
 		test_as(regtbl[i]);
 	}
+	fclose(f);
 	printf("done\n");
 }
 
@@ -49,7 +50,24 @@ void create_as_subs(){
 		}
 		test_as(tbl[i]);
 	}
+	fclose(f);
 	printf("done\n");
+}
+
+void create_as_b(){
+	const char *filename = "tests/data/b.s";
+	FILE *f;
+
+	f = fopen(filename, "r");
+	if (!f){
+		perror("fopen");
+		return;
+	}
+	printf("%s is manually created\n", filename);
+	init_reg();
+	test_as(/*dummy*/0);
+
+	fclose(f);
 }
 
 void create_as(const char *asname){
@@ -57,6 +75,8 @@ void create_as(const char *asname){
 		create_as_adds();
 	}else if (!strcmp(asname, "subs")){
 		create_as_subs();
+	}else if (!strcmp(asname, "b")){
+		create_as_b();
 	}else {
 		fprintf(stderr, "asname %s not match\n", asname);
 	}

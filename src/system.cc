@@ -793,8 +793,13 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
          +---------+----+----------------------+----+------+
 
          @o1: 1->unallocated
-                                 @o0: 0->B.cond, 1->BC.cond
+         @o0: 0->B.cond, 1->BC.cond
 
+				 BC.cond: 
+				 - "Branch Consistent conditionally to a label at a PC-relative offset, 
+				 with a hint that this branch will behave very consistently and
+				 is very unlikely to change direction." 
+				 - same as B.cond in this emulator.
 */
 static bool check_b_flag(uint8_t cond, core::cpu::CPSR &cpsr) {
   switch (cond) {
@@ -850,7 +855,7 @@ static bool check_b_flag(uint8_t cond, core::cpu::CPSR &cpsr) {
   return false;
 }
 
-void System::decode_unconditional_branch_imm(uint32_t inst) {
+void System::decode_conditional_branch_imm(uint32_t inst) {
   uint64_t offset;
   uint32_t imm19;
   uint8_t o1, o0, cond;
@@ -885,7 +890,7 @@ void System::decode_unconditional_branch_imm(uint32_t inst) {
          @op: 0->Branch, 1->Branch with Link
 
 */
-void System::decode_conditional_branch_imm(uint32_t inst) {
+void System::decode_unconditional_branch_imm(uint32_t inst) {
   uint64_t offset;
   uint32_t imm26;
   uint8_t op;

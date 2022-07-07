@@ -3,7 +3,8 @@ set -euox pipefail
 
 TEST_AS=( \
 #	"tests/data/adds.s"
-	"tests/data/subs.s"
+#	"tests/data/subs.s"
+	"tests/data/b.s"
 	);
 
 for as in ${TEST_AS[@]}; do
