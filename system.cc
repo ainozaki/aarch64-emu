@@ -189,8 +189,24 @@ static uint64_t add_imm(uint64_t x, uint64_t y, uint8_t carry_in) {
   return x + y + carry_in;
 }
 
-static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in,
+static uint32_t add_imm_s32(uint32_t x, uint32_t y, uint8_t carry_in,
                           core::cpu::CPSR &cpsr) {
+  uint64_t unsigned_sum = x + y + carry_in;
+  int64_t signed_sum = (int32_t)x + (int32_t)y + carry_in;
+  uint32_t result = unsigned_sum & bitutil::mask(32);
+
+  cpsr.N = bitutil::bit(result, 31);
+  cpsr.Z = result == 0;
+  cpsr.C = unsigned_sum != result;
+  cpsr.V = signed_sum != (int32_t)result;
+  return result;
+}
+
+static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in,
+                          core::cpu::CPSR &cpsr, bool if_64bit) {
+	if (!if_64bit){
+		return add_imm_s32(x, y, carry_in, cpsr);
+	}
   uint128_t unsigned_sum = x + y + carry_in;
   int128_t signed_sum = (int64_t)x + (int64_t)y + carry_in;
   uint64_t result = unsigned_sum & bitutil::mask(64);
@@ -239,22 +255,22 @@ void System::decode_add_sub_imm(uint32_t inst) {
   if (setflag) {
     if (if_sub) {
       /* SUBS */
-      LOG_CPU("SUBS: rd=%d, xregs[rn]=%lu, imm=%ld\n", rd, cpu_.xregs[rn],
+      LOG_CPU("SUBS: rd=%d, xregs[rn]=%lu, imm=0x%lx\n", rd, cpu_.xregs[rn],
               ~imm);
-      result = add_imm_s(cpu_.xregs[rn], ~imm, /*carry-in=*/1, cpu_.cpsr);
+      result = add_imm_s(cpu_.xregs[rn], ~imm, /*carry-in=*/1, cpu_.cpsr, if_64bit);
     } else {
       /* ADDS */
-      LOG_CPU("ADDS: rd=%d, xregs[rn]=%lu, imm=%ld\n", rd, cpu_.xregs[rn], imm);
-      result = add_imm_s(cpu_.xregs[rn], imm, /*carry-in=*/0, cpu_.cpsr);
+      LOG_CPU("ADDS: rd=%d, xregs[rn]=%lu, imm=0x%lx, if_64bit=%d\n", rd, cpu_.xregs[rn], imm, if_64bit);
+      result = add_imm_s(cpu_.xregs[rn], imm, /*carry-in=*/0, cpu_.cpsr, if_64bit);
     }
   } else {
     if (if_sub) {
       /* SUB */
-      LOG_CPU("SUB: rd=%d, xregs[rn]=%lu, imm=%ld\n", rd, cpu_.xregs[rn], ~imm);
+      LOG_CPU("SUB: rd=%d, xregs[rn]=%lu, imm=0x%lx\n", rd, cpu_.xregs[rn], ~imm);
       result = add_imm(cpu_.xregs[rn], ~imm, /*carry-in=*/1);
     } else {
       /* ADD */
-      LOG_CPU("ADD: rd=%d, xregs[rn]=%lu, imm=%ld\n", rd, cpu_.xregs[rn], imm);
+      LOG_CPU("ADD: rd=%d, xregs[rn]=%lu, imm=0x%lx\n", rd, cpu_.xregs[rn], imm);
       result = add_imm(cpu_.xregs[rn], imm, /*carry-in=*/0);
     }
   }
@@ -262,7 +278,7 @@ void System::decode_add_sub_imm(uint32_t inst) {
   if (if_64bit) {
     cpu_.xregs[rd] = result;
   } else {
-    cpu_.xregs[rd] = bitutil::clear_upper32(result);
+    cpu_.xregs[rd] = bitutil::mask(32) & result;
   }
 }
 

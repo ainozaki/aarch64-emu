@@ -20,6 +20,7 @@ public:
 
   SystemResult Init();
 
+	uint32_t fetch();
   int Execute();
 	void execute_loop();
 	void decode_start(uint32_t inst);
@@ -28,7 +29,6 @@ public:
   mem::Mem &mem() { return mem_; }
 
 private:
-	uint32_t fetch();
   
 	cpu::Cpu cpu_;
   mem::Mem mem_;
