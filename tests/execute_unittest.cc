@@ -9,7 +9,7 @@
 
 TEST(DataProcessingImm, ADD_SUB) {
 	std::string qqq;
-	uint64_t w0, w1, ans, imm;
+	uint64_t w0, ans, imm;
 	uint32_t inst;
 	char c;
 	int cpsr[4];
@@ -25,7 +25,8 @@ TEST(DataProcessingImm, ADD_SUB) {
 
 	std::string s;
 	while (getline(f, s)){
-		printf("-------------\n");
+		printf("-----------------------\n");
+		printf("[expected]\n");
 		// imm
 		std::istringstream ssimm(s);
 		ssimm >> qqq >> std::hex >> imm;
@@ -54,6 +55,7 @@ TEST(DataProcessingImm, ADD_SUB) {
 		printf("n=%d z=%d c=%d v=%d\n", cpsr[0], cpsr[1], cpsr[2], cpsr[3]);
 
 		// execute
+		printf("[actual]\n");
 		inst = sys.fetch();
 		sys.cpu().xregs[0] = w0;
 		sys.decode_start(inst);
