@@ -52,7 +52,6 @@ format: $(SRC) $(HEADER) $(MAIN)
 clean:
 	find ./ -type f -name "*.o" -or -name "*.d" -or -name "*.out" | xargs rm -rf
 	rm -f $(TARGET) $(TEST_TARGET) $(TEST_GENDATA) $(OBJ) $(TEST_OBJ) $(DEP) main.o main.d $(BIN) tests/tmp.o tmp.o
-	rm -f ./tests/data/*.s ./tests/data/*.bin
 
 .PHONY: all test run run-test format clean
 

@@ -21,7 +21,7 @@ printf "QQQIMM 0xfff\n"
 run
 end
 
-b adds_as
+b test_as
 set verbose off
 display/i $pc
 start

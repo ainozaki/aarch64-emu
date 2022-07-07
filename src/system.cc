@@ -191,8 +191,10 @@ static uint64_t add_imm(uint64_t x, uint64_t y, uint8_t carry_in) {
 
 static uint32_t add_imm_s32(uint32_t x, uint32_t y, uint8_t carry_in,
                           core::cpu::CPSR &cpsr) {
-  uint64_t unsigned_sum = x + y + carry_in;
-  int64_t signed_sum = (int32_t)x + (int32_t)y + carry_in;
+	int32_t sx = (int32_t)x;
+	int32_t sy = (int32_t)y;
+  uint64_t unsigned_sum = (uint64_t)x + (uint64_t)y + (uint64_t)carry_in;
+  int64_t signed_sum = (int64_t)sx + (int64_t)sy + (uint64_t)carry_in;
   uint32_t result = unsigned_sum & bitutil::mask(32);
 
   cpsr.N = bitutil::bit(result, 31);
@@ -207,8 +209,10 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in,
 	if (!if_64bit){
 		return add_imm_s32(x, y, carry_in, cpsr);
 	}
-  uint128_t unsigned_sum = x + y + carry_in;
-  int128_t signed_sum = (int64_t)x + (int64_t)y + carry_in;
+	int64_t sx = (int64_t)x;
+	int64_t sy = (int64_t)y;
+  uint128_t unsigned_sum = (uint128_t)x + (uint128_t)y + (uint128_t)carry_in;
+  int128_t signed_sum = (int128_t)sx + (int128_t)sy + (uint128_t)carry_in;
   uint64_t result = unsigned_sum & bitutil::mask(64);
 
   cpsr.N = bitutil::bit64(result, 63);

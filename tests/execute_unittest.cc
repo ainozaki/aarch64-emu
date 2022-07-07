@@ -7,7 +7,7 @@
 #include <sstream>
 #include <string>
 
-TEST(DataProcessingImm, ADD_SUB) {
+TEST(DataProcessingImm, ADDS) {
 	std::string qqq;
 	uint64_t w0, ans, imm;
 	uint32_t inst;
@@ -62,12 +62,10 @@ TEST(DataProcessingImm, ADD_SUB) {
 		sys.cpu().increment_pc();
 
 		EXPECT_EQ(sys.cpu().xregs[1], ans);
-		/*
 		EXPECT_EQ(cpsr[0], sys.cpu().cpsr.N);
 		EXPECT_EQ(cpsr[1], sys.cpu().cpsr.Z);
 		EXPECT_EQ(cpsr[2], sys.cpu().cpsr.C);
 		EXPECT_EQ(cpsr[3], sys.cpu().cpsr.V);
-		*/
 	}
 }
 
