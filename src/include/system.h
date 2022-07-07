@@ -20,24 +20,23 @@ public:
 
   SystemResult Init();
 
-	uint32_t fetch();
+  uint32_t fetch();
   int Execute();
-	void execute_loop();
-	void decode_start(uint32_t inst);
+  void execute_loop();
+  void decode_start(uint32_t inst);
 
   cpu::Cpu &cpu() { return cpu_; }
   mem::Mem &mem() { return mem_; }
 
 private:
-  
-	cpu::Cpu cpu_;
+  cpu::Cpu cpu_;
   mem::Mem mem_;
-	const char *filename_;
+  const char *filename_;
 
   void decode_sme_encodings(uint32_t inst);
   void decode_unallocated(uint32_t inst);
   void decode_sve_encodings(uint32_t inst);
-	void decode_loads_and_stores(uint32_t inst);
+  void decode_loads_and_stores(uint32_t inst);
   void decode_data_processing_imm(uint32_t inst);
   void decode_data_processing_reg(uint32_t inst);
   void decode_data_processing_float(uint32_t inst);
@@ -61,9 +60,9 @@ private:
   void decode_bitfield(uint32_t inst);
   void decode_extract(uint32_t inst);
 
-	/* Branches, Exception Generating and System instructions */
-	void decode_conditional_branch_imm(uint32_t inst);
-	void decode_unconditional_branch_imm(uint32_t inst);
+  /* Branches, Exception Generating and System instructions */
+  void decode_conditional_branch_imm(uint32_t inst);
+  void decode_unconditional_branch_imm(uint32_t inst);
   void decode_compare_and_branch_imm(uint32_t inst);
 };
 

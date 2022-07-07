@@ -16,14 +16,14 @@ public:
   Mem(System *system);
   ~Mem() = default;
 
-	SystemResult init_mem(const char *rawfile);
+  SystemResult init_mem(const char *rawfile);
   void clean_mem();
 
   void *get_ptr(uint64_t vaddr);
 
   void write(uint8_t size, uint64_t addr, uint64_t value);
   uint64_t read(uint8_t size, uint64_t addr);
-	uint32_t read_inst(uint64_t pc);
+  uint32_t read_inst(uint64_t pc);
 
   uint8_t *mem_;
   uint8_t *text_;
@@ -39,8 +39,8 @@ private:
   uint32_t read_32(const void *addr);
   uint64_t read_64(const void *addr);
 
-	uint64_t key;
-	bool no_text = false;
+  uint64_t key;
+  bool no_text = false;
 
   System *system_;
 };

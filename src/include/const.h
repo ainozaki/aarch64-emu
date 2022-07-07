@@ -1,6 +1,6 @@
 #pragma once
 
-enum class SystemResult{
-	Success,
-	ErrorMemory,
+enum class SystemResult {
+  Success,
+  ErrorMemory,
 };

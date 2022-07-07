@@ -8,172 +8,172 @@
 #include <string>
 
 TEST(DataProcessingImm, ADDS) {
-	std::string qqq;
-	uint64_t w0, ans, imm;
-	uint32_t inst;
-	char c;
-	int cpsr[4];
+  std::string qqq;
+  uint64_t w0, ans, imm;
+  uint32_t inst;
+  char c;
+  int cpsr[4];
 
   core::System sys("tests/data/adds.bin");
   sys.Init();
 
-	std::ifstream f("tests/data/adds.txt");
-	if (f.fail()){
-		fprintf(stderr, "ifstream\n");
-		return;
-	}
+  std::ifstream f("tests/data/adds.txt");
+  if (f.fail()) {
+    fprintf(stderr, "ifstream\n");
+    return;
+  }
 
-	std::string s;
-	while (getline(f, s)){
-		printf("-----------------------\n");
-		printf("[expected]\n");
-		// imm
-		std::istringstream ssimm(s);
-		ssimm >> qqq >> std::hex >> imm;
-		printf("imm = 0x%016lx\n", imm);
-		
-		// input
-		getline(f,s);
-		std::istringstream ssin(s);
-		ssin >> qqq >> std::hex >> w0;
-		printf("w0  = 0x%016lx\n", w0);
-		
-		// ans
-		getline(f,s);
-		std::istringstream ssans(s);
-		ssans >> qqq >> std::hex >> ans;
-		printf("ans = 0x%016lx\n", ans);
+  std::string s;
+  while (getline(f, s)) {
+    printf("-----------------------\n");
+    printf("[expected]\n");
+    // imm
+    std::istringstream ssimm(s);
+    ssimm >> qqq >> std::hex >> imm;
+    printf("imm = 0x%016lx\n", imm);
 
-		// flag
-		getline(f,s);
-		std::istringstream ssflag(s);
-		ssflag >> qqq;
-		for (int i = 0; i < 4; i++){
-			ssflag >> c;
-			cpsr[i] = (c != '-');
-		}
-		printf("n=%d z=%d c=%d v=%d\n", cpsr[0], cpsr[1], cpsr[2], cpsr[3]);
+    // input
+    getline(f, s);
+    std::istringstream ssin(s);
+    ssin >> qqq >> std::hex >> w0;
+    printf("w0  = 0x%016lx\n", w0);
 
-		// execute
-		printf("[actual]\n");
-		inst = sys.fetch();
-		sys.cpu().xregs[0] = w0;
-		sys.decode_start(inst);
-		sys.cpu().increment_pc();
+    // ans
+    getline(f, s);
+    std::istringstream ssans(s);
+    ssans >> qqq >> std::hex >> ans;
+    printf("ans = 0x%016lx\n", ans);
 
-		EXPECT_EQ(sys.cpu().xregs[1], ans);
-		EXPECT_EQ(cpsr[0], sys.cpu().cpsr.N);
-		EXPECT_EQ(cpsr[1], sys.cpu().cpsr.Z);
-		EXPECT_EQ(cpsr[2], sys.cpu().cpsr.C);
-		EXPECT_EQ(cpsr[3], sys.cpu().cpsr.V);
-	}
+    // flag
+    getline(f, s);
+    std::istringstream ssflag(s);
+    ssflag >> qqq;
+    for (int i = 0; i < 4; i++) {
+      ssflag >> c;
+      cpsr[i] = (c != '-');
+    }
+    printf("n=%d z=%d c=%d v=%d\n", cpsr[0], cpsr[1], cpsr[2], cpsr[3]);
+
+    // execute
+    printf("[actual]\n");
+    inst = sys.fetch();
+    sys.cpu().xregs[0] = w0;
+    sys.decode_start(inst);
+    sys.cpu().increment_pc();
+
+    EXPECT_EQ(sys.cpu().xregs[1], ans);
+    EXPECT_EQ(cpsr[0], sys.cpu().cpsr.N);
+    EXPECT_EQ(cpsr[1], sys.cpu().cpsr.Z);
+    EXPECT_EQ(cpsr[2], sys.cpu().cpsr.C);
+    EXPECT_EQ(cpsr[3], sys.cpu().cpsr.V);
+  }
 }
 
 TEST(DataProcessingImm, SUBS) {
-	std::string qqq;
-	uint64_t w0, ans, imm;
-	uint32_t inst;
-	char c;
-	int cpsr[4];
+  std::string qqq;
+  uint64_t w0, ans, imm;
+  uint32_t inst;
+  char c;
+  int cpsr[4];
 
   core::System sys("tests/data/subs.bin");
   sys.Init();
 
-	std::ifstream f("tests/data/subs.txt");
-	if (f.fail()){
-		fprintf(stderr, "ifstream\n");
-		return;
-	}
+  std::ifstream f("tests/data/subs.txt");
+  if (f.fail()) {
+    fprintf(stderr, "ifstream\n");
+    return;
+  }
 
-	std::string s;
-	while (getline(f, s)){
-		printf("-----------------------\n");
-		printf("[expected]\n");
-		// imm
-		std::istringstream ssimm(s);
-		ssimm >> qqq >> std::hex >> imm;
-		printf("imm = 0x%016lx\n", imm);
-		
-		// input
-		getline(f,s);
-		std::istringstream ssin(s);
-		ssin >> qqq >> std::hex >> w0;
-		printf("w0  = 0x%016lx\n", w0);
-		
-		// ans
-		getline(f,s);
-		std::istringstream ssans(s);
-		ssans >> qqq >> std::hex >> ans;
-		printf("ans = 0x%016lx\n", ans);
+  std::string s;
+  while (getline(f, s)) {
+    printf("-----------------------\n");
+    printf("[expected]\n");
+    // imm
+    std::istringstream ssimm(s);
+    ssimm >> qqq >> std::hex >> imm;
+    printf("imm = 0x%016lx\n", imm);
 
-		// flag
-		getline(f,s);
-		std::istringstream ssflag(s);
-		ssflag >> qqq;
-		for (int i = 0; i < 4; i++){
-			ssflag >> c;
-			cpsr[i] = (c != '-');
-		}
-		printf("n=%d z=%d c=%d v=%d\n", cpsr[0], cpsr[1], cpsr[2], cpsr[3]);
+    // input
+    getline(f, s);
+    std::istringstream ssin(s);
+    ssin >> qqq >> std::hex >> w0;
+    printf("w0  = 0x%016lx\n", w0);
 
-		// execute
-		printf("[actual]\n");
-		inst = sys.fetch();
-		sys.cpu().xregs[0] = w0;
-		sys.decode_start(inst);
-		sys.cpu().increment_pc();
+    // ans
+    getline(f, s);
+    std::istringstream ssans(s);
+    ssans >> qqq >> std::hex >> ans;
+    printf("ans = 0x%016lx\n", ans);
 
-		EXPECT_EQ(sys.cpu().xregs[1], ans);
-		EXPECT_EQ(cpsr[0], sys.cpu().cpsr.N);
-		EXPECT_EQ(cpsr[1], sys.cpu().cpsr.Z);
-		EXPECT_EQ(cpsr[2], sys.cpu().cpsr.C);
-		EXPECT_EQ(cpsr[3], sys.cpu().cpsr.V);
-	}
+    // flag
+    getline(f, s);
+    std::istringstream ssflag(s);
+    ssflag >> qqq;
+    for (int i = 0; i < 4; i++) {
+      ssflag >> c;
+      cpsr[i] = (c != '-');
+    }
+    printf("n=%d z=%d c=%d v=%d\n", cpsr[0], cpsr[1], cpsr[2], cpsr[3]);
+
+    // execute
+    printf("[actual]\n");
+    inst = sys.fetch();
+    sys.cpu().xregs[0] = w0;
+    sys.decode_start(inst);
+    sys.cpu().increment_pc();
+
+    EXPECT_EQ(sys.cpu().xregs[1], ans);
+    EXPECT_EQ(cpsr[0], sys.cpu().cpsr.N);
+    EXPECT_EQ(cpsr[1], sys.cpu().cpsr.Z);
+    EXPECT_EQ(cpsr[2], sys.cpu().cpsr.C);
+    EXPECT_EQ(cpsr[3], sys.cpu().cpsr.V);
+  }
 }
 
 TEST(Branch, b) {
-	std::string qqq;
-	uint64_t w1, w2, w3;
-	uint32_t inst;
+  std::string qqq;
+  uint64_t w1, w2, w3;
+  uint32_t inst;
 
   core::System sys("tests/data/b.bin");
   sys.Init();
 
-	std::ifstream f("tests/data/b.txt");
-	if (f.fail()){
-		fprintf(stderr, "ifstream\n");
-		return;
-	}
+  std::ifstream f("tests/data/b.txt");
+  if (f.fail()) {
+    fprintf(stderr, "ifstream\n");
+    return;
+  }
 
-	// init
-	for (int i = 0; i < 3; i++){
-		inst = sys.fetch();
-		sys.decode_start(inst);
-		sys.cpu().increment_pc();
-	}
+  // init
+  for (int i = 0; i < 3; i++) {
+    inst = sys.fetch();
+    sys.decode_start(inst);
+    sys.cpu().increment_pc();
+  }
 
-	std::string s;
-	while (getline(f, s)){
-		printf("-----------------------\n");
-		printf("[expected]\n");
-		// w1, w2, w3
-		std::istringstream ssw(s);
-		ssw >> qqq >> std::hex >> w1 >> w2 >> w3;
-		printf("w1=0x%016lx, w2=0x%016lx, w3=0x%016lx\n", w1, w2, w3);
-		
-		// flag
-		getline(f,s);
+  std::string s;
+  while (getline(f, s)) {
+    printf("-----------------------\n");
+    printf("[expected]\n");
+    // w1, w2, w3
+    std::istringstream ssw(s);
+    ssw >> qqq >> std::hex >> w1 >> w2 >> w3;
+    printf("w1=0x%016lx, w2=0x%016lx, w3=0x%016lx\n", w1, w2, w3);
 
-		// execute
-		printf("[actual]\n");
-		inst = sys.fetch();
-		sys.decode_start(inst);
-		sys.cpu().increment_pc();
+    // flag
+    getline(f, s);
 
-		EXPECT_EQ(sys.cpu().xregs[1], w1);
-		EXPECT_EQ(sys.cpu().xregs[2], w2);
-		EXPECT_EQ(sys.cpu().xregs[3], w3);
-	}
+    // execute
+    printf("[actual]\n");
+    inst = sys.fetch();
+    sys.decode_start(inst);
+    sys.cpu().increment_pc();
+
+    EXPECT_EQ(sys.cpu().xregs[1], w1);
+    EXPECT_EQ(sys.cpu().xregs[2], w2);
+    EXPECT_EQ(sys.cpu().xregs[3], w3);
+  }
 }
 
 TEST(DataProcessingImm, MoveWide) {

@@ -47,7 +47,7 @@ run-test:
 	./$(TEST_TARGET)
 
 format: $(SRC) $(HEADER) $(MAIN)
-	clang-format -i $^
+	find ./ -type f -name "*.cc" -or -name "*.h" | xargs clang-format -i
 
 clean:
 	find ./ -type f -name "*.o" -or -name "*.d" -or -name "*.out" | xargs rm -rf

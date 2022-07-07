@@ -190,9 +190,9 @@ static uint64_t add_imm(uint64_t x, uint64_t y, uint8_t carry_in) {
 }
 
 static uint32_t add_imm_s32(uint32_t x, uint32_t y, uint8_t carry_in,
-                          core::cpu::CPSR &cpsr) {
-	int32_t sx = (int32_t)x;
-	int32_t sy = (int32_t)y;
+                            core::cpu::CPSR &cpsr) {
+  int32_t sx = (int32_t)x;
+  int32_t sy = (int32_t)y;
   uint64_t unsigned_sum = (uint64_t)x + (uint64_t)y + (uint64_t)carry_in;
   int64_t signed_sum = (int64_t)sx + (int64_t)sy + (uint64_t)carry_in;
   uint32_t result = unsigned_sum & bitutil::mask(32);
@@ -206,11 +206,11 @@ static uint32_t add_imm_s32(uint32_t x, uint32_t y, uint8_t carry_in,
 
 static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in,
                           core::cpu::CPSR &cpsr, bool if_64bit) {
-	if (!if_64bit){
-		return add_imm_s32(x, y, carry_in, cpsr);
-	}
-	int64_t sx = (int64_t)x;
-	int64_t sy = (int64_t)y;
+  if (!if_64bit) {
+    return add_imm_s32(x, y, carry_in, cpsr);
+  }
+  int64_t sx = (int64_t)x;
+  int64_t sy = (int64_t)y;
   uint128_t unsigned_sum = (uint128_t)x + (uint128_t)y + (uint128_t)carry_in;
   int128_t signed_sum = (int128_t)sx + (int128_t)sy + (uint128_t)carry_in;
   uint64_t result = unsigned_sum & bitutil::mask(64);
@@ -261,20 +261,25 @@ void System::decode_add_sub_imm(uint32_t inst) {
       /* SUBS */
       LOG_CPU("SUBS: rd=%d, xregs[rn]=%lu, imm=0x%lx\n", rd, cpu_.xregs[rn],
               ~imm);
-      result = add_imm_s(cpu_.xregs[rn], ~imm, /*carry-in=*/1, cpu_.cpsr, if_64bit);
+      result =
+          add_imm_s(cpu_.xregs[rn], ~imm, /*carry-in=*/1, cpu_.cpsr, if_64bit);
     } else {
       /* ADDS */
-      LOG_CPU("ADDS: rd=%d, xregs[rn]=%lu, imm=0x%lx, if_64bit=%d\n", rd, cpu_.xregs[rn], imm, if_64bit);
-      result = add_imm_s(cpu_.xregs[rn], imm, /*carry-in=*/0, cpu_.cpsr, if_64bit);
+      LOG_CPU("ADDS: rd=%d, xregs[rn]=%lu, imm=0x%lx, if_64bit=%d\n", rd,
+              cpu_.xregs[rn], imm, if_64bit);
+      result =
+          add_imm_s(cpu_.xregs[rn], imm, /*carry-in=*/0, cpu_.cpsr, if_64bit);
     }
   } else {
     if (if_sub) {
       /* SUB */
-      LOG_CPU("SUB: rd=%d, xregs[rn]=%lu, imm=0x%lx\n", rd, cpu_.xregs[rn], ~imm);
+      LOG_CPU("SUB: rd=%d, xregs[rn]=%lu, imm=0x%lx\n", rd, cpu_.xregs[rn],
+              ~imm);
       result = add_imm(cpu_.xregs[rn], ~imm, /*carry-in=*/1);
     } else {
       /* ADD */
-      LOG_CPU("ADD: rd=%d, xregs[rn]=%lu, imm=0x%lx\n", rd, cpu_.xregs[rn], imm);
+      LOG_CPU("ADD: rd=%d, xregs[rn]=%lu, imm=0x%lx\n", rd, cpu_.xregs[rn],
+              imm);
       result = add_imm(cpu_.xregs[rn], imm, /*carry-in=*/0);
     }
   }
@@ -795,11 +800,11 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
          @o1: 1->unallocated
          @o0: 0->B.cond, 1->BC.cond
 
-				 BC.cond: 
-				 - "Branch Consistent conditionally to a label at a PC-relative offset, 
-				 with a hint that this branch will behave very consistently and
-				 is very unlikely to change direction." 
-				 - same as B.cond in this emulator.
+                                 BC.cond:
+                                 - "Branch Consistent conditionally to a label
+   at a PC-relative offset, with a hint that this branch will behave very
+   consistently and is very unlikely to change direction."
+                                 - same as B.cond in this emulator.
 */
 static bool check_b_flag(uint8_t cond, core::cpu::CPSR &cpsr) {
   switch (cond) {

@@ -23,8 +23,8 @@ public:
   ~Cpu() = default;
 
   void update_lower32(uint8_t reg, uint32_t value);
-	void increment_pc(){pc += 4;}
-	void set_pc(uint64_t new_pc){pc = new_pc;}
+  void increment_pc() { pc += 4; }
+  void set_pc(uint64_t new_pc) { pc = new_pc; }
 
   uint64_t pc;
 
