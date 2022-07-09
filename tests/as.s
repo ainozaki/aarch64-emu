@@ -1,3 +1,24 @@
+.global main
+.global init_reg
+.global test_as
+init_reg:
+	movz x1, #0
+	movz x2, #0
+	movz x3, #0
+test_as:
+	str  lr, [sp, #-16]! // push LR
+	bl call_ok
+	movz x1, #1
+	ldr  lr, [sp], #16    // pop LR
+	ret
+call_ok:
+	movz x3, #3
+	ret
+call_dummy:
+	movz x2, #2
+	ret
+
+/*
 .global init_reg
 .global adds_as
 .global subs_as
@@ -24,7 +45,7 @@ subs_as:
  subs w1, w0, 0x801
  subs w1, w0, 0xfff
  ret
-test_as:
+b_as:
 	movz x1, #1
 	b test3_as
 	ret
@@ -34,3 +55,4 @@ test2_as:
 test3_as:
 	movz x3, #3
 	ret
+*/

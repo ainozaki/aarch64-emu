@@ -71,6 +71,22 @@ void create_as_b() {
   fclose(f);
 }
 
+void create_as_ret() {
+  const char *filename = "tests/data/ret.s";
+  FILE *f;
+
+  f = fopen(filename, "r");
+  if (!f) {
+    perror("fopen");
+    return;
+  }
+  printf("%s is manually created\n", filename);
+  init_reg();
+  test_as(/*dummy*/ 0);
+
+  fclose(f);
+}
+
 void create_as(const char *asname) {
   if (!strcmp(asname, "adds")) {
     create_as_adds();
@@ -78,6 +94,8 @@ void create_as(const char *asname) {
     create_as_subs();
   } else if (!strcmp(asname, "b")) {
     create_as_b();
+  } else if (!strcmp(asname, "ret")) {
+    create_as_ret();
   } else {
     fprintf(stderr, "asname %s not match\n", asname);
   }

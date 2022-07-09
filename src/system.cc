@@ -169,6 +169,13 @@ void System::decode_branches(uint32_t inst) {
       unsupported();
     }
     break;
+  case 6:
+    if (bitutil::bit(inst, 25) == 1) {
+      decode_unconditional_branch_reg(inst);
+    } else {
+      unsupported();
+    }
+    break;
   default:
     unsupported();
     break;
@@ -882,6 +889,50 @@ void System::decode_conditional_branch_imm(uint32_t inst) {
       cpu_.set_pc(cpu_.pc - 4 + offset);
     }
   }
+}
+
+/*
+         Unconditional branch (reg)
+
+          31     25  24  21 20  16  15   10 9    5  4    0
+         +---------+-------------------------------------+
+         | 1101011 |  opc  |  op2  |  op3  |  Rn  |  op4  |
+         +---------+-------------------------------------+
+
+         @op:
+*/
+void System::decode_unconditional_branch_reg(uint32_t inst) {
+  uint8_t opc, op2, op3, Rn, op4, n;
+  uint64_t target = cpu_.pc;
+
+  opc = bitutil::shift(inst, 21, 24);
+  op2 = bitutil::shift(inst, 16, 20);
+  op3 = bitutil::shift(inst, 10, 15);
+  Rn = bitutil::shift(inst, 5, 9);
+  op4 = bitutil::shift(inst, 0, 4);
+
+  switch (opc) {
+  case 2:
+    switch (op3) {
+    case 0:
+      if (op4 != 0) {
+        unallocated();
+        break;
+      }
+      // RET
+      n = (Rn == 0) ? 30 : Rn;
+      assert(n <= 31);
+      target = cpu_.xregs[n];
+      LOG_CPU("RET: target=0x%lx\n", target);
+      break;
+    default:
+      unsupported();
+    }
+    break;
+  default:
+    unsupported();
+  }
+  cpu_.set_pc(target);
 }
 
 /*

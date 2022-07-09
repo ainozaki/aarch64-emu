@@ -19,7 +19,7 @@ TEST_GENDATA = emu-testgen
 all: $(TARGET)
 test: $(TEST_TARGET) $(TEST_GENDATA)
 
-$(TARGET): $(OBJ) main.o
+$(TARGET): $(OBJ) src/main.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(TEST_TARGET): $(OBJ) $(TEST_OBJ)
