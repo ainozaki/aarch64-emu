@@ -50,7 +50,7 @@ format: $(SRC) $(HEADER) $(MAIN)
 	find ./ -type f -name "*.cc" -or -name "*.h" | xargs clang-format -i
 
 clean:
-	find ./ -type f -name "*.o" -or -name "*.d" -or -name "*.out" | xargs rm -rf
+	find ./ -type f -name "*.o" -or -name "*.d" -or -name "*.out" -or -name "*.bin" | xargs rm -rf
 	rm -f $(TARGET) $(TEST_TARGET) $(TEST_GENDATA) $(OBJ) $(TEST_OBJ) $(DEP) main.o main.d $(BIN) tests/tmp.o tmp.o
 
 .PHONY: all test run run-test format clean
