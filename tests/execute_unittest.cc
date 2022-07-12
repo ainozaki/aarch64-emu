@@ -181,7 +181,7 @@ TEST(Branch, ret) {
   uint64_t w1, w2, w3, w4;
   uint32_t inst;
 
-  core::System sys("tests/data/ret.bin", /*initaddr=*/12);
+  core::System sys("tests/data/ret.bin", /*initaddr=*/0x8);
   sys.Init();
 
   std::ifstream f("tests/data/ret.txt");
@@ -217,7 +217,6 @@ TEST(Branch, ret) {
     printf("[actual]\n");
     inst = sys.fetch();
     sys.decode_start(inst);
-    sys.cpu().increment_pc();
   }
   EXPECT_EQ(sys.cpu().xregs[1], w1);
   EXPECT_EQ(sys.cpu().xregs[2], w2);

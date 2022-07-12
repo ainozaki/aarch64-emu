@@ -1,15 +1,15 @@
 => 0xaaaaaaaabd7c <main(int, char**)+16>:	ldr	w0, [sp, #28]
 => 0xaaaaaaaac028 <ret_test_enter+4>:	bl	0xaaaaaaaac044 <init_reg>
-QQQW1234 0x0 0x0 0xafb1fae230ff5e1d 0xaaaaaaaac477
+QQQW1234 0x0 0x0 0x2fcb7caa38e0f75 0xaaaaaaaac477
 QQQFLG   - Z C -
 => 0xaaaaaaaac044 <init_reg>:	mov	x1, #0x0                   	// #0
-QQQW1234 0x0 0x0 0xafb1fae230ff5e1d 0xaaaaaaaac477
+QQQW1234 0x0 0x0 0x2fcb7caa38e0f75 0xaaaaaaaac477
 QQQFLG   - Z C -
 => 0xaaaaaaaac048 <init_reg+4>:	mov	x2, #0x0                   	// #0
-QQQW1234 0x0 0x0 0xafb1fae230ff5e1d 0xaaaaaaaac477
+QQQW1234 0x0 0x0 0x2fcb7caa38e0f75 0xaaaaaaaac477
 QQQFLG   - Z C -
 => 0xaaaaaaaac04c <init_reg+8>:	mov	x3, #0x0                   	// #0
-QQQW1234 0x0 0x0 0xafb1fae230ff5e1d 0xaaaaaaaac477
+QQQW1234 0x0 0x0 0x2fcb7caa38e0f75 0xaaaaaaaac477
 QQQFLG   - Z C -
 => 0xaaaaaaaac050 <init_reg+12>:	mov	x4, #0x0                   	// #0
 QQQW1234 0x0 0x0 0x0 0xaaaaaaaac477

@@ -62,7 +62,7 @@ SystemResult Mem::init_mem(const char *rawfile, const uint64_t initaddr) {
 
   system_->cpu().pc = (uint64_t)text_ + initaddr;
   printf("mem: set initial PC\n");
-  printf("mem: PC = %p\n", text_);
+  printf("mem: PC = 0x%lx\n", system_->cpu().pc);
 
   return SystemResult::Success;
 }
