@@ -1,1 +1,47 @@
 => 0xaaaaaaaabd78 <main(int, char**)+16>:	ldr	w0, [sp, #28]
+=> 0xaaaaaaaac044 <ret_test_enter+4>:	bl	0xaaaaaaaac060 <init_reg>
+QQQW1234 0x0 0x0 0xb7e929ba1205fbca 0xaaaaaaaac477
+QQQFLG   - Z C -
+=> 0xaaaaaaaac060 <init_reg>:	mov	x1, #0x0                   	// #0
+QQQW1234 0x0 0x0 0xb7e929ba1205fbca 0xaaaaaaaac477
+QQQFLG   - Z C -
+=> 0xaaaaaaaac064 <init_reg+4>:	mov	x2, #0x0                   	// #0
+QQQW1234 0x0 0x0 0xb7e929ba1205fbca 0xaaaaaaaac477
+QQQFLG   - Z C -
+=> 0xaaaaaaaac068 <init_reg+8>:	mov	x3, #0x0                   	// #0
+QQQW1234 0x0 0x0 0xb7e929ba1205fbca 0xaaaaaaaac477
+QQQFLG   - Z C -
+=> 0xaaaaaaaac06c <init_reg+12>:	mov	x4, #0x0                   	// #0
+QQQW1234 0x0 0x0 0x0 0xaaaaaaaac477
+QQQFLG   - Z C -
+=> 0xaaaaaaaac070 <init_reg+16>:	mov	x5, #0x0                   	// #0
+QQQW1234 0x0 0x0 0x0 0x0
+QQQFLG   - Z C -
+=> 0xaaaaaaaac074 <init_reg+20>:	ret
+QQQW1234 0x0 0x0 0x0 0x0
+QQQFLG   - Z C -
+=> 0xaaaaaaaac048 <ret_test_enter+8>:	bl	0xaaaaaaaac020 <call_forward>
+QQQW1234 0x0 0x0 0x0 0x0
+QQQFLG   - Z C -
+=> 0xaaaaaaaac020 <call_forward>:	mov	x4, #0x4                   	// #4
+QQQW1234 0x0 0x0 0x0 0x0
+QQQFLG   - Z C -
+=> 0xaaaaaaaac024 <call_forward+4>:	ret
+QQQW1234 0x0 0x0 0x0 0x4
+QQQFLG   - Z C -
+=> 0xaaaaaaaac04c <ret_test_enter+12>:	bl	0xaaaaaaaac080 <call_back>
+QQQW1234 0x0 0x0 0x0 0x4
+QQQFLG   - Z C -
+=> 0xaaaaaaaac080 <call_back>:	mov	x3, #0x3                   	// #3
+QQQW1234 0x0 0x0 0x0 0x4
+QQQFLG   - Z C -
+=> 0xaaaaaaaac084 <call_back+4>:	ret
+QQQW1234 0x0 0x0 0x3 0x4
+QQQFLG   - Z C -
+=> 0xaaaaaaaac050 <ret_test_enter+16>:	mov	x1, #0x1                   	// #1
+QQQW1234 0x0 0x0 0x3 0x4
+QQQFLG   - Z C -
+=> 0xaaaaaaaac054 <ret_test_enter+20>:	mov	x5, #0x1                   	// #1
+QQQW1234 0x1 0x0 0x3 0x4
+QQQFLG   - Z C -
+=> 0xaaaaaaaac058 <ret_test_enter+24>:	ldr	x30, [sp], #16
