@@ -1,3 +1,10 @@
+.global subs_test_enter
+subs_test_enter:
+	str  lr, [sp, #-16]! // push LR
+	bl test_subs
+	ldr  lr, [sp], #16    // pop LR
+	ret
+test_subs:
 SUBS W1, W0, 0x00000000
 SUBS W1, W0, 0x00000001
 SUBS W1, W0, 0x000007ff

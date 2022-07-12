@@ -1,4 +1,4 @@
-CXXFLAGS=-O2 -Wall -Wextra -I./src/include -pthread -DNDEBUG -fsanitize=address
+CXXFLAGS=-g -Wall -Wextra -I./src/include -pthread -DNDEBUG -fsanitize=address
 LDFLAGS= -fsanitize=address
 LDFLAGS_TEST= $(LDFLAGS) -L/usr/local/lib -lgtest -lgtest_main -lpthread
 
@@ -8,6 +8,12 @@ SRC = \
 	src/system.cc
 TEST_OBJ = \
 	tests/execute_unittest.o
+TEST_GENOBJ =\
+	tests/create_testdata.o \
+	tests/data/adds.o \
+	tests/data/subs.o \
+	tests/data/b.o \
+	tests/data/ret.o
 
 OBJ=$(SRC:.cc=.o)
 DEP=$(SRC:.cc=.d)
@@ -25,7 +31,7 @@ $(TARGET): $(OBJ) src/main.o
 $(TEST_TARGET): $(OBJ) $(TEST_OBJ)
 	$(CXX) -o $@ $^ $(LDFLAGS_TEST)
 
-$(TEST_GENDATA): tests/create_testdata.o tests/as.o
+$(TEST_GENDATA): $(TEST_GENOBJ)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 	./tests/gen-testdata.sh
 

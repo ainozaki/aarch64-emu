@@ -923,7 +923,7 @@ void System::decode_unconditional_branch_reg(uint32_t inst) {
       n = (Rn == 0) ? 30 : Rn;
       assert(n <= 31);
       target = cpu_.xregs[n];
-      LOG_CPU("RET: target=0x%lx\n", target);
+      LOG_CPU("RET: target=xregs[%d](0x%lx)\n", n, target);
       break;
     default:
       unsupported();
@@ -961,8 +961,8 @@ void System::decode_unconditional_branch_imm(uint32_t inst) {
     LOG_CPU("B: pc=0x%lx offset=0x%lx\n", cpu_.pc + offset, offset);
     break;
   case 1:
-    LOG_CPU("BL: pc=0x%lx offset=0x%lx\n", cpu_.pc + offset, offset);
-    cpu_.xregs[30] = cpu_.pc;
+    LOG_CPU("BL: pc=0x%lx offset=0x%lx, xregs[30]=0x%lx\n", cpu_.pc + offset, offset, cpu_.pc + 4);
+    cpu_.xregs[30] = cpu_.pc + 4;
     break;
   }
   cpu_.set_pc(cpu_.pc - 4 + offset);
