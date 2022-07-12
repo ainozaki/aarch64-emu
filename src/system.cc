@@ -961,7 +961,8 @@ void System::decode_unconditional_branch_imm(uint32_t inst) {
     LOG_CPU("B: pc=0x%lx offset=0x%lx\n", cpu_.pc + offset, offset);
     break;
   case 1:
-    LOG_CPU("BL: pc=0x%lx offset=0x%lx, xregs[30]=0x%lx\n", cpu_.pc + offset, offset, cpu_.pc + 4);
+    LOG_CPU("BL: pc=0x%lx offset=0x%lx, xregs[30]=0x%lx\n", cpu_.pc + offset,
+            offset, cpu_.pc + 4);
     cpu_.xregs[30] = cpu_.pc + 4;
     break;
   }

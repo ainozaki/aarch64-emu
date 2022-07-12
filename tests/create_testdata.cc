@@ -86,10 +86,10 @@ void create_as_ret() {
     return;
   }
   printf("%s is manually created\n", filename);
-	
-	endflag = 0;
+
+  endflag = 0;
   ret_test_enter();
-	endflag = 1;
+  endflag = 1;
 
   fclose(f);
 }

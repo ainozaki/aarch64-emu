@@ -9,6 +9,7 @@ display/i $pc
 set verbose off
 start
 c
-while !endflag
+#while !endflag
+while $x5!=1
 stepi
 end

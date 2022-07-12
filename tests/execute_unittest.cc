@@ -204,7 +204,8 @@ TEST(Branch, ret) {
     // w1, w2, w3
     std::istringstream ssw(s);
     ssw >> qqq >> std::hex >> w1 >> w2 >> w3 >> w4;
-    printf("w1=0x%016lx, w2=0x%016lx, w3=0x%016lx, w4=0x%016lx\n", w1, w2, w3, w4);
+    printf("w1=0x%016lx, w2=0x%016lx, w3=0x%016lx, w4=0x%016lx\n", w1, w2, w3,
+           w4);
 
     // flag
     getline(f, s);

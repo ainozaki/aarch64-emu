@@ -8,6 +8,7 @@ ret_test:
 	bl call_forward
 	bl call_back
 	movz x1, #1
+	movz x5, #1
 	ret
 ret_test_enter:
 	str  lr, [sp, #-16]! // push LR
@@ -15,6 +16,7 @@ ret_test_enter:
 	bl call_forward
 	bl call_back
 	movz x1, #1
+	movz x5, #1
 	ldr  lr, [sp], #16    // pop LR
 	ret
 init_reg:
@@ -22,6 +24,7 @@ init_reg:
 	movz x2, #0
 	movz x3, #0
 	movz x4, #0
+	movz x5, #0
 	ret
 call_dummy:
 	movz x2, #2
