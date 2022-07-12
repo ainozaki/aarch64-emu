@@ -3,7 +3,7 @@ define hook-stepi
   printf "QQQFLG   %c %c %c %c\n", ($cpsr >> 31) & 1 ? 'N' : '-', ($cpsr >> 30) & 1 ? 'Z' : '-', ($cpsr >> 29) & 1 ? 'C' : '-', ($cpsr >> 28) & 1 ? 'V' : '-'
 end
 
-b ret_test_enter
+b b_test_enter
 
 display/i $pc
 set verbose off

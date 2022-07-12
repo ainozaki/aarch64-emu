@@ -7,7 +7,7 @@ as_all=( \
 	"tests/data/b.s"
 	"tests/data/ret.s"
 	);
-as_new="tests/data/ret.s"
+as_new="tests/data/b.s"
 
 # create expected data
 echo "creating ${as_new%.*}.txt"

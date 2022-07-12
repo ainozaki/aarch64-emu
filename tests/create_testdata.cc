@@ -8,7 +8,7 @@ int endflag = -1;
 extern "C" uint32_t test_as(uint32_t);
 extern "C" uint32_t adds_test_enter(uint32_t);
 extern "C" uint32_t subs_test_enter(uint32_t);
-extern "C" uint32_t b_test_enter(uint32_t);
+extern "C" uint32_t b_test_enter();
 extern "C" uint32_t ret_test_enter();
 extern "C" uint32_t ret_test();
 
@@ -71,7 +71,7 @@ void create_as_b() {
     return;
   }
   printf("%s is manually created\n", filename);
-  b_test_enter(/*dummy*/ 0);
+  b_test_enter();
 
   fclose(f);
 }

@@ -133,10 +133,10 @@ TEST(DataProcessingImm, SUBS) {
 
 TEST(Branch, b) {
   std::string qqq;
-  uint64_t w1, w2, w3;
+  uint64_t w1, w2, w3, w4;
   uint32_t inst;
 
-  core::System sys("tests/data/b.bin", /*initaddr=*/0);
+  core::System sys("tests/data/b.bin", /*initaddr=*/0x10);
   sys.Init();
 
   std::ifstream f("tests/data/b.txt");
@@ -145,35 +145,38 @@ TEST(Branch, b) {
     return;
   }
 
-  // init
-  for (int i = 0; i < 3; i++) {
-    inst = sys.fetch();
-    sys.decode_start(inst);
-    sys.cpu().increment_pc();
-  }
-
   std::string s;
-  while (getline(f, s)) {
+  std::getline(f, s);
+
+  while (std::getline(f, s)) {
     printf("-----------------------\n");
+    // inst
+    std::cout << s << std::endl;
+
     printf("[expected]\n");
     // w1, w2, w3
+    if (!std::getline(f, s)) {
+      break;
+    }
     std::istringstream ssw(s);
-    ssw >> qqq >> std::hex >> w1 >> w2 >> w3;
-    printf("w1=0x%016lx, w2=0x%016lx, w3=0x%016lx\n", w1, w2, w3);
+    ssw >> qqq >> std::hex >> w1 >> w2 >> w3 >> w4;
+    printf("w1=0x%016lx, w2=0x%016lx, w3=0x%016lx, w4=0x%16lx\n", w1, w2, w3,
+           w4);
 
     // flag
-    getline(f, s);
+    if (!std::getline(f, s)) {
+      break;
+    }
 
     // execute
     printf("[actual]\n");
     inst = sys.fetch();
     sys.decode_start(inst);
-    sys.cpu().increment_pc();
-
-    EXPECT_EQ(sys.cpu().xregs[1], w1);
-    EXPECT_EQ(sys.cpu().xregs[2], w2);
-    EXPECT_EQ(sys.cpu().xregs[3], w3);
   }
+  EXPECT_EQ(sys.cpu().xregs[1], w1);
+  EXPECT_EQ(sys.cpu().xregs[2], w2);
+  EXPECT_EQ(sys.cpu().xregs[3], w3);
+  EXPECT_EQ(sys.cpu().xregs[4], w4);
 }
 
 TEST(Branch, ret) {
@@ -200,7 +203,7 @@ TEST(Branch, ret) {
 
     printf("[expected]\n");
     // w1, w2, w3
-    if (!getline(f, s)) {
+    if (!std::getline(f, s)) {
       break;
     }
     std::istringstream ssw(s);
@@ -209,7 +212,7 @@ TEST(Branch, ret) {
            w4);
 
     // flag
-    if (!getline(f, s)) {
+    if (!std::getline(f, s)) {
       break;
     }
 

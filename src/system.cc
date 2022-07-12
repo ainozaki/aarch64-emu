@@ -92,7 +92,7 @@ void System::decode_start(uint32_t inst) {
   uint8_t op1;
   op1 = bitutil::shift(inst, 25, 28);
 
-	LOG_CPU("PC=0x%lx\n", cpu_.pc);
+  LOG_CPU("PC=0x%lx\n", cpu_.pc);
   const decode_func decode_inst_tbl[] = {
       &System::decode_sme_encodings,
       &System::decode_unallocated,
@@ -188,22 +188,22 @@ void System::decode_branches(uint32_t inst) {
   }
 }
 void System::decode_pc_rel(uint32_t inst) {
-	LOG_CPU("pc_rel %d\n", inst); 
+  LOG_CPU("pc_rel %d\n", inst);
   cpu_.increment_pc();
 }
 
 void System::decode_sme_encodings(uint32_t inst) {
-	LOG_CPU("sme_encodings %d\n", inst); 
+  LOG_CPU("sme_encodings %d\n", inst);
   cpu_.increment_pc();
 }
 
 void System::decode_unallocated(uint32_t inst) {
-	LOG_CPU("unallocated %d\n", inst); 
+  LOG_CPU("unallocated %d\n", inst);
   cpu_.increment_pc();
 }
 
 void System::decode_sve_encodings(uint32_t inst) {
-	LOG_CPU("sve_encodings %d\n", inst); 
+  LOG_CPU("sve_encodings %d\n", inst);
   cpu_.increment_pc();
 }
 
@@ -908,10 +908,10 @@ void System::decode_conditional_branch_imm(uint32_t inst) {
       LOG_CPU("B.cond: pc=0x%lx offset=0x%lx, cond=0x%x\n", cpu_.pc + offset,
               offset, cond);
       cpu_.set_pc(cpu_.pc + offset);
-			return;
+      return;
     }
   }
-	cpu_.increment_pc();
+  cpu_.increment_pc();
 }
 
 /*
@@ -981,12 +981,13 @@ void System::decode_unconditional_branch_imm(uint32_t inst) {
 
   switch (op) {
   case 0:
-    LOG_CPU("B: pc=0x%lx offset=0x%lx, jumpto=0x%lx\n", cpu_.pc, offset, cpu_.pc + offset);
+    LOG_CPU("B: pc=0x%lx offset=0x%lx, jumpto=0x%lx\n", cpu_.pc, offset,
+            cpu_.pc + offset);
     break;
   case 1:
     cpu_.xregs[30] = cpu_.pc + 4;
-    LOG_CPU("BL: pc=0x%lx, offset=0x%lx, jumpto=0x%lx, xregs[30]=0x%lx\n", cpu_.pc,
-            offset, cpu_.pc + offset, cpu_.xregs[30]);
+    LOG_CPU("BL: pc=0x%lx, offset=0x%lx, jumpto=0x%lx, xregs[30]=0x%lx\n",
+            cpu_.pc, offset, cpu_.pc + offset, cpu_.xregs[30]);
     break;
   }
   cpu_.set_pc(cpu_.pc + offset);
