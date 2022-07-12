@@ -14,7 +14,7 @@ TEST(DataProcessingImm, ADDS) {
   char c;
   int cpsr[4];
 
-  core::System sys("tests/data/adds.bin");
+  core::System sys("tests/data/adds.bin", /*initaddr=*/0);
   sys.Init();
 
   std::ifstream f("tests/data/adds.txt");
@@ -76,7 +76,7 @@ TEST(DataProcessingImm, SUBS) {
   char c;
   int cpsr[4];
 
-  core::System sys("tests/data/subs.bin");
+  core::System sys("tests/data/subs.bin", /*initaddr=*/0);
   sys.Init();
 
   std::ifstream f("tests/data/subs.txt");
@@ -136,7 +136,7 @@ TEST(Branch, b) {
   uint64_t w1, w2, w3;
   uint32_t inst;
 
-  core::System sys("tests/data/b.bin");
+  core::System sys("tests/data/b.bin", /*initaddr=*/0);
   sys.Init();
 
   std::ifstream f("tests/data/b.txt");
@@ -181,7 +181,7 @@ TEST(Branch, ret) {
   uint64_t w1, w2, w3, w4;
   uint32_t inst;
 
-  core::System sys("tests/data/ret.bin");
+  core::System sys("tests/data/ret.bin", /*initaddr=*/12);
   sys.Init();
 
   std::ifstream f("tests/data/ret.txt");
@@ -190,25 +190,28 @@ TEST(Branch, ret) {
     return;
   }
 
-  // init
-  for (int i = 0; i < 4; i++) {
-    inst = sys.fetch();
-    sys.decode_start(inst);
-    sys.cpu().increment_pc();
-  }
-
   std::string s;
-  while (getline(f, s)) {
+  std::getline(f, s);
+
+  while (std::getline(f, s)) {
     printf("-----------------------\n");
+    // inst
+    std::cout << s << std::endl;
+
     printf("[expected]\n");
     // w1, w2, w3
+    if (!getline(f, s)) {
+      break;
+    }
     std::istringstream ssw(s);
     ssw >> qqq >> std::hex >> w1 >> w2 >> w3 >> w4;
     printf("w1=0x%016lx, w2=0x%016lx, w3=0x%016lx, w4=0x%016lx\n", w1, w2, w3,
            w4);
 
     // flag
-    getline(f, s);
+    if (!getline(f, s)) {
+      break;
+    }
 
     // execute
     printf("[actual]\n");
@@ -223,7 +226,7 @@ TEST(Branch, ret) {
 }
 
 TEST(DataProcessingImm, MoveWide) {
-  core::System sys("");
+  core::System sys("", 0);
   sys.Init();
 
   sys.decode_start(0x91404042); /* ADD X2, X2, 0x10, LSL #12 */
@@ -237,7 +240,7 @@ TEST(DataProcessingImm, MoveWide) {
 }
 
 TEST(DataProcessingImm, Logical) {
-  core::System sys("");
+  core::System sys("", 0);
   sys.Init();
 
   sys.decode_start(0xd2802201); /* MOV X1, #0x110 */
@@ -259,7 +262,7 @@ TEST(DataProcessingImm, Logical) {
 }
 
 TEST(DataProcessingImm, Bitfield) {
-  core::System sys("");
+  core::System sys("", 0);
   sys.Init();
 
   sys.decode_start(0xd2801e22); /* MOV X2, #0x00f1 */
@@ -280,7 +283,7 @@ TEST(DataProcessingImm, Bitfield) {
 }
 
 TEST(Branch, BranchImm) {
-  core::System sys("tests/test_branch.bin");
+  core::System sys("tests/test_branch.bin", 0);
   sys.Init();
   sys.execute_loop();
 

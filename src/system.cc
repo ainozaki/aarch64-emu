@@ -16,8 +16,9 @@ namespace core {
 typedef __attribute__((mode(TI))) unsigned int uint128_t;
 typedef __attribute__((mode(TI))) int int128_t;
 
-System::System(const char *filename)
-    : cpu_(cpu::Cpu(this)), mem_(mem::Mem(this)), filename_(filename) {}
+System::System(const char *filename, const uint64_t initaddr)
+    : cpu_(cpu::Cpu(this)), mem_(mem::Mem(this)), initaddr_(initaddr),
+      filename_(filename) {}
 
 System::~System() {
   // free
@@ -30,7 +31,7 @@ SystemResult System::Init() {
   printf("emu: start emulating\n");
 
   /// mem
-  err = mem_.init_mem(filename_);
+  err = mem_.init_mem(filename_, initaddr_);
   if (err != SystemResult::Success) {
     fprintf(stderr, "emu: failed to initialize mem\n");
     return SystemResult::ErrorMemory;

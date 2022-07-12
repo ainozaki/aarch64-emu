@@ -12,7 +12,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "usage; %s <filename>\n", argv[0]);
   }
   filename = argv[1];
-  core::System system(filename);
+  core::System system(filename, /*initaddr=*/0x0);
 
   err = system.Init();
   if (err != SystemResult::Success) {

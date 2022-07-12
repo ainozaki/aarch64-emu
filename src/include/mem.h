@@ -16,7 +16,7 @@ public:
   Mem(System *system);
   ~Mem() = default;
 
-  SystemResult init_mem(const char *rawfile);
+  SystemResult init_mem(const char *rawfile, const uint64_t initaddr);
   void clean_mem();
 
   void *get_ptr(uint64_t vaddr);

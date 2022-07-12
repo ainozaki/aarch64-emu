@@ -15,7 +15,7 @@ namespace core {
 
 class System {
 public:
-  System(const char *filename);
+  System(const char *filename, const uint64_t initaddr);
   ~System();
 
   SystemResult Init();
@@ -31,6 +31,7 @@ public:
 private:
   cpu::Cpu cpu_;
   mem::Mem mem_;
+  const uint64_t initaddr_;
   const char *filename_;
 
   void decode_sme_encodings(uint32_t inst);

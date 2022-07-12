@@ -28,7 +28,7 @@ void Mem::clean_mem() {
   printf("mem: free mainmem\n");
 }
 
-SystemResult Mem::init_mem(const char *rawfile) {
+SystemResult Mem::init_mem(const char *rawfile, const uint64_t initaddr) {
   FILE *fp;
   size_t readlen;
 
@@ -60,7 +60,7 @@ SystemResult Mem::init_mem(const char *rawfile) {
   printf("mem: load file %s, size 0x%lx\n", rawfile, readlen);
   fclose(fp);
 
-  system_->cpu().pc = (uint64_t)text_;
+  system_->cpu().pc = (uint64_t)text_ + initaddr;
   printf("mem: set initial PC\n");
   printf("mem: PC = %p\n", text_);
 
