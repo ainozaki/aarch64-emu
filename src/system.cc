@@ -469,11 +469,7 @@ void System::decode_move_wide_imm(uint32_t inst) {
     }
     break;
   case 3: /* MOVK */
-    if (if_64bit) {
-      cpu_.xregs[rd] = (cpu_.xregs[rd] & bitutil::mask(48) << 16) | imm;
-    } else {
-      cpu_.xregs[rd] = (cpu_.xregs[rd] & bitutil::mask(16) << 16) | imm;
-    }
+    cpu_.xregs[rd] = cpu_.xregs[rd] | imm;
     break;
   default:
     assert(false);
