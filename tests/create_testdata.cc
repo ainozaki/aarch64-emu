@@ -6,7 +6,7 @@
 int endflag = -1;
 
 extern "C" uint32_t test_as(uint32_t);
-extern "C" uint32_t adds_test_enter(uint32_t);
+extern "C" uint32_t adds_test_enter();
 extern "C" uint32_t subs_test_enter(uint32_t);
 extern "C" uint32_t b_test_enter();
 extern "C" uint32_t ret_test_enter();
@@ -16,7 +16,7 @@ void create_as_adds() {
   const char *filename = "tests/data/adds.s";
   FILE *f;
 
-  f = fopen(filename, "w");
+  f = fopen(filename, "r");
   if (!f) {
     perror("fopen");
     return;
@@ -26,14 +26,17 @@ void create_as_adds() {
   const uint32_t immtbl[] = {0, 1, 0x7ff, 0x800, 0x801, 0xfff};
   const size_t regn = sizeof(regtbl) / sizeof(regtbl[0]);
   const size_t immn = sizeof(immtbl) / sizeof(immtbl[0]);
+  adds_test_enter();
 
-  printf("creating %s... ", filename);
-  for (size_t i = 0; i < regn; i++) {
-    for (size_t j = 0; j < immn; j++) {
-      fprintf(f, "ADDS W1, W0, 0x%08x\n", immtbl[j]);
-    }
-    adds_test_enter(regtbl[i]);
-  }
+  /*
+printf("creating %s... ", filename);
+for (size_t i = 0; i < regn; i++) {
+for (size_t j = 0; j < immn; j++) {
+fprintf(f, "ADDS W1, W0, 0x%08x\n", immtbl[j]);
+}
+adds_test_enter(regtbl[i]);
+}
+  */
   fclose(f);
   printf("done\n");
 }
@@ -87,9 +90,7 @@ void create_as_ret() {
   }
   printf("%s is manually created\n", filename);
 
-  endflag = 0;
   ret_test_enter();
-  endflag = 1;
 
   fclose(f);
 }

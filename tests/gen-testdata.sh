@@ -13,6 +13,7 @@ as_new="tests/data/b.s"
 echo "creating ${as_new%.*}.txt"
 filename=${as_new##*/}
 gdb -nx -q -batch -x ./tests/gdbscript.txt --args ./emu-testgen ${filename%.*} | grep -e QQQ -e "=>" > ${as_new%.*}.txt
+sed -i '1s/^/=> bl\n/' ${as_new%.*}.txt
 
 # create test assembler
 echo "creating ${as_new%.*}.s"

@@ -1,144 +1,154 @@
-QQQIMM 0x0
-QQQINP 0x0
-QQQANS 0x0
-QQQFLG - Z - -
-QQQIMM 0x1
-QQQINP 0x0
-QQQANS 0x1
-QQQFLG - - - -
-QQQIMM 0x7ff
-QQQINP 0x0
-QQQANS 0x7ff
-QQQFLG - - - -
-QQQIMM 0x800
-QQQINP 0x0
-QQQANS 0x800
-QQQFLG - - - -
-QQQIMM 0x801
-QQQINP 0x0
-QQQANS 0x801
-QQQFLG - - - -
-QQQIMM 0xfff
-QQQINP 0x0
-QQQANS 0xfff
-QQQFLG - - - -
-QQQIMM 0x0
-QQQINP 0x1
-QQQANS 0x1
-QQQFLG - - - -
-QQQIMM 0x1
-QQQINP 0x1
-QQQANS 0x2
-QQQFLG - - - -
-QQQIMM 0x7ff
-QQQINP 0x1
-QQQANS 0x800
-QQQFLG - - - -
-QQQIMM 0x800
-QQQINP 0x1
-QQQANS 0x801
-QQQFLG - - - -
-QQQIMM 0x801
-QQQINP 0x1
-QQQANS 0x802
-QQQFLG - - - -
-QQQIMM 0xfff
-QQQINP 0x1
-QQQANS 0x1000
-QQQFLG - - - -
-QQQIMM 0x0
-QQQINP 0x7fffffff
-QQQANS 0x7fffffff
-QQQFLG - - - -
-QQQIMM 0x1
-QQQINP 0x7fffffff
-QQQANS 0x80000000
-QQQFLG N - - V
-QQQIMM 0x7ff
-QQQINP 0x7fffffff
-QQQANS 0x800007fe
-QQQFLG N - - V
-QQQIMM 0x800
-QQQINP 0x7fffffff
-QQQANS 0x800007ff
-QQQFLG N - - V
-QQQIMM 0x801
-QQQINP 0x7fffffff
-QQQANS 0x80000800
-QQQFLG N - - V
-QQQIMM 0xfff
-QQQINP 0x7fffffff
-QQQANS 0x80000ffe
-QQQFLG N - - V
-QQQIMM 0x0
-QQQINP 0x80000000
-QQQANS 0x80000000
-QQQFLG N - - -
-QQQIMM 0x1
-QQQINP 0x80000000
-QQQANS 0x80000001
-QQQFLG N - - -
-QQQIMM 0x7ff
-QQQINP 0x80000000
-QQQANS 0x800007ff
-QQQFLG N - - -
-QQQIMM 0x800
-QQQINP 0x80000000
-QQQANS 0x80000800
-QQQFLG N - - -
-QQQIMM 0x801
-QQQINP 0x80000000
-QQQANS 0x80000801
-QQQFLG N - - -
-QQQIMM 0xfff
-QQQINP 0x80000000
-QQQANS 0x80000fff
-QQQFLG N - - -
-QQQIMM 0x0
-QQQINP 0x80000001
-QQQANS 0x80000001
-QQQFLG N - - -
-QQQIMM 0x1
-QQQINP 0x80000001
-QQQANS 0x80000002
-QQQFLG N - - -
-QQQIMM 0x7ff
-QQQINP 0x80000001
-QQQANS 0x80000800
-QQQFLG N - - -
-QQQIMM 0x800
-QQQINP 0x80000001
-QQQANS 0x80000801
-QQQFLG N - - -
-QQQIMM 0x801
-QQQINP 0x80000001
-QQQANS 0x80000802
-QQQFLG N - - -
-QQQIMM 0xfff
-QQQINP 0x80000001
-QQQANS 0x80001000
-QQQFLG N - - -
-QQQIMM 0x0
-QQQINP 0xffffffff
-QQQANS 0xffffffff
-QQQFLG N - - -
-QQQIMM 0x1
-QQQINP 0xffffffff
-QQQANS 0x0
-QQQFLG - Z C -
-QQQIMM 0x7ff
-QQQINP 0xffffffff
-QQQANS 0x7fe
-QQQFLG - - C -
-QQQIMM 0x800
-QQQINP 0xffffffff
-QQQANS 0x7ff
-QQQFLG - - C -
-QQQIMM 0x801
-QQQINP 0xffffffff
-QQQANS 0x800
-QQQFLG - - C -
-QQQIMM 0xfff
-QQQINP 0xffffffff
-QQQANS 0xffe
-QQQFLG - - C -
+=> bl
+QQQW01  0x6 0xfffff7ffd6b0
+QQQFLG  - - C -
+=> 0xaaaaaaaabad0 <init_reg>:	mov	x0, #0x0                   	// #0
+QQQW01  0x0 0xfffff7ffd6b0
+QQQFLG  - - C -
+=> 0xaaaaaaaabad4 <init_reg+4>:	mov	x1, #0x0                   	// #0
+QQQW01  0x0 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabad8 <init_reg+8>:	mov	x5, #0x0                   	// #0
+QQQW01  0x0 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabadc <init_reg+12>:	ret
+QQQW01  0x0 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabac0 <adds_test_enter+8>:	bl	0xaaaaaaaabae0 <test_adds>
+QQQW01  0x0 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabae0 <test_adds>:	mov	x0, #0x0                   	// #0
+QQQW01  0x0 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabae4 <test_adds+4>:	adds	w1, w0, #0x0
+QQQW01  0x0 0x0
+QQQFLG  - Z - -
+=> 0xaaaaaaaabae8 <test_adds+8>:	adds	w1, w0, #0x1
+QQQW01  0x0 0x1
+QQQFLG  - - - -
+=> 0xaaaaaaaabaec <test_adds+12>:	adds	w1, w0, #0x7ff
+QQQW01  0x0 0x7ff
+QQQFLG  - - - -
+=> 0xaaaaaaaabaf0 <test_adds+16>:	adds	w1, w0, #0x800
+QQQW01  0x0 0x800
+QQQFLG  - - - -
+=> 0xaaaaaaaabaf4 <test_adds+20>:	adds	w1, w0, #0x801
+QQQW01  0x0 0x801
+QQQFLG  - - - -
+=> 0xaaaaaaaabaf8 <test_adds+24>:	adds	w1, w0, #0xfff
+QQQW01  0x0 0xfff
+QQQFLG  - - - -
+=> 0xaaaaaaaabafc <test_adds+28>:	mov	x0, #0x1                   	// #1
+QQQW01  0x1 0xfff
+QQQFLG  - - - -
+=> 0xaaaaaaaabb00 <test_adds+32>:	adds	w1, w0, #0x0
+QQQW01  0x1 0x1
+QQQFLG  - - - -
+=> 0xaaaaaaaabb04 <test_adds+36>:	adds	w1, w0, #0x1
+QQQW01  0x1 0x2
+QQQFLG  - - - -
+=> 0xaaaaaaaabb08 <test_adds+40>:	adds	w1, w0, #0x7ff
+QQQW01  0x1 0x800
+QQQFLG  - - - -
+=> 0xaaaaaaaabb0c <test_adds+44>:	adds	w1, w0, #0x800
+QQQW01  0x1 0x801
+QQQFLG  - - - -
+=> 0xaaaaaaaabb10 <test_adds+48>:	adds	w1, w0, #0x801
+QQQW01  0x1 0x802
+QQQFLG  - - - -
+=> 0xaaaaaaaabb14 <test_adds+52>:	adds	w1, w0, #0xfff
+QQQW01  0x1 0x1000
+QQQFLG  - - - -
+=> 0xaaaaaaaabb18 <test_adds+56>:	mov	x0, #0x7fffffff            	// #2147483647
+QQQW01  0x7fffffff 0x1000
+QQQFLG  - - - -
+=> 0xaaaaaaaabb1c <test_adds+60>:	adds	w1, w0, #0x0
+QQQW01  0x7fffffff 0x7fffffff
+QQQFLG  - - - -
+=> 0xaaaaaaaabb20 <test_adds+64>:	adds	w1, w0, #0x1
+QQQW01  0x7fffffff 0x80000000
+QQQFLG  N - - V
+=> 0xaaaaaaaabb24 <test_adds+68>:	adds	w1, w0, #0x7ff
+QQQW01  0x7fffffff 0x800007fe
+QQQFLG  N - - V
+=> 0xaaaaaaaabb28 <test_adds+72>:	adds	w1, w0, #0x800
+QQQW01  0x7fffffff 0x800007ff
+QQQFLG  N - - V
+=> 0xaaaaaaaabb2c <test_adds+76>:	adds	w1, w0, #0x801
+QQQW01  0x7fffffff 0x80000800
+QQQFLG  N - - V
+=> 0xaaaaaaaabb30 <test_adds+80>:	adds	w1, w0, #0xfff
+QQQW01  0x7fffffff 0x80000ffe
+QQQFLG  N - - V
+=> 0xaaaaaaaabb34 <test_adds+84>:	mov	x0, #0x80000000            	// #2147483648
+QQQW01  0x80000000 0x80000ffe
+QQQFLG  N - - V
+=> 0xaaaaaaaabb38 <test_adds+88>:	adds	w1, w0, #0x0
+QQQW01  0x80000000 0x80000000
+QQQFLG  N - - -
+=> 0xaaaaaaaabb3c <test_adds+92>:	adds	w1, w0, #0x1
+QQQW01  0x80000000 0x80000001
+QQQFLG  N - - -
+=> 0xaaaaaaaabb40 <test_adds+96>:	adds	w1, w0, #0x7ff
+QQQW01  0x80000000 0x800007ff
+QQQFLG  N - - -
+=> 0xaaaaaaaabb44 <test_adds+100>:	adds	w1, w0, #0x800
+QQQW01  0x80000000 0x80000800
+QQQFLG  N - - -
+=> 0xaaaaaaaabb48 <test_adds+104>:	adds	w1, w0, #0x801
+QQQW01  0x80000000 0x80000801
+QQQFLG  N - - -
+=> 0xaaaaaaaabb4c <test_adds+108>:	adds	w1, w0, #0xfff
+QQQW01  0x80000000 0x80000fff
+QQQFLG  N - - -
+=> 0xaaaaaaaabb50 <test_adds+112>:	mov	x0, #0x1                   	// #1
+QQQW01  0x1 0x80000fff
+QQQFLG  N - - -
+=> 0xaaaaaaaabb54 <test_adds+116>:	movk	x0, #0x8000, lsl #16
+QQQW01  0x80000001 0x80000fff
+QQQFLG  N - - -
+=> 0xaaaaaaaabb58 <test_adds+120>:	adds	w1, w0, #0x0
+QQQW01  0x80000001 0x80000001
+QQQFLG  N - - -
+=> 0xaaaaaaaabb5c <test_adds+124>:	adds	w1, w0, #0x1
+QQQW01  0x80000001 0x80000002
+QQQFLG  N - - -
+=> 0xaaaaaaaabb60 <test_adds+128>:	adds	w1, w0, #0x7ff
+QQQW01  0x80000001 0x80000800
+QQQFLG  N - - -
+=> 0xaaaaaaaabb64 <test_adds+132>:	adds	w1, w0, #0x800
+QQQW01  0x80000001 0x80000801
+QQQFLG  N - - -
+=> 0xaaaaaaaabb68 <test_adds+136>:	adds	w1, w0, #0x801
+QQQW01  0x80000001 0x80000802
+QQQFLG  N - - -
+=> 0xaaaaaaaabb6c <test_adds+140>:	adds	w1, w0, #0xfff
+QQQW01  0x80000001 0x80001000
+QQQFLG  N - - -
+=> 0xaaaaaaaabb70 <test_adds+144>:	mov	x0, #0xffffffff            	// #4294967295
+QQQW01  0xffffffff 0x80001000
+QQQFLG  N - - -
+=> 0xaaaaaaaabb74 <test_adds+148>:	adds	w1, w0, #0x0
+QQQW01  0xffffffff 0xffffffff
+QQQFLG  N - - -
+=> 0xaaaaaaaabb78 <test_adds+152>:	adds	w1, w0, #0x1
+QQQW01  0xffffffff 0x0
+QQQFLG  - Z C -
+=> 0xaaaaaaaabb7c <test_adds+156>:	adds	w1, w0, #0x7ff
+QQQW01  0xffffffff 0x7fe
+QQQFLG  - - C -
+=> 0xaaaaaaaabb80 <test_adds+160>:	adds	w1, w0, #0x800
+QQQW01  0xffffffff 0x7ff
+QQQFLG  - - C -
+=> 0xaaaaaaaabb84 <test_adds+164>:	adds	w1, w0, #0x801
+QQQW01  0xffffffff 0x800
+QQQFLG  - - C -
+=> 0xaaaaaaaabb88 <test_adds+168>:	adds	w1, w0, #0xfff
+QQQW01  0xffffffff 0xffe
+QQQFLG  - - C -
+=> 0xaaaaaaaabb8c <test_adds+172>:	ret
+QQQW01  0xffffffff 0xffe
+QQQFLG  - - C -
+=> 0xaaaaaaaabac4 <adds_test_enter+12>:	mov	x5, #0x1                   	// #1
+QQQW01  0xffffffff 0xffe
+QQQFLG  - - C -
+=> 0xaaaaaaaabac8 <adds_test_enter+16>:	ldr	x30, [sp], #16

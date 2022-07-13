@@ -1,15 +1,15 @@
-define hook-stepi
-	printf "QQQW1234 0x%lx 0x%lx 0x%lx 0x%lx\n", $w1, $w2, $w3, $w4
-  printf "QQQFLG   %c %c %c %c\n", ($cpsr >> 31) & 1 ? 'N' : '-', ($cpsr >> 30) & 1 ? 'Z' : '-', ($cpsr >> 29) & 1 ? 'C' : '-', ($cpsr >> 28) & 1 ? 'V' : '-'
+define run-stepi
+	si
+	printf "QQQW1234  0x%lx 0x%lx 0x%lx 0x%lx\n", $w1, $w2, $w3, $w4
+  printf "QQQFLG    %c %c %c %c\n", ($cpsr >> 31) & 1 ? 'N' : '-', ($cpsr >> 30) & 1 ? 'Z' : '-', ($cpsr >> 29) & 1 ? 'C' : '-', ($cpsr >> 28) & 1 ? 'V' : '-'
+	x/i $pc
 end
 
 b b_test_enter
 
-display/i $pc
 set verbose off
 start
 c
-#while !endflag
 while $x5!=1
-stepi
+run-stepi
 end

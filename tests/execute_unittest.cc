@@ -8,8 +8,8 @@
 #include <string>
 
 TEST(DataProcessingImm, ADDS) {
-  std::string qqq;
-  uint64_t w0, ans, imm;
+  std::string qqq, insttype;
+  uint64_t w0, w1;
   uint32_t inst;
   char c;
   int cpsr[4];
@@ -24,28 +24,27 @@ TEST(DataProcessingImm, ADDS) {
   }
 
   std::string s;
+
   while (getline(f, s)) {
     printf("-----------------------\n");
+    // inst
+    std::istringstream ssinst(s);
+    ssinst >> qqq >> qqq >> qqq >> insttype;
+    std::cout << s << std::endl;
+
     printf("[expected]\n");
-    // imm
-    std::istringstream ssimm(s);
-    ssimm >> qqq >> std::hex >> imm;
-    printf("imm = 0x%016lx\n", imm);
-
-    // input
-    getline(f, s);
-    std::istringstream ssin(s);
-    ssin >> qqq >> std::hex >> w0;
-    printf("w0  = 0x%016lx\n", w0);
-
-    // ans
-    getline(f, s);
-    std::istringstream ssans(s);
-    ssans >> qqq >> std::hex >> ans;
-    printf("ans = 0x%016lx\n", ans);
+    // w1, w2, w3
+    if (!std::getline(f, s)) {
+      break;
+    }
+    std::istringstream ssw(s);
+    ssw >> qqq >> std::hex >> w0 >> w1;
+    printf("w0=0x%016lx, w1=0x%016lx\n", w0, w1);
 
     // flag
-    getline(f, s);
+    if (!std::getline(f, s)) {
+      break;
+    }
     std::istringstream ssflag(s);
     ssflag >> qqq;
     for (int i = 0; i < 4; i++) {
@@ -57,15 +56,16 @@ TEST(DataProcessingImm, ADDS) {
     // execute
     printf("[actual]\n");
     inst = sys.fetch();
-    sys.cpu().xregs[0] = w0;
     sys.decode_start(inst);
-    sys.cpu().increment_pc();
 
-    EXPECT_EQ(sys.cpu().xregs[1], ans);
-    EXPECT_EQ(cpsr[0], sys.cpu().cpsr.N);
-    EXPECT_EQ(cpsr[1], sys.cpu().cpsr.Z);
-    EXPECT_EQ(cpsr[2], sys.cpu().cpsr.C);
-    EXPECT_EQ(cpsr[3], sys.cpu().cpsr.V);
+    if (insttype == "adds") {
+      EXPECT_EQ(sys.cpu().xregs[0], w0);
+      EXPECT_EQ(sys.cpu().xregs[1], w1);
+      EXPECT_EQ(cpsr[0], sys.cpu().cpsr.N);
+      EXPECT_EQ(cpsr[1], sys.cpu().cpsr.Z);
+      EXPECT_EQ(cpsr[2], sys.cpu().cpsr.C);
+      EXPECT_EQ(cpsr[3], sys.cpu().cpsr.V);
+    }
   }
 }
 
@@ -146,7 +146,6 @@ TEST(Branch, b) {
   }
 
   std::string s;
-  std::getline(f, s);
 
   while (std::getline(f, s)) {
     printf("-----------------------\n");
@@ -194,7 +193,6 @@ TEST(Branch, ret) {
   }
 
   std::string s;
-  std::getline(f, s);
 
   while (std::getline(f, s)) {
     printf("-----------------------\n");

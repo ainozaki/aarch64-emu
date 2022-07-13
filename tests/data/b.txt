@@ -1,38 +1,37 @@
-=> 0xaaaaaaaabd78 <main(int, char**)+16>:	ldr	w0, [sp, #28]
-=> 0xaaaaaaaabfe8 <b_test_enter+4>:	bl	0xaaaaaaaabff8 <init_reg>
-QQQW1234 0x0 0x0 0x4bb37ce34d7f6ab7 0xaaaaaaaac477
-QQQFLG   - Z C -
-=> 0xaaaaaaaabff8 <init_reg>:	mov	x1, #0x0                   	// #0
-QQQW1234 0x0 0x0 0x4bb37ce34d7f6ab7 0xaaaaaaaac477
-QQQFLG   - Z C -
-=> 0xaaaaaaaabffc <init_reg+4>:	mov	x2, #0x0                   	// #0
-QQQW1234 0x0 0x0 0x4bb37ce34d7f6ab7 0xaaaaaaaac477
-QQQFLG   - Z C -
-=> 0xaaaaaaaac000 <init_reg+8>:	mov	x3, #0x0                   	// #0
-QQQW1234 0x0 0x0 0x4bb37ce34d7f6ab7 0xaaaaaaaac477
-QQQFLG   - Z C -
-=> 0xaaaaaaaac004 <init_reg+12>:	mov	x4, #0x0                   	// #0
-QQQW1234 0x0 0x0 0x0 0xaaaaaaaac477
-QQQFLG   - Z C -
-=> 0xaaaaaaaac008 <init_reg+16>:	mov	x5, #0x0                   	// #0
-QQQW1234 0x0 0x0 0x0 0x0
-QQQFLG   - Z C -
-=> 0xaaaaaaaac00c <init_reg+20>:	ret
-QQQW1234 0x0 0x0 0x0 0x0
-QQQFLG   - Z C -
-=> 0xaaaaaaaabfec <b_test_enter+8>:	b	0xaaaaaaaabfc4 <call_forward>
-QQQW1234 0x0 0x0 0x0 0x0
-QQQFLG   - Z C -
-=> 0xaaaaaaaabfc4 <call_forward>:	mov	x1, #0x1                   	// #1
-QQQW1234 0x0 0x0 0x0 0x0
-QQQFLG   - Z C -
-=> 0xaaaaaaaabfc8 <b_test2>:	b	0xaaaaaaaac010 <call_back>
-QQQW1234 0x1 0x0 0x0 0x0
-QQQFLG   - Z C -
-=> 0xaaaaaaaac010 <call_back>:	mov	x4, #0x4                   	// #4
-QQQW1234 0x1 0x0 0x0 0x0
-QQQFLG   - Z C -
-=> 0xaaaaaaaac014 <end_test>:	mov	x5, #0x1                   	// #1
-QQQW1234 0x1 0x0 0x0 0x4
-QQQFLG   - Z C -
-=> 0xaaaaaaaac018 <end_test+4>:	ldr	x30, [sp], #16
+=> bl
+QQQW1234  0x0 0x0 0xa9c6f055ee1c8acc 0xaaaaaaaac057
+QQQFLG    - Z C -
+=> 0xaaaaaaaabc64 <init_reg>:	mov	x1, #0x0                   	// #0
+QQQW1234  0x0 0x0 0xa9c6f055ee1c8acc 0xaaaaaaaac057
+QQQFLG    - Z C -
+=> 0xaaaaaaaabc68 <init_reg+4>:	mov	x2, #0x0                   	// #0
+QQQW1234  0x0 0x0 0xa9c6f055ee1c8acc 0xaaaaaaaac057
+QQQFLG    - Z C -
+=> 0xaaaaaaaabc6c <init_reg+8>:	mov	x3, #0x0                   	// #0
+QQQW1234  0x0 0x0 0x0 0xaaaaaaaac057
+QQQFLG    - Z C -
+=> 0xaaaaaaaabc70 <init_reg+12>:	mov	x4, #0x0                   	// #0
+QQQW1234  0x0 0x0 0x0 0x0
+QQQFLG    - Z C -
+=> 0xaaaaaaaabc74 <init_reg+16>:	mov	x5, #0x0                   	// #0
+QQQW1234  0x0 0x0 0x0 0x0
+QQQFLG    - Z C -
+=> 0xaaaaaaaabc78 <init_reg+20>:	ret
+QQQW1234  0x0 0x0 0x0 0x0
+QQQFLG    - Z C -
+=> 0xaaaaaaaabc58 <b_test_enter+8>:	b	0xaaaaaaaabc30 <call_forward>
+QQQW1234  0x0 0x0 0x0 0x0
+QQQFLG    - Z C -
+=> 0xaaaaaaaabc30 <call_forward>:	mov	x1, #0x1                   	// #1
+QQQW1234  0x1 0x0 0x0 0x0
+QQQFLG    - Z C -
+=> 0xaaaaaaaabc34 <b_test2>:	b	0xaaaaaaaabc7c <call_back>
+QQQW1234  0x1 0x0 0x0 0x0
+QQQFLG    - Z C -
+=> 0xaaaaaaaabc7c <call_back>:	mov	x4, #0x4                   	// #4
+QQQW1234  0x1 0x0 0x0 0x4
+QQQFLG    - Z C -
+=> 0xaaaaaaaabc80 <end_test>:	mov	x5, #0x1                   	// #1
+QQQW1234  0x1 0x0 0x0 0x4
+QQQFLG    - Z C -
+=> 0xaaaaaaaabc84 <end_test+4>:	ldr	x30, [sp], #16
