@@ -3,11 +3,12 @@ set -euox pipefail
 
 as_all=( \
 	"tests/data/adds.s"
+	"tests/data/fun_sum.s"
 	"tests/data/subs.s"
 	"tests/data/b.s"
 	"tests/data/ret.s"
 	);
-as_new="tests/data/b.s"
+as_new="tests/data/fun_sum.s"
 
 # create expected data
 echo "creating ${as_new%.*}.txt"

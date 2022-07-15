@@ -296,3 +296,52 @@ TEST(Branch, BranchImm) {
   EXPECT_NE(0x5, sys.cpu().xregs[5]);
   EXPECT_EQ(0x6, sys.cpu().xregs[6]);
 }
+
+TEST(Func, sum) {
+  std::string qqq;
+  uint64_t w0, w1;
+  uint32_t inst;
+  std::string s;
+
+  core::System sys("tests/data/fun_sum.bin", /*initaddr=*/0x0);
+  sys.Init();
+  std::ifstream f("tests/data/fun_sum.txt");
+  if (f.fail()) {
+    fprintf(stderr, "ifstream\n");
+    return;
+  }
+  sys.cpu().xregs[0] = 10;
+
+  while (std::getline(f, s)) {
+    printf("-----------------------\n");
+    // inst
+    std::cout << s << std::endl;
+
+    printf("[expected]\n");
+    // w0, w1
+    if (!std::getline(f, s)) {
+      break;
+    }
+    std::istringstream ssw(s);
+    ssw >> qqq >> std::hex >> w0 >> w1;
+    printf("w0=0x%016lx, w1=0x%016lx\n", w0, w1);
+
+    // flag
+    if (!std::getline(f, s)) {
+      break;
+    }
+
+    // execute
+    printf("[actual]\n");
+    inst = sys.fetch();
+    sys.decode_start(inst);
+    printf("inst: 0x%x\n", inst);
+    printf("w0=0x%016lx, w1=0x%016lx\n", sys.cpu().xregs[0],
+           sys.cpu().xregs[1]);
+    printf("\tpc=0x%016lx, sp=0x%016lx\n", sys.cpu().pc, sys.cpu().xregs[31]);
+    printf("\t24(SP):0x%lx\n", sys.mem().read(3, sys.cpu().xregs[31] + 24));
+    printf("\t28(SP):0x%lx\n", sys.mem().read(3, sys.cpu().xregs[31] + 28));
+    EXPECT_EQ(sys.cpu().xregs[0], w0);
+    EXPECT_EQ(sys.cpu().xregs[1], w1);
+  }
+}

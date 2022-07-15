@@ -1,0 +1,343 @@
+=> bl
+QQQW01  0xa 0x0
+QQQFLG  - Z C -
+=> 0xaaaaaaaabbcc <testfn_sum>:	sub	sp, sp, #0x20
+QQQW01  0xa 0x0
+QQQFLG  - Z C -
+=> 0xaaaaaaaabbd0 <testfn_sum+4>:	str	w0, [sp, #12]
+QQQW01  0xa 0x0
+QQQFLG  - Z C -
+=> 0xaaaaaaaabbd4 <testfn_sum+8>:	str	wzr, [sp, #24]
+QQQW01  0xa 0x0
+QQQFLG  - Z C -
+=> 0xaaaaaaaabbd8 <testfn_sum+12>:	ldr	w0, [sp, #12]
+QQQW01  0xa 0x0
+QQQFLG  - Z C -
+=> 0xaaaaaaaabbdc <testfn_sum+16>:	str	w0, [sp, #28]
+QQQW01  0xa 0x0
+QQQFLG  - Z C -
+=> 0xaaaaaaaabbe0 <testfn_sum+20>:	b	0xaaaaaaaabc00 <testfn_sum+52>
+QQQW01  0xa 0x0
+QQQFLG  - Z C -
+=> 0xaaaaaaaabc00 <testfn_sum+52>:	ldr	w0, [sp, #28]
+QQQW01  0xa 0x0
+QQQFLG  - Z C -
+=> 0xaaaaaaaabc04 <testfn_sum+56>:	cmp	w0, #0x0
+QQQW01  0xa 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabc08 <testfn_sum+60>:	b.gt	0xaaaaaaaabbe4 <testfn_sum+24>
+QQQW01  0xa 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe4 <testfn_sum+24>:	ldr	w1, [sp, #24]
+QQQW01  0xa 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe8 <testfn_sum+28>:	ldr	w0, [sp, #28]
+QQQW01  0xa 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabbec <testfn_sum+32>:	add	w0, w1, w0
+QQQW01  0xa 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf0 <testfn_sum+36>:	str	w0, [sp, #24]
+QQQW01  0xa 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf4 <testfn_sum+40>:	ldr	w0, [sp, #28]
+QQQW01  0xa 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf8 <testfn_sum+44>:	sub	w0, w0, #0x1
+QQQW01  0x9 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabbfc <testfn_sum+48>:	str	w0, [sp, #28]
+QQQW01  0x9 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabc00 <testfn_sum+52>:	ldr	w0, [sp, #28]
+QQQW01  0x9 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabc04 <testfn_sum+56>:	cmp	w0, #0x0
+QQQW01  0x9 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabc08 <testfn_sum+60>:	b.gt	0xaaaaaaaabbe4 <testfn_sum+24>
+QQQW01  0x9 0x0
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe4 <testfn_sum+24>:	ldr	w1, [sp, #24]
+QQQW01  0x9 0xa
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe8 <testfn_sum+28>:	ldr	w0, [sp, #28]
+QQQW01  0x9 0xa
+QQQFLG  - - C -
+=> 0xaaaaaaaabbec <testfn_sum+32>:	add	w0, w1, w0
+QQQW01  0x13 0xa
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf0 <testfn_sum+36>:	str	w0, [sp, #24]
+QQQW01  0x13 0xa
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf4 <testfn_sum+40>:	ldr	w0, [sp, #28]
+QQQW01  0x9 0xa
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf8 <testfn_sum+44>:	sub	w0, w0, #0x1
+QQQW01  0x8 0xa
+QQQFLG  - - C -
+=> 0xaaaaaaaabbfc <testfn_sum+48>:	str	w0, [sp, #28]
+QQQW01  0x8 0xa
+QQQFLG  - - C -
+=> 0xaaaaaaaabc00 <testfn_sum+52>:	ldr	w0, [sp, #28]
+QQQW01  0x8 0xa
+QQQFLG  - - C -
+=> 0xaaaaaaaabc04 <testfn_sum+56>:	cmp	w0, #0x0
+QQQW01  0x8 0xa
+QQQFLG  - - C -
+=> 0xaaaaaaaabc08 <testfn_sum+60>:	b.gt	0xaaaaaaaabbe4 <testfn_sum+24>
+QQQW01  0x8 0xa
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe4 <testfn_sum+24>:	ldr	w1, [sp, #24]
+QQQW01  0x8 0x13
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe8 <testfn_sum+28>:	ldr	w0, [sp, #28]
+QQQW01  0x8 0x13
+QQQFLG  - - C -
+=> 0xaaaaaaaabbec <testfn_sum+32>:	add	w0, w1, w0
+QQQW01  0x1b 0x13
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf0 <testfn_sum+36>:	str	w0, [sp, #24]
+QQQW01  0x1b 0x13
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf4 <testfn_sum+40>:	ldr	w0, [sp, #28]
+QQQW01  0x8 0x13
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf8 <testfn_sum+44>:	sub	w0, w0, #0x1
+QQQW01  0x7 0x13
+QQQFLG  - - C -
+=> 0xaaaaaaaabbfc <testfn_sum+48>:	str	w0, [sp, #28]
+QQQW01  0x7 0x13
+QQQFLG  - - C -
+=> 0xaaaaaaaabc00 <testfn_sum+52>:	ldr	w0, [sp, #28]
+QQQW01  0x7 0x13
+QQQFLG  - - C -
+=> 0xaaaaaaaabc04 <testfn_sum+56>:	cmp	w0, #0x0
+QQQW01  0x7 0x13
+QQQFLG  - - C -
+=> 0xaaaaaaaabc08 <testfn_sum+60>:	b.gt	0xaaaaaaaabbe4 <testfn_sum+24>
+QQQW01  0x7 0x13
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe4 <testfn_sum+24>:	ldr	w1, [sp, #24]
+QQQW01  0x7 0x1b
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe8 <testfn_sum+28>:	ldr	w0, [sp, #28]
+QQQW01  0x7 0x1b
+QQQFLG  - - C -
+=> 0xaaaaaaaabbec <testfn_sum+32>:	add	w0, w1, w0
+QQQW01  0x22 0x1b
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf0 <testfn_sum+36>:	str	w0, [sp, #24]
+QQQW01  0x22 0x1b
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf4 <testfn_sum+40>:	ldr	w0, [sp, #28]
+QQQW01  0x7 0x1b
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf8 <testfn_sum+44>:	sub	w0, w0, #0x1
+QQQW01  0x6 0x1b
+QQQFLG  - - C -
+=> 0xaaaaaaaabbfc <testfn_sum+48>:	str	w0, [sp, #28]
+QQQW01  0x6 0x1b
+QQQFLG  - - C -
+=> 0xaaaaaaaabc00 <testfn_sum+52>:	ldr	w0, [sp, #28]
+QQQW01  0x6 0x1b
+QQQFLG  - - C -
+=> 0xaaaaaaaabc04 <testfn_sum+56>:	cmp	w0, #0x0
+QQQW01  0x6 0x1b
+QQQFLG  - - C -
+=> 0xaaaaaaaabc08 <testfn_sum+60>:	b.gt	0xaaaaaaaabbe4 <testfn_sum+24>
+QQQW01  0x6 0x1b
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe4 <testfn_sum+24>:	ldr	w1, [sp, #24]
+QQQW01  0x6 0x22
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe8 <testfn_sum+28>:	ldr	w0, [sp, #28]
+QQQW01  0x6 0x22
+QQQFLG  - - C -
+=> 0xaaaaaaaabbec <testfn_sum+32>:	add	w0, w1, w0
+QQQW01  0x28 0x22
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf0 <testfn_sum+36>:	str	w0, [sp, #24]
+QQQW01  0x28 0x22
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf4 <testfn_sum+40>:	ldr	w0, [sp, #28]
+QQQW01  0x6 0x22
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf8 <testfn_sum+44>:	sub	w0, w0, #0x1
+QQQW01  0x5 0x22
+QQQFLG  - - C -
+=> 0xaaaaaaaabbfc <testfn_sum+48>:	str	w0, [sp, #28]
+QQQW01  0x5 0x22
+QQQFLG  - - C -
+=> 0xaaaaaaaabc00 <testfn_sum+52>:	ldr	w0, [sp, #28]
+QQQW01  0x5 0x22
+QQQFLG  - - C -
+=> 0xaaaaaaaabc04 <testfn_sum+56>:	cmp	w0, #0x0
+QQQW01  0x5 0x22
+QQQFLG  - - C -
+=> 0xaaaaaaaabc08 <testfn_sum+60>:	b.gt	0xaaaaaaaabbe4 <testfn_sum+24>
+QQQW01  0x5 0x22
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe4 <testfn_sum+24>:	ldr	w1, [sp, #24]
+QQQW01  0x5 0x28
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe8 <testfn_sum+28>:	ldr	w0, [sp, #28]
+QQQW01  0x5 0x28
+QQQFLG  - - C -
+=> 0xaaaaaaaabbec <testfn_sum+32>:	add	w0, w1, w0
+QQQW01  0x2d 0x28
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf0 <testfn_sum+36>:	str	w0, [sp, #24]
+QQQW01  0x2d 0x28
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf4 <testfn_sum+40>:	ldr	w0, [sp, #28]
+QQQW01  0x5 0x28
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf8 <testfn_sum+44>:	sub	w0, w0, #0x1
+QQQW01  0x4 0x28
+QQQFLG  - - C -
+=> 0xaaaaaaaabbfc <testfn_sum+48>:	str	w0, [sp, #28]
+QQQW01  0x4 0x28
+QQQFLG  - - C -
+=> 0xaaaaaaaabc00 <testfn_sum+52>:	ldr	w0, [sp, #28]
+QQQW01  0x4 0x28
+QQQFLG  - - C -
+=> 0xaaaaaaaabc04 <testfn_sum+56>:	cmp	w0, #0x0
+QQQW01  0x4 0x28
+QQQFLG  - - C -
+=> 0xaaaaaaaabc08 <testfn_sum+60>:	b.gt	0xaaaaaaaabbe4 <testfn_sum+24>
+QQQW01  0x4 0x28
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe4 <testfn_sum+24>:	ldr	w1, [sp, #24]
+QQQW01  0x4 0x2d
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe8 <testfn_sum+28>:	ldr	w0, [sp, #28]
+QQQW01  0x4 0x2d
+QQQFLG  - - C -
+=> 0xaaaaaaaabbec <testfn_sum+32>:	add	w0, w1, w0
+QQQW01  0x31 0x2d
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf0 <testfn_sum+36>:	str	w0, [sp, #24]
+QQQW01  0x31 0x2d
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf4 <testfn_sum+40>:	ldr	w0, [sp, #28]
+QQQW01  0x4 0x2d
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf8 <testfn_sum+44>:	sub	w0, w0, #0x1
+QQQW01  0x3 0x2d
+QQQFLG  - - C -
+=> 0xaaaaaaaabbfc <testfn_sum+48>:	str	w0, [sp, #28]
+QQQW01  0x3 0x2d
+QQQFLG  - - C -
+=> 0xaaaaaaaabc00 <testfn_sum+52>:	ldr	w0, [sp, #28]
+QQQW01  0x3 0x2d
+QQQFLG  - - C -
+=> 0xaaaaaaaabc04 <testfn_sum+56>:	cmp	w0, #0x0
+QQQW01  0x3 0x2d
+QQQFLG  - - C -
+=> 0xaaaaaaaabc08 <testfn_sum+60>:	b.gt	0xaaaaaaaabbe4 <testfn_sum+24>
+QQQW01  0x3 0x2d
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe4 <testfn_sum+24>:	ldr	w1, [sp, #24]
+QQQW01  0x3 0x31
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe8 <testfn_sum+28>:	ldr	w0, [sp, #28]
+QQQW01  0x3 0x31
+QQQFLG  - - C -
+=> 0xaaaaaaaabbec <testfn_sum+32>:	add	w0, w1, w0
+QQQW01  0x34 0x31
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf0 <testfn_sum+36>:	str	w0, [sp, #24]
+QQQW01  0x34 0x31
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf4 <testfn_sum+40>:	ldr	w0, [sp, #28]
+QQQW01  0x3 0x31
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf8 <testfn_sum+44>:	sub	w0, w0, #0x1
+QQQW01  0x2 0x31
+QQQFLG  - - C -
+=> 0xaaaaaaaabbfc <testfn_sum+48>:	str	w0, [sp, #28]
+QQQW01  0x2 0x31
+QQQFLG  - - C -
+=> 0xaaaaaaaabc00 <testfn_sum+52>:	ldr	w0, [sp, #28]
+QQQW01  0x2 0x31
+QQQFLG  - - C -
+=> 0xaaaaaaaabc04 <testfn_sum+56>:	cmp	w0, #0x0
+QQQW01  0x2 0x31
+QQQFLG  - - C -
+=> 0xaaaaaaaabc08 <testfn_sum+60>:	b.gt	0xaaaaaaaabbe4 <testfn_sum+24>
+QQQW01  0x2 0x31
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe4 <testfn_sum+24>:	ldr	w1, [sp, #24]
+QQQW01  0x2 0x34
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe8 <testfn_sum+28>:	ldr	w0, [sp, #28]
+QQQW01  0x2 0x34
+QQQFLG  - - C -
+=> 0xaaaaaaaabbec <testfn_sum+32>:	add	w0, w1, w0
+QQQW01  0x36 0x34
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf0 <testfn_sum+36>:	str	w0, [sp, #24]
+QQQW01  0x36 0x34
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf4 <testfn_sum+40>:	ldr	w0, [sp, #28]
+QQQW01  0x2 0x34
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf8 <testfn_sum+44>:	sub	w0, w0, #0x1
+QQQW01  0x1 0x34
+QQQFLG  - - C -
+=> 0xaaaaaaaabbfc <testfn_sum+48>:	str	w0, [sp, #28]
+QQQW01  0x1 0x34
+QQQFLG  - - C -
+=> 0xaaaaaaaabc00 <testfn_sum+52>:	ldr	w0, [sp, #28]
+QQQW01  0x1 0x34
+QQQFLG  - - C -
+=> 0xaaaaaaaabc04 <testfn_sum+56>:	cmp	w0, #0x0
+QQQW01  0x1 0x34
+QQQFLG  - - C -
+=> 0xaaaaaaaabc08 <testfn_sum+60>:	b.gt	0xaaaaaaaabbe4 <testfn_sum+24>
+QQQW01  0x1 0x34
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe4 <testfn_sum+24>:	ldr	w1, [sp, #24]
+QQQW01  0x1 0x36
+QQQFLG  - - C -
+=> 0xaaaaaaaabbe8 <testfn_sum+28>:	ldr	w0, [sp, #28]
+QQQW01  0x1 0x36
+QQQFLG  - - C -
+=> 0xaaaaaaaabbec <testfn_sum+32>:	add	w0, w1, w0
+QQQW01  0x37 0x36
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf0 <testfn_sum+36>:	str	w0, [sp, #24]
+QQQW01  0x37 0x36
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf4 <testfn_sum+40>:	ldr	w0, [sp, #28]
+QQQW01  0x1 0x36
+QQQFLG  - - C -
+=> 0xaaaaaaaabbf8 <testfn_sum+44>:	sub	w0, w0, #0x1
+QQQW01  0x0 0x36
+QQQFLG  - - C -
+=> 0xaaaaaaaabbfc <testfn_sum+48>:	str	w0, [sp, #28]
+QQQW01  0x0 0x36
+QQQFLG  - - C -
+=> 0xaaaaaaaabc00 <testfn_sum+52>:	ldr	w0, [sp, #28]
+QQQW01  0x0 0x36
+QQQFLG  - - C -
+=> 0xaaaaaaaabc04 <testfn_sum+56>:	cmp	w0, #0x0
+QQQW01  0x0 0x36
+QQQFLG  - Z C -
+=> 0xaaaaaaaabc08 <testfn_sum+60>:	b.gt	0xaaaaaaaabbe4 <testfn_sum+24>
+QQQW01  0x0 0x36
+QQQFLG  - Z C -
+=> 0xaaaaaaaabc0c <testfn_sum+64>:	ldr	w0, [sp, #24]
+QQQW01  0x37 0x36
+QQQFLG  - Z C -
+=> 0xaaaaaaaabc10 <testfn_sum+68>:	add	sp, sp, #0x20
+QQQW01  0x37 0x36
+QQQFLG  - Z C -
+=> 0xaaaaaaaabc14 <testfn_sum+72>:	ret
+QQQW01  0x37 0x36
+QQQFLG  - Z C -
+=> 0xaaaaaaaabbc0 <sum_test_enter+8>:	mov	x5, #0x1                   	// #1
+QQQW01  0x37 0x36
+QQQFLG  - Z C -
+=> 0xaaaaaaaabbc4 <sum_test_enter+12>:	ldr	x30, [sp], #32

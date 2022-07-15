@@ -148,9 +148,19 @@ void System::decode_loads_and_stores(uint32_t inst) {
 }
 
 void System::decode_data_processing_reg(uint32_t inst) {
-  LOG_CPU("data_processing_reg %d\n", inst);
+  uint8_t op1, op2;
+
+  op1 = bitutil::bit(inst, 28);
+  op2 = bitutil::shift(inst, 21, 24);
+  LOG_CPU("data_processing_reg, op1=0x%x, op2=0x%x\n", op1, op2);
+  if ((op1 == 0) && (op2 == 8)) {
+    decode_addsub_shifted_reg(inst);
+  } else {
+    unsupported();
+  }
   cpu_.increment_pc();
 }
+
 void System::decode_data_processing_float(uint32_t inst) {
   LOG_CPU("data_processing_float %d\n", inst);
   cpu_.increment_pc();
@@ -297,6 +307,9 @@ void System::decode_add_sub_imm(uint32_t inst) {
               cpu_.xregs[rn], imm, if_64bit);
       result =
           add_imm_s(cpu_.xregs[rn], imm, /*carry-in=*/0, cpu_.cpsr, if_64bit);
+    }
+    if (rd == 31) {
+      return;
     }
   } else {
     if (if_sub) {
@@ -546,28 +559,88 @@ void System::decode_extract(uint32_t inst) { LOG_CPU("%d\n", inst); }
 
 void System::decode_ldst_register(uint32_t inst) {
   uint8_t op;
+  uint8_t op0 = bitutil::shift(inst, 28, 31);
 
-  if (bitutil::bit(inst, 24)) {
-    decode_ldst_reg_unsigned_imm(inst);
+  if (op0 % 4 == 0x3) {
+    if (bitutil::bit(inst, 24)) {
+      decode_ldst_reg_unsigned_imm(inst);
+    } else {
+      op = (bitutil::bit(inst, 21)) << 2 | bitutil::shift(inst, 10, 11);
+      const decode_func decode_ldst_reg_tbl[] = {
+          &System::decode_ldst_reg_immediate,
+          &System::decode_ldst_reg_immediate,
+          &System::decode_ldst_reg_unpriviledged,
+          &System::decode_ldst_reg_immediate,
+          &System::decode_ldst_atomic_memory_op,
+          &System::decode_ldst_reg_pac,
+          &System::decode_ldst_reg_reg_offset,
+          &System::decode_ldst_reg_pac,
+      };
+      (this->*decode_ldst_reg_tbl[op])(inst);
+    }
   } else {
-    op = (bitutil::bit(inst, 21)) << 2 | bitutil::shift(inst, 10, 11);
-    const decode_func decode_ldst_reg_tbl[] = {
-        &System::decode_ldst_reg_immediate,
-        &System::decode_ldst_reg_immediate,
-        &System::decode_ldst_reg_unpriviledged,
-        &System::decode_ldst_reg_immediate,
-        &System::decode_ldst_atomic_memory_op,
-        &System::decode_ldst_reg_pac,
-        &System::decode_ldst_reg_reg_offset,
-        &System::decode_ldst_reg_pac,
-    };
-    (this->*decode_ldst_reg_tbl[op])(inst);
+    unsupported();
   }
 }
 
+/*
+         Load/store register (unsigned immediate)
+
+         31   30 29 27  26 25 24 23 22 21         10  9    5 4   0
+         +------+-----+---+----+------+--------------+------+-----+
+         | size | 111 | V | 01 | opc  |    imm12     |  Rn  |  Rt |
+         +------+-----+---+----+------+--------------+------+-----+
+
+         @size: 00:8bit, 01:16bit, 10:32bit, 11:64bit
+         @V: simd
+         @Rm: offset register
+         @opt: extend type
+         @S: if S=1 then shift |size|
+         @idx: 00:unscaled immediate, 01:post-indexed, 11:pre-indexed
+         @Rn: base register or stack pointer
+         @Rt: register to be transfered
+
+*/
 void System::decode_ldst_reg_unsigned_imm(uint32_t inst) {
-  LOG_CPU("load_store: reg_unsigned_imm\n");
-  LOG_CPU("%d\n", inst);
+  bool vector;
+  uint8_t size, opc, rn, rt;
+  uint64_t imm12, offset;
+
+  size = bitutil::shift(inst, 30, 31);
+  vector = bitutil::bit(inst, 26);
+  opc = bitutil::shift(inst, 22, 23);
+  imm12 = bitutil::shift(inst, 10, 21);
+  rn = bitutil::shift(inst, 5, 9);
+  rt = bitutil::shift(inst, 0, 4);
+
+  if (vector) {
+    unsupported();
+  } else {
+    switch (opc) {
+    case 0x0:
+      LOG_CPU("STR, opc=0x%x, size=0x%x, V=%d, rt=%d, rn=%d\n", opc, size,
+              vector, rt, rn);
+      offset = imm12 << size;
+      mem_.write(size, cpu_.xregs[rn] + offset, rt == 31 ? 0 : cpu_.xregs[rt]);
+      break;
+    case 0x1:
+      LOG_CPU("LDR, opc=0x%x, size=0x%x, V=%d, rt=%d, rn=%d, inst=0x%x\n", opc,
+              size, vector, rt, rn, inst);
+      offset = imm12 << size;
+      cpu_.xregs[rt] = mem_.read(size, cpu_.xregs[rn] + offset);
+      break;
+    case 0x2:
+      LOG_CPU("LDRS, opc=0x%x, size=0x%x, V=%d\n", opc, size, vector);
+      break;
+    case 0x3:
+      if (size >= 0x2) {
+        unallocated();
+        return;
+      }
+      LOG_CPU("LDRS, opc=0x%x, size=0x%x, V=%d\n", opc, size, vector);
+      break;
+    }
+  }
 }
 
 /*
@@ -796,14 +869,59 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
                // TODO: option = 0b011
       offset =
           shift_and_extend(cpu_.xregs[rm], shift, scale, extendtype_tbl[opt]);
-      LOG_CPU(
-          "load_store: register offset: load: rt=%d, rn=%d, [rn]=0x%lx, rm=%d, "
-          "[rm]=0x%lx, offset=%lu vaddr=0x%lx\n",
-          rt, rn, cpu_.xregs[rn], rm, cpu_.xregs[rm], offset,
-          cpu_.xregs[rn] + offset);
+      LOG_CPU("load_store: register offset: load: rt=%d, rn=%d, [rn]=0x%lx, "
+              "rm=%d, "
+              "[rm]=0x%lx, offset=%lu vaddr=0x%lx\n",
+              rt, rn, cpu_.xregs[rn], rm, cpu_.xregs[rm], offset,
+              cpu_.xregs[rn] + offset);
       cpu_.xregs[rt] = mem_.read(size, cpu_.xregs[rn] + offset);
       break;
     }
+  }
+}
+
+/*
+====================================================
+         Data Processing Register
+====================================================
+*/
+
+/*
+         Add/substruct (shifted register)
+           31   30   29 28   24 2322  21  20   16 15  10 9   5 4   0
+         +----+----+---+-------+----+---+-------+------+-----+-----+
+         | sf | op | S | 01011 | sh | 0 |  Rm   | imm6 |  Rn |  Rd |
+         +----+----+---+-------+----+---+-------+------+-----+-----+
+
+         @sf: 0->32bit, 1->64bit
+         @op: 0->ADD, 1->SUB
+         @S: set flag
+         @sh: if sh=1 then LSL #12
+         @Rn: source gp regiter or sp
+*/
+void System::decode_addsub_shifted_reg(uint32_t inst) {
+  uint8_t rd, rn, imm6;
+  uint64_t rm, operand2;
+  bool shift, setflag, if_sub, if_64bit;
+  uint64_t result;
+
+  if_64bit = bitutil::bit(inst, 31);
+  if_sub = bitutil::bit(inst, 30);
+  setflag = bitutil::bit(inst, 29);
+  shift = bitutil::shift(inst, 22, 23);
+  rm = bitutil::shift(inst, 16, 20);
+  imm6 = bitutil::shift(inst, 10, 15);
+  rn = bitutil::shift(inst, 5, 9);
+  rd = bitutil::shift(inst, 0, 4);
+
+  operand2 = cpu_.xregs[rm] << imm6;
+
+  if (if_sub) {
+    LOG_CPU("SUB rd=0x%x, rm=0x%lx, rn=0x%d\n", rd, rm, rn);
+  } else {
+    LOG_CPU("ADD rd=0x%x, rm=0x%lx, rn=0x%d, xregs[rn]=0x%lx, op2=0x%lx\n", rd,
+            rm, rn, cpu_.xregs[rn], operand2);
+    cpu_.xregs[rd] = cpu_.xregs[rn] + operand2;
   }
 }
 
@@ -869,7 +987,7 @@ static bool check_b_flag(uint8_t cond, core::cpu::CPSR &cpsr) {
     return cpsr.N != cpsr.V;
     break;
   case 12:
-    return (cpsr.Z == 0) | (cpsr.N == cpsr.V);
+    return (cpsr.Z == 0) & (cpsr.N == cpsr.V);
     break;
   case 13:
     return (cpsr.Z == 1) | (cpsr.N != cpsr.V);

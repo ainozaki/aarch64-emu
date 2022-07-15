@@ -35,6 +35,7 @@ public:
   uint64_t xregs[32] = {0};
   uint64_t sp_el[4];  /* Stack pointers*/
   uint64_t elr_el[4]; /* Exception Linked Registers */
+  const uint64_t xzr = 0;
 
   CPSR cpsr; /* Current Program Status Register*/
 

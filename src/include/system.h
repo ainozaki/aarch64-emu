@@ -52,6 +52,9 @@ private:
   void decode_ldst_reg_pac(uint32_t inst);
   void decode_ldst_reg_reg_offset(uint32_t inst);
 
+  /* Data Processing Register */
+  void decode_addsub_shifted_reg(uint32_t inst);
+
   /* Data Processing Immediate */
   void decode_pc_rel(uint32_t inst);
   void decode_add_sub_imm(uint32_t inst);
