@@ -11,6 +11,13 @@ class System;
 
 namespace mem {
 
+enum class MemAccess {
+  Size8,
+  Size16,
+  Size32,
+  Size64,
+};
+
 class Mem {
 public:
   Mem(System *system);
@@ -21,8 +28,8 @@ public:
 
   void *get_ptr(uint64_t vaddr);
 
-  void write(uint8_t size, uint64_t addr, uint64_t value);
-  uint64_t read(uint8_t size, uint64_t addr);
+  void write(MemAccess size, uint64_t addr, uint64_t value);
+  uint64_t read(MemAccess size, uint64_t addr);
   uint32_t read_inst(uint64_t pc);
 
   uint8_t *mem_;
@@ -30,6 +37,8 @@ public:
   uint8_t *text_end;
 
 private:
+  void show_stack();
+
   void write_8(void *addr, const uint8_t value);
   void write_16(void *addr, const uint16_t value);
   void write_32(void *addr, const uint32_t value);

@@ -11,6 +11,7 @@ extern "C" uint32_t subs_test_enter(uint32_t);
 extern "C" uint32_t b_test_enter();
 extern "C" uint32_t ret_test_enter();
 extern "C" uint32_t sum_test_enter(uint32_t);
+extern "C" uint32_t fibonacci_test_enter(uint32_t);
 
 void create_as_adds() {
   const char *filename = "tests/data/adds.s";
@@ -50,64 +51,19 @@ void create_as_subs() {
   printf("done\n");
 }
 
-void create_as_b() {
-  const char *filename = "tests/data/b.s";
-  FILE *f;
-
-  f = fopen(filename, "r");
-  if (!f) {
-    perror("fopen");
-    return;
-  }
-  printf("%s is manually created\n", filename);
-  b_test_enter();
-
-  fclose(f);
-}
-
-void create_as_ret() {
-  const char *filename = "tests/data/ret.s";
-  FILE *f;
-
-  f = fopen(filename, "r");
-  if (!f) {
-    perror("fopen");
-    return;
-  }
-  printf("%s is manually created\n", filename);
-
-  ret_test_enter();
-
-  fclose(f);
-}
-
-void create_as_funsum() {
-  const char *filename = "tests/data/fun_sum.s";
-  FILE *f;
-
-  f = fopen(filename, "r");
-  if (!f) {
-    perror("fopen");
-    return;
-  }
-  printf("%s is manually created\n", filename);
-
-  sum_test_enter(10);
-
-  fclose(f);
-}
-
 void create_as(const char *asname) {
   if (!strcmp(asname, "adds")) {
     create_as_adds();
   } else if (!strcmp(asname, "subs")) {
     create_as_subs();
   } else if (!strcmp(asname, "b")) {
-    create_as_b();
+    b_test_enter();
   } else if (!strcmp(asname, "ret")) {
-    create_as_ret();
+    ret_test_enter();
   } else if (!strcmp(asname, "fun_sum")) {
-    create_as_funsum();
+    sum_test_enter(10);
+  } else if (!strcmp(asname, "fun_fibonacci")) {
+    fibonacci_test_enter(15);
   } else {
     fprintf(stderr, "asname %s not match\n", asname);
   }

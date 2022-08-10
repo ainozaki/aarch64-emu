@@ -32,7 +32,7 @@ TEST(DataProcessingImm, ADDS) {
     // inst
     std::istringstream ssinst(s);
     ssinst >> qqq >> qqq >> qqq >> insttype;
-    LOG_DEBUG("%s", s);
+    LOG_DEBUG("%s", s.c_str());
 
     LOG_DEBUG("[expected]\n");
     // w1, w2, w3
@@ -154,7 +154,7 @@ TEST(Branch, b) {
   while (std::getline(f, s)) {
     LOG_DEBUG("-----------------------\n");
     // inst
-    LOG_DEBUG("%s", s);
+    LOG_DEBUG("%s", s.c_str());
 
     LOG_DEBUG("[expected]\n");
     // w1, w2, w3
@@ -201,7 +201,7 @@ TEST(Branch, ret) {
   while (std::getline(f, s)) {
     LOG_DEBUG("-----------------------\n");
     // inst
-    LOG_DEBUG("%s", s);
+    LOG_DEBUG("%s", s.c_str());
 
     LOG_DEBUG("[expected]\n");
     // w1, w2, w3
@@ -321,7 +321,7 @@ TEST(Func, sum) {
   while (std::getline(f, s)) {
     LOG_DEBUG("-----------------------\n");
     // inst
-    LOG_DEBUG("%s", s);
+    LOG_DEBUG("%s", s.c_str());
 
     LOG_DEBUG("[expected]\n");
     // w0, w1
@@ -346,9 +346,66 @@ TEST(Func, sum) {
               sys.cpu().xregs[1]);
     LOG_DEBUG("\tpc=0x%016lx, sp=0x%016lx\n", sys.cpu().pc,
               sys.cpu().xregs[31]);
-    LOG_DEBUG("\t24(SP):0x%lx\n", sys.mem().read(3, sys.cpu().xregs[31] + 24));
-    LOG_DEBUG("\t28(SP):0x%lx\n", sys.mem().read(3, sys.cpu().xregs[31] + 28));
+    LOG_DEBUG("\t24(SP):0x%lx\n", sys.mem().read(core::mem::MemAccess::Size64,
+                                                 sys.cpu().xregs[31] + 24));
+    LOG_DEBUG("\t28(SP):0x%lx\n", sys.mem().read(core::mem::MemAccess::Size64,
+                                                 sys.cpu().xregs[31] + 28));
     EXPECT_EQ(sys.cpu().xregs[0], w0);
     EXPECT_EQ(sys.cpu().xregs[1], w1);
+  }
+}
+
+TEST(Func, fibonacci) {
+  std::string qqq;
+  uint64_t w0, w1, w19;
+  uint32_t inst;
+  std::string s;
+  int index = 0;
+
+  core::System sys("tests/data/fun_fibonacci.bin", /*initaddr=*/0x0);
+  sys.Init();
+  std::ifstream f("tests/data/fun_fibonacci.txt");
+  if (f.fail()) {
+    fprintf(stderr, "ifstream\n");
+    return;
+  }
+  sys.cpu().xregs[0] = 15;
+
+  while (std::getline(f, s)) {
+    LOG_DEBUG("-----------------------\n");
+    // inst
+    LOG_DEBUG("%s", s.c_str());
+
+    LOG_DEBUG("\n[expected]\n");
+    // w0, w1
+    if (!std::getline(f, s)) {
+      break;
+    }
+    std::istringstream ssw(s);
+    ssw >> qqq >> std::hex >> w0 >> w1 >> w19;
+    LOG_DEBUG("\tw0=0x%016lx, w1=0x%016lx, w19=0x%016lx\n", w0, w1, w19);
+
+    // flag
+    if (!std::getline(f, s)) {
+      break;
+    }
+
+    // execute
+    LOG_DEBUG("[actual]\n");
+    inst = sys.fetch();
+    sys.decode_start(inst);
+    LOG_DEBUG("\tinst: 0x%x\n", inst);
+    LOG_DEBUG("\tw0=0x%016lx, w1=0x%016lx, w19=0x%016lx\n", sys.cpu().xregs[0],
+              sys.cpu().xregs[1], sys.cpu().xregs[19]);
+    LOG_DEBUG("\tw29=0x%016lx, w30=0x%016lx\n", sys.cpu().xregs[29],
+              sys.cpu().xregs[30]);
+    LOG_DEBUG("\tpc=0x%016lx, sp=0x%016lx\n", sys.cpu().pc,
+              sys.cpu().xregs[31]);
+    // LOG_DEBUG("\t28(SP):0x%lx\n", sys.mem().read(3, sys.cpu().xregs[31]
+    // + 28)); EXPECT_EQ(sys.cpu().xregs[0], w0); EXPECT_EQ(sys.cpu().xregs[1],
+    // w1);
+    EXPECT_EQ(sys.cpu().xregs[0], w0);
+    EXPECT_EQ(sys.cpu().xregs[1], w1);
+    index++;
   }
 }

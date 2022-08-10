@@ -16,7 +16,7 @@ namespace core {
 namespace mem {
 
 const uint32_t text_section_size = 1024 * 1024 * 1024; /// 1MB
-const uint32_t mem_size = 1024 * 1024 * 1024;          /// 1MB
+const uint64_t mem_size = 1024 * 1024 * 1024;          /// 1MB
 
 Mem::Mem(System *system) : system_(system) {}
 
@@ -28,15 +28,26 @@ void Mem::clean_mem() {
   printf("mem: free mainmem\n");
 }
 
+void Mem::show_stack() {
+  uint64_t sp = system_->cpu().xregs[31];
+  uint64_t addr;
+  LOG_DEBUG("\t\t===============\n");
+  for (int i = -15; i < 16; i++) {
+    addr = sp + i * 4;
+    LOG_DEBUG("\t[0x%lx]   0x%08x\n", addr, read_32(get_ptr(addr)));
+  }
+  LOG_DEBUG("\t\t===============\n");
+}
+
 SystemResult Mem::init_mem(const char *rawfile, const uint64_t initaddr) {
   FILE *fp;
   size_t readlen;
 
   /// mem
   mem_ = (uint8_t *)malloc(mem_size);
-  printf("mem: malloc mainmem size 0x%x  %p - %p\n", mem_size, mem_,
+  printf("mem: malloc mainmem size 0x%lx  %p - %p\n", mem_size, mem_,
          mem_ + mem_size - 1);
-  system_->cpu().xregs[31] = (uint64_t)(mem_size - 1024);
+  system_->cpu().xregs[31] = (uint64_t)(mem_size - 1024 * 1024);
   printf("mem: set initial SP\n");
   printf("mem: SP = 0x%lx\n", system_->cpu().xregs[31]);
 
@@ -69,31 +80,39 @@ SystemResult Mem::init_mem(const char *rawfile, const uint64_t initaddr) {
 
 void *Mem::get_ptr(uint64_t vaddr) {
   if (vaddr >= mem_size) {
-    fprintf(stderr, "=====Warning:memory access out of range=====\n");
+    fprintf(stderr,
+            "=====Warning:memory access out of range vaddr=0x%lx=====\n",
+            vaddr);
     return NULL;
   }
   return vaddr + mem_;
 }
 
-void Mem::write(uint8_t size, uint64_t vaddr, uint64_t value) {
+void Mem::write(MemAccess size, uint64_t vaddr, uint64_t value) {
   void *paddr;
   paddr = get_ptr(vaddr);
   if (!paddr) {
     return;
   }
-  LOG_CPU("\tmem: write: vaddr=0x%lx paddr=0x%p\n", vaddr, paddr);
+  LOG_CPU("\tmem: write: vaddr=0x%lx paddr=0x%p, value=0x%lx\n", vaddr, paddr,
+          value);
   switch (size) {
-  case 0:
-    return write_8(paddr, value);
-  case 1:
-    return write_16(paddr, value);
-  case 2:
-    return write_32(paddr, value);
-  case 3:
-    return write_64(paddr, value);
+  case MemAccess::Size8:
+    write_8(paddr, value);
+    break;
+  case MemAccess::Size16:
+    write_16(paddr, value);
+    break;
+  case MemAccess::Size32:
+    write_32(paddr, value);
+    break;
+  case MemAccess::Size64:
+    write_64(paddr, value);
+    break;
   default:
     assert(false);
   }
+  show_stack();
 }
 
 void Mem::write_8(void *paddr, const uint8_t value) {
@@ -127,7 +146,7 @@ void Mem::write_64(void *paddr, const uint64_t value) {
   p[7] = (uint8_t)(value >> 56);
 }
 
-uint64_t Mem::read(uint8_t size, const uint64_t addr) {
+uint64_t Mem::read(MemAccess size, const uint64_t addr) {
   void *paddr;
 
   paddr = get_ptr(addr);
@@ -135,14 +154,15 @@ uint64_t Mem::read(uint8_t size, const uint64_t addr) {
     return 0;
   }
   LOG_CPU("\tmem: read: vaddr=0x%lx paddr=0x%p\n", addr, paddr);
+  show_stack();
   switch (size) {
-  case 0:
+  case MemAccess::Size8:
     return read_8(paddr);
-  case 1:
+  case MemAccess::Size16:
     return read_16(paddr);
-  case 2:
+  case MemAccess::Size32:
     return read_32(paddr);
-  case 3:
+  case MemAccess::Size64:
     return read_64(paddr);
   default:
     assert(false);

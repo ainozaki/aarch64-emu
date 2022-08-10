@@ -1,11 +1,11 @@
 define run-stepi
 	si
-	printf "QQQW01  0x%lx 0x%lx\n", $w0, $w1
+	printf "QQQW0119  0x%lx 0x%lx 0x%lx\n", $w0, $w1, $w19
   printf "QQQFLG  %c %c %c %c\n", ($cpsr >> 31) & 1 ? 'N' : '-', ($cpsr >> 30) & 1 ? 'Z' : '-', ($cpsr >> 29) & 1 ? 'C' : '-', ($cpsr >> 28) & 1 ? 'V' : '-'
 	x/i $pc
 end
 
-b sum_test_enter
+b fibonacci_test_enter
 
 set verbose off
 start

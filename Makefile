@@ -11,6 +11,7 @@ TEST_OBJ = \
 TEST_GENOBJ =\
 	tests/create_testdata.o \
 	tests/data/adds.o \
+	tests/data/fun_fibonacci.o \
 	tests/data/fun_sum.o \
 	tests/data/subs.o \
 	tests/data/b.o \

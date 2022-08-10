@@ -44,6 +44,7 @@ private:
   void decode_branches(uint32_t inst);
 
   /* loads/stores */
+  void decode_ldst_register_pair(uint32_t inst);
   void decode_ldst_register(uint32_t inst);
   void decode_ldst_reg_unsigned_imm(uint32_t inst);
   void decode_ldst_reg_immediate(uint32_t inst);
@@ -54,6 +55,7 @@ private:
 
   /* Data Processing Register */
   void decode_addsub_shifted_reg(uint32_t inst);
+  void decode_logical_shifted_reg(uint32_t inst);
 
   /* Data Processing Immediate */
   void decode_pc_rel(uint32_t inst);

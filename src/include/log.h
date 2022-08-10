@@ -2,8 +2,8 @@
 
 #include <stdio.h>
 
-//#define ENABLE_LOG_CPU
-//#define ENABLE_LOG_DEBUG
+#define ENABLE_LOG_CPU
+#define ENABLE_LOG_DEBUG
 
 #ifdef ENABLE_LOG_CPU
 #define LOG_CPU(...) printf("\t\t"), printf(__VA_ARGS__)
