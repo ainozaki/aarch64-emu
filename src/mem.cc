@@ -71,7 +71,7 @@ SystemResult Mem::init_mem(const char *rawfile, const uint64_t initaddr) {
   printf("mem: load file %s, size 0x%lx\n", rawfile, readlen);
   fclose(fp);
 
-  system_->cpu().pc = (uint64_t)text_ + initaddr;
+  system_->cpu().pc = initaddr;
   printf("mem: set initial PC\n");
   printf("mem: PC = 0x%lx\n", system_->cpu().pc);
 
@@ -112,7 +112,7 @@ void Mem::write(MemAccess size, uint64_t vaddr, uint64_t value) {
   default:
     assert(false);
   }
-  show_stack();
+  //show_stack();
 }
 
 void Mem::write_8(void *paddr, const uint8_t value) {
@@ -154,7 +154,7 @@ uint64_t Mem::read(MemAccess size, const uint64_t addr) {
     return 0;
   }
   LOG_CPU("\tmem: read: vaddr=0x%lx paddr=0x%p\n", addr, paddr);
-  show_stack();
+  //show_stack();
   switch (size) {
   case MemAccess::Size8:
     return read_8(paddr);
@@ -171,7 +171,7 @@ uint64_t Mem::read(MemAccess size, const uint64_t addr) {
 }
 
 uint32_t Mem::read_inst(uint64_t pc) {
-  uint8_t *p = (uint8_t *)pc;
+  uint8_t *p = (uint8_t *)(pc + text_);
   return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24 | uint64_t(p[4]) << 32;
 }
 

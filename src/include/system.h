@@ -68,6 +68,7 @@ private:
 
   /* Branches, Exception Generating and System instructions */
   void decode_conditional_branch_imm(uint32_t inst);
+  void decode_exception_generation(uint32_t inst);
   void decode_unconditional_branch_reg(uint32_t inst);
   void decode_unconditional_branch_imm(uint32_t inst);
   void decode_compare_and_branch_imm(uint32_t inst);
