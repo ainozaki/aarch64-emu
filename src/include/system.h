@@ -11,26 +11,24 @@
 
 #define MEM_SIZE 1024
 
-namespace core {
-
 class System {
 public:
   System(const char *filename, const uint64_t initaddr);
   ~System();
 
-  SystemResult Init();
+  SysResult Init();
 
   uint32_t fetch();
   int Execute();
   void execute_loop();
   void decode_start(uint32_t inst);
 
-  cpu::Cpu &cpu() { return cpu_; }
-  mem::Mem &mem() { return mem_; }
+  Cpu &cpu() { return cpu_; }
+  Mem &mem() { return mem_; }
 
 private:
-  cpu::Cpu cpu_;
-  mem::Mem mem_;
+  Cpu cpu_;
+  Mem mem_;
   const uint64_t initaddr_;
   const char *filename_;
 
@@ -75,5 +73,3 @@ private:
 };
 
 typedef void (System::*decode_func)(uint32_t inst);
-
-} // namespace core

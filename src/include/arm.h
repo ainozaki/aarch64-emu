@@ -2,11 +2,7 @@
 
 #include <cstdint>
 
-namespace core {
-
 class System;
-
-namespace cpu {
 
 struct CPSR {
   char buff[27];
@@ -41,6 +37,3 @@ public:
 
   System *system_;
 };
-
-} // namespace cpu
-} // namespace core

@@ -8,10 +8,6 @@
 #include "system.h"
 #include "utils.h"
 
-namespace core {
-
-namespace cpu {
-
 Cpu::Cpu(System *system) : system_(system) {}
 
 void Cpu::show_regs() {
@@ -32,7 +28,3 @@ void Cpu::show_regs() {
 void Cpu::update_lower32(uint8_t reg, uint32_t value) {
   xregs[reg] = (xregs[reg] & (uint64_t)0xffffffff << 32) | value;
 }
-
-} // namespace cpu
-
-} // namespace core

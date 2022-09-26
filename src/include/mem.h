@@ -5,11 +5,7 @@
 #include "arm.h"
 #include "const.h"
 
-namespace core {
-
 class System;
-
-namespace mem {
 
 enum class MemAccess {
   Size8,
@@ -23,7 +19,7 @@ public:
   Mem(System *system);
   ~Mem() = default;
 
-  SystemResult init_mem(const char *rawfile, const uint64_t initaddr);
+  SysResult init_mem(const char *rawfile, const uint64_t initaddr);
   void clean_mem();
 
   void *get_ptr(uint64_t vaddr);
@@ -53,7 +49,3 @@ private:
 
   System *system_;
 };
-
-} // namespace mem
-
-} // namespace core

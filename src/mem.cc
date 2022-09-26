@@ -11,10 +11,6 @@
 #include "log.h"
 #include "system.h"
 
-namespace core {
-
-namespace mem {
-
 const uint32_t text_section_size = 1024 * 1024 * 1024; /// 1MB
 const uint64_t mem_size = 1024 * 1024 * 1024;          /// 1MB
 
@@ -39,7 +35,7 @@ void Mem::show_stack() {
   LOG_DEBUG("\t\t===============\n");
 }
 
-SystemResult Mem::init_mem(const char *rawfile, const uint64_t initaddr) {
+SysResult Mem::init_mem(const char *rawfile, const uint64_t initaddr) {
   FILE *fp;
   size_t readlen;
 
@@ -55,7 +51,7 @@ SystemResult Mem::init_mem(const char *rawfile, const uint64_t initaddr) {
   if (!rawfile) {
     no_text = true;
     fprintf(stdout, "mem: Proceed without text code.\n");
-    return SystemResult::Success;
+    return SysResult::Success;
   }
 
   text_ = (uint8_t *)calloc(1, text_section_size);
@@ -64,7 +60,7 @@ SystemResult Mem::init_mem(const char *rawfile, const uint64_t initaddr) {
     no_text = true;
     fprintf(stderr, "mem: cannot open file %s.\n", rawfile);
     free(text_);
-    return SystemResult::ErrorMemory;
+    return SysResult::ErrorMemory;
   }
   readlen = fread(text_, 1, text_section_size, fp);
   text_end = text_ + readlen - 1;
@@ -75,7 +71,7 @@ SystemResult Mem::init_mem(const char *rawfile, const uint64_t initaddr) {
   printf("mem: set initial PC\n");
   printf("mem: PC = 0x%lx\n", system_->cpu().pc);
 
-  return SystemResult::Success;
+  return SysResult::Success;
 }
 
 void *Mem::get_ptr(uint64_t vaddr) {
@@ -112,7 +108,7 @@ void Mem::write(MemAccess size, uint64_t vaddr, uint64_t value) {
   default:
     assert(false);
   }
-  //show_stack();
+  // show_stack();
 }
 
 void Mem::write_8(void *paddr, const uint8_t value) {
@@ -154,7 +150,7 @@ uint64_t Mem::read(MemAccess size, const uint64_t addr) {
     return 0;
   }
   LOG_CPU("\tmem: read: vaddr=0x%lx paddr=0x%p\n", addr, paddr);
-  //show_stack();
+  // show_stack();
   switch (size) {
   case MemAccess::Size8:
     return read_8(paddr);
@@ -192,7 +188,3 @@ uint64_t Mem::read_64(const void *paddr) {
   return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24 | uint64_t(p[4]) << 32 |
          uint64_t(p[5]) << 40 | uint64_t(p[6]) << 48 | uint64_t(p[7]) << 56;
 }
-
-} // namespace mem
-
-} // namespace core
