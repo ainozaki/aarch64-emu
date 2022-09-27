@@ -1,5 +1,5 @@
 CXXFLAGS=-g -Wall -Wextra -I./src/include -pthread -DNDEBUG -fsanitize=address
-LDFLAGS= -fsanitize=address
+LDFLAGS= -fsanitize=address -T ./linker_script.x
 LDFLAGS_TEST= $(LDFLAGS) -L/usr/local/lib -lgtest -lgtest_main -lpthread
 
 SRC = \
@@ -63,7 +63,7 @@ format: $(SRC) $(HEADER) $(MAIN)
 
 clean:
 	find ./ -type f -name "*.o" -or -name "*.d" -or -name "*.out" -or -name "*.bin" | xargs rm -rf
-	rm -f $(TARGET) $(TEST_TARGET) $(TEST_GENDATA) $(OBJ) $(TEST_OBJ) $(DEP) main.o main.d $(BIN) tests/tmp.o tmp.o
+	rm -f $(TARGET) $(TEST_TARGET) $(TEST_GENDATA) $(OBJ) $(TEST_OBJ) $(DEP) main.o main.d tests/tmp.o tmp.o
 
 .PHONY: all test run run-test format clean
 

@@ -43,13 +43,16 @@ SysResult Emulator::init()
 
 void Emulator::execute_loop()
 {
-  /*
+
   uint32_t inst;
   while (true)
   {
     inst = cpu.fetch();
+    if (!inst)
+    {
+      break;
+    }
     cpu.decode_start(inst);
   }
-  */
   cpu.show_regs();
 }
