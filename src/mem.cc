@@ -7,131 +7,86 @@
 #include <cmath>
 #include <cstdint>
 
-#include "arm.h"
 #include "log.h"
-#include "system.h"
 
-const uint32_t text_section_size = 1024 * 1024 * 1024; /// 1MB
-const uint64_t mem_size = 1024 * 1024 * 1024;          /// 1MB
-
-Mem::Mem(System *system) : system_(system) {}
-
-void Mem::clean_mem() {
-  if (!no_text) {
+void Mem::clean_mem()
+{
+  if (!no_text)
+  {
     free(text_);
   }
   free(mem_);
   printf("mem: free mainmem\n");
 }
 
-void Mem::show_stack() {
-  uint64_t sp = system_->cpu().xregs[31];
+void Mem::show_stack(uint64_t sp)
+{
   uint64_t addr;
   LOG_DEBUG("\t\t===============\n");
-  for (int i = -15; i < 16; i++) {
+  for (int i = -15; i < 16; i++)
+  {
     addr = sp + i * 4;
-    LOG_DEBUG("\t[0x%lx]   0x%08x\n", addr, read_32(get_ptr(addr)));
+    LOG_DEBUG("\t[0x%lx]   0x%08x\n", addr, load32(get_ptr(addr)));
+
+    LOG_DEBUG("\t\t===============\n");
   }
-  LOG_DEBUG("\t\t===============\n");
 }
 
-SysResult Mem::init_mem(const char *rawfile, const uint64_t initaddr) {
-  FILE *fp;
-  size_t readlen;
-
-  /// mem
-  mem_ = (uint8_t *)malloc(mem_size);
-  printf("mem: malloc mainmem size 0x%lx  %p - %p\n", mem_size, mem_,
-         mem_ + mem_size - 1);
-  system_->cpu().xregs[31] = (uint64_t)(mem_size - 1024 * 1024);
-  printf("mem: set initial SP\n");
-  printf("mem: SP = 0x%lx\n", system_->cpu().xregs[31]);
-
-  /// text
-  if (!rawfile) {
-    no_text = true;
-    fprintf(stdout, "mem: Proceed without text code.\n");
-    return SysResult::Success;
-  }
-
-  text_ = (uint8_t *)calloc(1, text_section_size);
-  fp = fopen(rawfile, "r");
-  if (!fp) {
-    no_text = true;
-    fprintf(stderr, "mem: cannot open file %s.\n", rawfile);
-    free(text_);
-    return SysResult::ErrorMemory;
-  }
-  readlen = fread(text_, 1, text_section_size, fp);
-  text_end = text_ + readlen - 1;
-  printf("mem: load file %s, size 0x%lx\n", rawfile, readlen);
-  fclose(fp);
-
-  system_->cpu().pc = initaddr;
-  printf("mem: set initial PC\n");
-  printf("mem: PC = 0x%lx\n", system_->cpu().pc);
-
-  return SysResult::Success;
-}
-
-void *Mem::get_ptr(uint64_t vaddr) {
-  if (vaddr >= mem_size) {
+uint64_t Mem::get_ptr(uint64_t vaddr)
+{
+  /*
+  if (vaddr >= mem_size)
+  {
     fprintf(stderr,
             "=====Warning:memory access out of range vaddr=0x%lx=====\n",
             vaddr);
-    return NULL;
+    return 0;
   }
-  return vaddr + mem_;
+  return (uint64_t)(vaddr + mem_);
+  */
+  return vaddr;
 }
 
-void Mem::write(MemAccess size, uint64_t vaddr, uint64_t value) {
-  void *paddr;
-  paddr = get_ptr(vaddr);
-  if (!paddr) {
-    return;
-  }
-  LOG_CPU("\tmem: write: vaddr=0x%lx paddr=0x%p, value=0x%lx\n", vaddr, paddr,
-          value);
-  switch (size) {
-  case MemAccess::Size8:
-    write_8(paddr, value);
-    break;
-  case MemAccess::Size16:
-    write_16(paddr, value);
-    break;
-  case MemAccess::Size32:
-    write_32(paddr, value);
-    break;
-  case MemAccess::Size64:
-    write_64(paddr, value);
-    break;
-  default:
-    assert(false);
-  }
-  // show_stack();
-}
-
-void Mem::write_8(void *paddr, const uint8_t value) {
-  uint8_t *p = (uint8_t *)paddr;
+void Mem::store8(uint64_t addr, const uint8_t value)
+{
+  uint8_t *p = (uint8_t *)get_ptr(addr);
   p[0] = (uint8_t)value;
 }
 
-void Mem::write_16(void *paddr, const uint16_t value) {
-  uint8_t *p = (uint8_t *)paddr;
+void Mem::store16(uint64_t addr, const uint16_t value)
+{
+  uint8_t *p;
+  if (!(p = (uint8_t *)get_ptr(addr)))
+  {
+    printf("cannot access to 0x%lx\n", addr);
+    return;
+  }
   p[0] = value;
   p[1] = (uint8_t)(value >> 8);
 }
 
-void Mem::write_32(void *paddr, const uint32_t value) {
-  uint8_t *p = (uint8_t *)paddr;
+void Mem::store32(uint64_t addr, const uint32_t value)
+{
+  uint8_t *p;
+  if (!(p = (uint8_t *)get_ptr(addr)))
+  {
+    printf("cannot access to 0x%lx\n", addr);
+    return;
+  }
   p[0] = value;
   p[1] = (uint8_t)(value >> 8);
   p[2] = (uint8_t)(value >> 16);
   p[3] = (uint8_t)(value >> 24);
 }
 
-void Mem::write_64(void *paddr, const uint64_t value) {
-  uint8_t *p = (uint8_t *)paddr;
+void Mem::store64(uint64_t addr, const uint64_t value)
+{
+  uint8_t *p;
+  if (!(p = (uint8_t *)get_ptr(addr)))
+  {
+    printf("cannot access to 0x%lx\n", addr);
+    return;
+  }
   p[0] = value;
   p[1] = (uint8_t)(value >> 8);
   p[2] = (uint8_t)(value >> 16);
@@ -142,49 +97,47 @@ void Mem::write_64(void *paddr, const uint64_t value) {
   p[7] = (uint8_t)(value >> 56);
 }
 
-uint64_t Mem::read(MemAccess size, const uint64_t addr) {
-  void *paddr;
-
-  paddr = get_ptr(addr);
-  if (!paddr) {
+uint8_t Mem::load8(uint64_t addr)
+{
+  uint8_t *p;
+  if (!(p = (uint8_t *)get_ptr(addr)))
+  {
+    printf("cannot access to 0x%lx\n", addr);
     return 0;
   }
-  LOG_CPU("\tmem: read: vaddr=0x%lx paddr=0x%p\n", addr, paddr);
-  // show_stack();
-  switch (size) {
-  case MemAccess::Size8:
-    return read_8(paddr);
-  case MemAccess::Size16:
-    return read_16(paddr);
-  case MemAccess::Size32:
-    return read_32(paddr);
-  case MemAccess::Size64:
-    return read_64(paddr);
-  default:
-    assert(false);
-    return -1;
+  return *(uint8_t *)p;
+}
+
+uint16_t Mem::load16(uint64_t addr)
+{
+  uint8_t *p;
+  if (!(p = (uint8_t *)get_ptr(addr)))
+  {
+    printf("cannot access to 0x%lx\n", addr);
+    return 0;
   }
-}
-
-uint32_t Mem::read_inst(uint64_t pc) {
-  uint8_t *p = (uint8_t *)(pc + text_);
-  return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24 | uint64_t(p[4]) << 32;
-}
-
-uint8_t Mem::read_8(const void *paddr) { return *(uint8_t *)paddr; }
-
-uint16_t Mem::read_16(const void *paddr) {
-  uint8_t *p = (uint8_t *)paddr;
   return p[0] | p[1] << 8;
 }
 
-uint32_t Mem::read_32(const void *paddr) {
-  uint8_t *p = (uint8_t *)paddr;
+uint32_t Mem::load32(uint64_t addr)
+{
+  uint8_t *p;
+  if (!(p = (uint8_t *)get_ptr(addr)))
+  {
+    printf("cannot access to 0x%lx\n", addr);
+    return 0;
+  }
   return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24 | uint64_t(p[4]) << 32;
 }
 
-uint64_t Mem::read_64(const void *paddr) {
-  uint8_t *p = (uint8_t *)paddr;
+uint64_t Mem::load64(uint64_t addr)
+{
+  uint8_t *p;
+  if (!(p = (uint8_t *)get_ptr(addr)))
+  {
+    printf("cannot access to 0x%lx\n", addr);
+    return 0;
+  }
   return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24 | uint64_t(p[4]) << 32 |
          uint64_t(p[5]) << 40 | uint64_t(p[6]) << 48 | uint64_t(p[7]) << 56;
 }

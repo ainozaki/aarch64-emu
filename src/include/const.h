@@ -3,4 +3,5 @@
 enum class SysResult {
   Success,
   ErrorMemory,
+  ErrorElf,
 };

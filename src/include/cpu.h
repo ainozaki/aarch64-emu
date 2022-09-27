@@ -1,36 +1,42 @@
 #pragma once
 
 #include <cstdint>
-#include <fstream>
-#include <memory>
-#include <vector>
 
-#include <arm.h>
-#include <const.h>
-#include <mem.h>
+#include "bus.h"
 
-#define MEM_SIZE 1024
+struct CPSR
+{
+  char buff[27];
+  uint8_t Q : 1;
+  uint8_t V : 1;
+  uint8_t C : 1;
+  uint8_t Z : 1;
+  uint8_t N : 1;
+};
 
-class System {
+class Cpu
+{
 public:
-  System(const char *filename, const uint64_t initaddr);
-  ~System();
+  Bus bus;
+  uint64_t pc;
+  CPSR cpsr; /* Current Program Status Register*/
 
-  SysResult Init();
+  /* map SP to xregs[31] */
+  uint64_t xregs[32] = {0};
+  uint64_t sp_el[4];  /* Stack pointers*/
+  uint64_t elr_el[4]; /* Exception Linked Registers */
+  const uint64_t xzr = 0;
 
+  Cpu() = default;
+  ~Cpu() = default;
   uint32_t fetch();
-  int Execute();
-  void execute_loop();
   void decode_start(uint32_t inst);
-
-  Cpu &cpu() { return cpu_; }
-  Mem &mem() { return mem_; }
+  void show_regs();
 
 private:
-  Cpu cpu_;
-  Mem mem_;
-  const uint64_t initaddr_;
-  const char *filename_;
+  void update_lower32(uint8_t reg, uint32_t value);
+  void increment_pc() { pc += 4; }
+  void set_pc(uint64_t new_pc) { pc = new_pc; }
 
   void decode_sme_encodings(uint32_t inst);
   void decode_unallocated(uint32_t inst);
@@ -72,4 +78,4 @@ private:
   void decode_compare_and_branch_imm(uint32_t inst);
 };
 
-typedef void (System::*decode_func)(uint32_t inst);
+typedef void (Cpu::*decode_func)(uint32_t inst);

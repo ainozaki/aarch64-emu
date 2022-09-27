@@ -2,50 +2,33 @@
 
 #include <cstdint>
 
-#include "arm.h"
 #include "const.h"
 
-class System;
-
-enum class MemAccess {
-  Size8,
-  Size16,
-  Size32,
-  Size64,
-};
-
-class Mem {
+class Mem
+{
 public:
-  Mem(System *system);
-  ~Mem() = default;
-
-  SysResult init_mem(const char *rawfile, const uint64_t initaddr);
-  void clean_mem();
-
-  void *get_ptr(uint64_t vaddr);
-
-  void write(MemAccess size, uint64_t addr, uint64_t value);
-  uint64_t read(MemAccess size, uint64_t addr);
-  uint32_t read_inst(uint64_t pc);
-
   uint8_t *mem_;
   uint8_t *text_;
   uint8_t *text_end;
 
-private:
-  void show_stack();
+  Mem() = default;
+  ~Mem() = default;
 
-  void write_8(void *addr, const uint8_t value);
-  void write_16(void *addr, const uint16_t value);
-  void write_32(void *addr, const uint32_t value);
-  void write_64(void *addr, const uint64_t value);
-  uint8_t read_8(const void *addr);
-  uint16_t read_16(const void *addr);
-  uint32_t read_32(const void *addr);
-  uint64_t read_64(const void *addr);
+  void clean_mem();
+  uint64_t get_ptr(uint64_t vaddr);
+
+  uint8_t load8(uint64_t addr);
+  uint16_t load16(uint64_t addr);
+  uint32_t load32(uint64_t addr);
+  uint64_t load64(uint64_t addr);
+  void store8(uint64_t addr, uint8_t value);
+  void store16(uint64_t addr, uint16_t value);
+  void store32(uint64_t addr, uint32_t value);
+  void store64(uint64_t addr, uint64_t value);
+
+private:
+  void show_stack(uint64_t sp);
 
   uint64_t key;
   bool no_text = false;
-
-  System *system_;
 };

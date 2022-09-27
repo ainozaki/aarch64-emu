@@ -3,9 +3,11 @@ LDFLAGS= -fsanitize=address
 LDFLAGS_TEST= $(LDFLAGS) -L/usr/local/lib -lgtest -lgtest_main -lpthread
 
 SRC = \
-	src/arm.cc \
-	src/mem.cc \
-	src/system.cc
+	src/bus.cc \
+	src/cpu.cc \
+	src/emulator.cc \
+	src/loader.cc \
+	src/mem.cc
 TEST_OBJ = \
 	tests/execute_unittest.o
 TEST_GENOBJ =\
@@ -47,6 +49,8 @@ $(TEST_GENDATA): $(TEST_GENOBJ)
 	bash extract_text.sh $< $@
 
 -include $(DEP)
+
+BIN=./misc/static
 
 run:
 	./$(TARGET) $(BIN)

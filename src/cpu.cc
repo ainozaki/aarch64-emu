@@ -1,51 +1,43 @@
-#include "system.h"
+#include "cpu.h"
 
+#include <bitset>
 #include <cassert>
+#include <iomanip>
 #include <iostream>
-#include <memory>
-
-#include <stdio.h>
 #include <unistd.h>
 
-#include "arm.h"
 #include "log.h"
-#include "mem.h"
 #include "utils.h"
 
 typedef __attribute__((mode(TI))) unsigned int uint128_t;
 typedef __attribute__((mode(TI))) int int128_t;
 
-System::System(const char *filename, const uint64_t initaddr)
-    : cpu_(Cpu(this)), mem_(Mem(this)), initaddr_(initaddr),
-      filename_(filename) {}
+uint32_t Cpu::fetch() { return bus.load32(pc); }
 
-System::~System() {
-  // free
-  mem_.clean_mem();
-}
+void Cpu::decode_start(uint32_t inst) {
+  uint8_t op1;
+  op1 = bitutil::shift(inst, 25, 28);
 
-SysResult System::Init() {
-  SysResult err;
-  printf("emu: start emulating\n");
-
-  /// mem
-  if ((err = mem_.init_mem(filename_, initaddr_)) != SysResult::Success) {
-    fprintf(stderr, "emu: failed to initialize mem\n");
-    return err;
-  }
-
-  return SysResult::Success;
-}
-
-uint32_t System::fetch() { return mem_.read_inst(cpu_.pc); }
-
-void System::execute_loop() {
-  uint32_t inst;
-
-  while (cpu_.pc < (uint64_t)mem_.text_end) {
-    inst = fetch();
-    decode_start(inst);
-  }
+  // LOG_CPU("PC=0x%lx\n", pc);
+  const decode_func decode_inst_tbl[] = {
+      &Cpu::decode_sme_encodings,
+      &Cpu::decode_unallocated,
+      &Cpu::decode_sve_encodings,
+      &Cpu::decode_unallocated,
+      &Cpu::decode_loads_and_stores,
+      &Cpu::decode_data_processing_reg,
+      &Cpu::decode_loads_and_stores,
+      &Cpu::decode_data_processing_float,
+      &Cpu::decode_data_processing_imm,
+      &Cpu::decode_data_processing_imm,
+      &Cpu::decode_branches,
+      &Cpu::decode_branches,
+      &Cpu::decode_loads_and_stores,
+      &Cpu::decode_data_processing_reg,
+      &Cpu::decode_loads_and_stores,
+      &Cpu::decode_data_processing_float,
+  };
+  (this->*decode_inst_tbl[op1])(inst);
 }
 
 namespace {
@@ -88,46 +80,39 @@ static inline uint32_t signed_extend32(uint32_t val, uint8_t topbit) {
 
 } // namespace
 
-void System::decode_start(uint32_t inst) {
-  uint8_t op1;
-  op1 = bitutil::shift(inst, 25, 28);
-
-  // LOG_CPU("PC=0x%lx\n", cpu_.pc);
-  const decode_func decode_inst_tbl[] = {
-      &System::decode_sme_encodings,
-      &System::decode_unallocated,
-      &System::decode_sve_encodings,
-      &System::decode_unallocated,
-      &System::decode_loads_and_stores,
-      &System::decode_data_processing_reg,
-      &System::decode_loads_and_stores,
-      &System::decode_data_processing_float,
-      &System::decode_data_processing_imm,
-      &System::decode_data_processing_imm,
-      &System::decode_branches,
-      &System::decode_branches,
-      &System::decode_loads_and_stores,
-      &System::decode_data_processing_reg,
-      &System::decode_loads_and_stores,
-      &System::decode_data_processing_float,
-  };
-  (this->*decode_inst_tbl[op1])(inst);
+void Cpu::show_regs() {
+  std::cout << "=================================================" << std::endl;
+  for (int i = 0; i < 31; i++) {
+    std::cout << std::setw(2) << i << ":" << std::hex << std::setfill('0')
+              << std::right << std::setw(16) << xregs[i] << "	";
+    if (i % 3 == 2) {
+      std::cout << std::endl;
+    }
+  }
+  std::cout << std::endl;
+  std::cout << "CPSR: [NZCV]=" << cpsr.N << cpsr.Z << cpsr.C << cpsr.Z
+            << std::endl;
+  std::cout << "=================================================" << std::endl;
 }
 
-void System::decode_data_processing_imm(uint32_t inst) {
+void Cpu::update_lower32(uint8_t reg, uint32_t value) {
+  xregs[reg] = (xregs[reg] & (uint64_t)0xffffffff << 32) | value;
+}
+
+void Cpu::decode_data_processing_imm(uint32_t inst) {
   uint8_t op0;
   op0 = bitutil::shift(inst, 23, 25);
   const decode_func decode_data_processing_imm_tbl[] = {
-      &System::decode_pc_rel,      &System::decode_pc_rel,
-      &System::decode_add_sub_imm, &System::decode_add_sub_imm_with_tags,
-      &System::decode_logical_imm, &System::decode_move_wide_imm,
-      &System::decode_bitfield,    &System::decode_extract,
+      &Cpu::decode_pc_rel,      &Cpu::decode_pc_rel,
+      &Cpu::decode_add_sub_imm, &Cpu::decode_add_sub_imm_with_tags,
+      &Cpu::decode_logical_imm, &Cpu::decode_move_wide_imm,
+      &Cpu::decode_bitfield,    &Cpu::decode_extract,
   };
   (this->*decode_data_processing_imm_tbl[op0])(inst);
-  cpu_.increment_pc();
+  increment_pc();
 }
 
-void System::decode_loads_and_stores(uint32_t inst) {
+void Cpu::decode_loads_and_stores(uint32_t inst) {
   uint8_t op;
   op = bitutil::shift(inst, 28, 29);
   switch (op) {
@@ -138,16 +123,16 @@ void System::decode_loads_and_stores(uint32_t inst) {
     unsupported();
     break;
   case 0b10:
-    System::decode_ldst_register_pair(inst);
+    Cpu::decode_ldst_register_pair(inst);
     break;
   case 0b11:
-    System::decode_ldst_register(inst);
+    Cpu::decode_ldst_register(inst);
     break;
   }
-  cpu_.increment_pc();
+  increment_pc();
 }
 
-void System::decode_data_processing_reg(uint32_t inst) {
+void Cpu::decode_data_processing_reg(uint32_t inst) {
   uint8_t op1, op2;
 
   op1 = bitutil::bit(inst, 28);
@@ -160,15 +145,15 @@ void System::decode_data_processing_reg(uint32_t inst) {
   } else {
     unsupported();
   }
-  cpu_.increment_pc();
+  increment_pc();
 }
 
-void System::decode_data_processing_float(uint32_t inst) {
+void Cpu::decode_data_processing_float(uint32_t inst) {
   LOG_CPU("data_processing_float %d\n", inst);
-  cpu_.increment_pc();
+  increment_pc();
 }
 
-void System::decode_branches(uint32_t inst) {
+void Cpu::decode_branches(uint32_t inst) {
   uint8_t op;
   op = bitutil::shift(inst, 29, 31);
   switch (op) {
@@ -206,19 +191,19 @@ void System::decode_branches(uint32_t inst) {
   }
 }
 
-void System::decode_sme_encodings(uint32_t inst) {
+void Cpu::decode_sme_encodings(uint32_t inst) {
   LOG_CPU("sme_encodings %d\n", inst);
-  cpu_.increment_pc();
+  increment_pc();
 }
 
-void System::decode_unallocated(uint32_t inst) {
+void Cpu::decode_unallocated(uint32_t inst) {
   LOG_CPU("unallocated %d\n", inst);
-  cpu_.increment_pc();
+  increment_pc();
 }
 
-void System::decode_sve_encodings(uint32_t inst) {
+void Cpu::decode_sve_encodings(uint32_t inst) {
   LOG_CPU("sve_encodings %d\n", inst);
-  cpu_.increment_pc();
+  increment_pc();
 }
 
 /*
@@ -237,7 +222,7 @@ void System::decode_sve_encodings(uint32_t inst) {
 
          @op: 0->ADR, 1->ADRP
 */
-void System::decode_pc_rel(uint32_t inst) {
+void Cpu::decode_pc_rel(uint32_t inst) {
   uint8_t op, immlo, rd;
   uint32_t immhi;
   uint64_t imm;
@@ -255,12 +240,12 @@ void System::decode_pc_rel(uint32_t inst) {
     imm = immhi << 14;
     imm = imm | immlo << 12;
     LOG_CPU("ADRP: rd=%d, pc=0x%lx, immhi=0x%x, immlo=0x%x, imm=0x%lx\n", rd,
-            cpu_.pc, immhi, immlo, imm);
+            pc, immhi, immlo, imm);
     break;
   default:
     unallocated();
   }
-  cpu().xregs[rd] = ((cpu_.pc >> 12) << 12) + imm;
+  xregs[rd] = ((pc >> 12) << 12) + imm;
 }
 
 static uint64_t add_imm(uint64_t x, uint64_t y, uint8_t carry_in) {
@@ -316,7 +301,7 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
          @Rd: destination gp register or sp
 
 */
-void System::decode_add_sub_imm(uint32_t inst) {
+void Cpu::decode_add_sub_imm(uint32_t inst) {
   uint8_t rd, rn;
   uint64_t imm;
   bool shift, setflag, if_sub, if_64bit;
@@ -337,16 +322,13 @@ void System::decode_add_sub_imm(uint32_t inst) {
   if (setflag) {
     if (if_sub) {
       /* SUBS */
-      LOG_CPU("SUBS: rd=%d, xregs[rn]=0x%lx, imm=0x%lx\n", rd, cpu_.xregs[rn],
-              ~imm);
-      result =
-          add_imm_s(cpu_.xregs[rn], ~imm, /*carry-in=*/1, cpu_.cpsr, if_64bit);
+      LOG_CPU("SUBS: rd=%d, xregs[rn]=0x%lx, imm=0x%lx\n", rd, xregs[rn], ~imm);
+      result = add_imm_s(xregs[rn], ~imm, /*carry-in=*/1, cpsr, if_64bit);
     } else {
       /* ADDS */
       LOG_CPU("ADDS: rd=%d, xregs[rn]=0x%lx, imm=0x%lx, if_64bit=%d\n", rd,
-              cpu_.xregs[rn], imm, if_64bit);
-      result =
-          add_imm_s(cpu_.xregs[rn], imm, /*carry-in=*/0, cpu_.cpsr, if_64bit);
+              xregs[rn], imm, if_64bit);
+      result = add_imm_s(xregs[rn], imm, /*carry-in=*/0, cpsr, if_64bit);
     }
     if (rd == 31) {
       return;
@@ -354,27 +336,23 @@ void System::decode_add_sub_imm(uint32_t inst) {
   } else {
     if (if_sub) {
       /* SUB */
-      LOG_CPU("SUB: rd=%d, xregs[rn]=0x%lx, imm=0x%lx\n", rd, cpu_.xregs[rn],
-              ~imm);
-      result = add_imm(cpu_.xregs[rn], ~imm, /*carry-in=*/1);
+      LOG_CPU("SUB: rd=%d, xregs[rn]=0x%lx, imm=0x%lx\n", rd, xregs[rn], ~imm);
+      result = add_imm(xregs[rn], ~imm, /*carry-in=*/1);
     } else {
       /* ADD */
-      LOG_CPU("ADD: rd=%d, xregs[rn]=0x%lx, imm=0x%lx\n", rd, cpu_.xregs[rn],
-              imm);
-      result = add_imm(cpu_.xregs[rn], imm, /*carry-in=*/0);
+      LOG_CPU("ADD: rd=%d, xregs[rn]=0x%lx, imm=0x%lx\n", rd, xregs[rn], imm);
+      result = add_imm(xregs[rn], imm, /*carry-in=*/0);
     }
   }
 
   if (if_64bit) {
-    cpu_.xregs[rd] = result;
+    xregs[rd] = result;
   } else {
-    cpu_.xregs[rd] = bitutil::mask(32) & result;
+    xregs[rd] = bitutil::mask(32) & result;
   }
 }
 
-void System::decode_add_sub_imm_with_tags(uint32_t inst) {
-  LOG_CPU("%d\n", inst);
-}
+void Cpu::decode_add_sub_imm_with_tags(uint32_t inst) { LOG_CPU("%d\n", inst); }
 
 static uint64_t bitfield_replicate(uint64_t mask, uint8_t e) {
   while (e < 64) {
@@ -420,7 +398,7 @@ static uint64_t decode_bit_masks(uint8_t n, uint8_t imms, uint8_t immr) {
          @opc: 0->AND, 1->ORR, 2->EOR, 3->ANDS
 */
 
-void System::decode_logical_imm(uint32_t inst) {
+void Cpu::decode_logical_imm(uint32_t inst) {
   uint8_t rd, rn, imms, immr, opc;
   bool N, if_64bit;
   uint32_t imm;
@@ -443,37 +421,37 @@ void System::decode_logical_imm(uint32_t inst) {
 
   switch (opc) {
   case 0b00:
-    LOG_CPU("AND: [rn]=%lu, imm=%d\n", cpu_.xregs[rn], imm);
-    result = cpu_.xregs[rn] & imm; /* AND */
+    LOG_CPU("AND: [rn]=%lu, imm=%d\n", xregs[rn], imm);
+    result = xregs[rn] & imm; /* AND */
     break;
   case 0b01:
-    LOG_CPU("ORR: [rn]=%lu, imm=%d\n", cpu_.xregs[rn], imm);
-    result = cpu_.xregs[rn] | imm; /* ORR */
+    LOG_CPU("ORR: [rn]=%lu, imm=%d\n", xregs[rn], imm);
+    result = xregs[rn] | imm; /* ORR */
     break;
   case 0b10:
-    LOG_CPU("EOR: [rn]=%lu, imm=%d\n", cpu_.xregs[rn], imm);
-    result = cpu_.xregs[rn] ^ imm; /* EOR */
+    LOG_CPU("EOR: [rn]=%lu, imm=%d\n", xregs[rn], imm);
+    result = xregs[rn] ^ imm; /* EOR */
     break;
   case 0b11:
-    LOG_CPU("ANDS: [rn]=%lu, imm=%d\n", cpu_.xregs[rn], imm);
-    result = cpu_.xregs[rn] & imm; /* ANDS */
+    LOG_CPU("ANDS: [rn]=%lu, imm=%d\n", xregs[rn], imm);
+    result = xregs[rn] & imm; /* ANDS */
     if (if_64bit) {
-      cpu_.cpsr.N = (int64_t)result < 0;
+      cpsr.N = (int64_t)result < 0;
     } else {
-      cpu_.cpsr.N = (int32_t)result < 0;
+      cpsr.N = (int32_t)result < 0;
     }
-    cpu_.cpsr.Z = result == 0;
-    cpu_.cpsr.C = 0;
-    cpu_.cpsr.V = 0;
+    cpsr.Z = result == 0;
+    cpsr.C = 0;
+    cpsr.V = 0;
     break;
   default:
     assert(false);
   }
 
   if (if_64bit) {
-    cpu_.xregs[rd] = result;
+    xregs[rd] = result;
   } else {
-    cpu_.xregs[rd] = bitutil::clear_upper32(result);
+    xregs[rd] = bitutil::clear_upper32(result);
   }
 }
 
@@ -491,7 +469,7 @@ void System::decode_logical_imm(uint32_t inst) {
          @Rd: destination gp register or sp
 
 */
-void System::decode_move_wide_imm(uint32_t inst) {
+void Cpu::decode_move_wide_imm(uint32_t inst) {
   uint8_t opc, hw, rd, shift;
   bool if_64bit;
   uint64_t imm;
@@ -516,13 +494,13 @@ void System::decode_move_wide_imm(uint32_t inst) {
     [[fallthrough]];
   case 2: /* MOVZ */
     if (if_64bit) {
-      cpu_.xregs[rd] = imm;
+      xregs[rd] = imm;
     } else {
-      cpu_.xregs[rd] = bitutil::clear_upper32(imm);
+      xregs[rd] = bitutil::clear_upper32(imm);
     }
     break;
   case 3: /* MOVK */
-    cpu_.xregs[rd] = cpu_.xregs[rd] | imm;
+    xregs[rd] = xregs[rd] | imm;
     break;
   default:
     assert(false);
@@ -541,7 +519,7 @@ void System::decode_move_wide_imm(uint32_t inst) {
          @opc: 0->SBFM, 1->BFM, 2->UBFM, 3->unallocated
 
 */
-void System::decode_bitfield(uint32_t inst) {
+void Cpu::decode_bitfield(uint32_t inst) {
   uint8_t rd, rn, imms, immr, opc, to, from, len;
   bool N, if_64bit;
   uint32_t imm;
@@ -567,29 +545,29 @@ void System::decode_bitfield(uint32_t inst) {
     from = 0;
     to = if_64bit ? 64 - immr : 32 - immr;
   }
-  imm = bitutil::shift(cpu_.xregs[rn], from, from + len - 1) << to;
+  imm = bitutil::shift(xregs[rn], from, from + len - 1) << to;
 
   switch (opc) {
   case 0:
     LOG_CPU("SBFM, to=%d, from=%d, len=%d\n", to, from, len);
-    cpu_.xregs[rd] = 0;
-    cpu_.xregs[rd] = signed_extend(imm, /*topbit=*/to + len - 1);
+    xregs[rd] = 0;
+    xregs[rd] = signed_extend(imm, /*topbit=*/to + len - 1);
     break;
   case 1:
     LOG_CPU("BFM\n");
-    cpu_.xregs[rd] = imm | (cpu_.xregs[rd] & ((1 << to) - 1)) |
-                     (cpu_.xregs[rd] & (bitutil::mask(len) << to));
+    xregs[rd] = imm | (xregs[rd] & ((1 << to) - 1)) |
+                (xregs[rd] & (bitutil::mask(len) << to));
     break;
   case 2:
     LOG_CPU("UBFM\n");
-    cpu_.xregs[rd] = imm;
+    xregs[rd] = imm;
     break;
   default:
     assert(false);
   }
 }
 
-void System::decode_extract(uint32_t inst) { LOG_CPU("%d\n", inst); }
+void Cpu::decode_extract(uint32_t inst) { LOG_CPU("%d\n", inst); }
 
 /*
 ====================================================
@@ -611,7 +589,7 @@ void System::decode_extract(uint32_t inst) { LOG_CPU("%d\n", inst); }
    010:offset, 011:pre-indexed
                                  @L: if load
 */
-void System::decode_ldst_register_pair(uint32_t inst) {
+void Cpu::decode_ldst_register_pair(uint32_t inst) {
   bool /*if_vector, */ wback, postindex, if_32bit;
   uint8_t if_load, opc, opt, rn, rt, rt2, imm7;
   int16_t offset;
@@ -690,28 +668,28 @@ void System::decode_ldst_register_pair(uint32_t inst) {
     unallocated();
   }
 
-  address = cpu_.xregs[rn];
+  address = xregs[rn];
   if (!postindex) {
     address += offset;
   }
 
   if (if_load) {
     if (if_32bit) {
-      cpu_.xregs[rt] = mem_.read(MemAccess::Size32, address);
-      cpu_.xregs[rt2] = mem_.read(MemAccess::Size32, address + 4);
+      xregs[rt] = bus.load32(address);
+      xregs[rt2] = bus.load32(address + 4);
     } else {
-      cpu_.xregs[rt] = mem_.read(MemAccess::Size64, address);
-      cpu_.xregs[rt2] = mem_.read(MemAccess::Size64, address + 8);
+      xregs[rt] = bus.load64(address);
+      xregs[rt2] = bus.load64(address + 8);
     }
   } else {
-    data1 = cpu_.xregs[rt];
-    data2 = cpu_.xregs[rt2];
+    data1 = xregs[rt];
+    data2 = xregs[rt2];
     if (if_32bit) {
-      mem_.write(MemAccess::Size32, address, data1);
-      mem_.write(MemAccess::Size32, address + 4, data2);
+      bus.store32(address, data1);
+      bus.store32(address + 4, data2);
     } else {
-      mem_.write(MemAccess::Size64, address, data1);
-      mem_.write(MemAccess::Size64, address + 8, data2);
+      bus.store64(address, data1);
+      bus.store64(address + 8, data2);
     }
   }
 
@@ -719,11 +697,11 @@ void System::decode_ldst_register_pair(uint32_t inst) {
     if (postindex) {
       address += offset;
     }
-    cpu_.xregs[rn] = address;
+    xregs[rn] = address;
   }
 }
 
-void System::decode_ldst_register(uint32_t inst) {
+void Cpu::decode_ldst_register(uint32_t inst) {
   uint8_t op;
   // uint8_t op0 = bitutil::shift(inst, 28, 31);
 
@@ -732,14 +710,10 @@ void System::decode_ldst_register(uint32_t inst) {
   } else {
     op = (bitutil::bit(inst, 21)) << 2 | bitutil::shift(inst, 10, 11);
     const decode_func decode_ldst_reg_tbl[] = {
-        &System::decode_ldst_reg_immediate,
-        &System::decode_ldst_reg_immediate,
-        &System::decode_ldst_reg_unpriviledged,
-        &System::decode_ldst_reg_immediate,
-        &System::decode_ldst_atomic_memory_op,
-        &System::decode_ldst_reg_pac,
-        &System::decode_ldst_reg_reg_offset,
-        &System::decode_ldst_reg_pac,
+        &Cpu::decode_ldst_reg_immediate,     &Cpu::decode_ldst_reg_immediate,
+        &Cpu::decode_ldst_reg_unpriviledged, &Cpu::decode_ldst_reg_immediate,
+        &Cpu::decode_ldst_atomic_memory_op,  &Cpu::decode_ldst_reg_pac,
+        &Cpu::decode_ldst_reg_reg_offset,    &Cpu::decode_ldst_reg_pac,
     };
     (this->*decode_ldst_reg_tbl[op])(inst);
   }
@@ -763,7 +737,7 @@ void System::decode_ldst_register(uint32_t inst) {
          @Rt: register to be transfered
 
 */
-void System::decode_ldst_reg_unsigned_imm(uint32_t inst) {
+void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
   bool vector;
   uint8_t size, opc, rn, rt;
   uint64_t imm12, offset;
@@ -783,14 +757,15 @@ void System::decode_ldst_reg_unsigned_imm(uint32_t inst) {
       LOG_CPU("STR, opc=0x%x, size=0x%x, V=%d, rt=%d, rn=%d\n", opc, size,
               vector, rt, rn);
       offset = imm12 << size;
-      mem_.write((MemAccess)size, cpu_.xregs[rn] + offset,
-                 rt == 31 ? 0 : cpu_.xregs[rt]);
+      // TODO size
+      bus.store64(xregs[rn] + offset, rt == 31 ? 0 : xregs[rt]);
       break;
     case 0x1:
       LOG_CPU("LDR, opc=0x%x, size=0x%x, V=%d, rt=%d, rn=%d, inst=0x%x\n", opc,
               size, vector, rt, rn, inst);
       offset = imm12 << size;
-      cpu_.xregs[rt] = mem_.read((MemAccess)size, cpu_.xregs[rn] + offset);
+      // TODO size
+      xregs[rt] = bus.load64(xregs[rn] + offset);
       break;
     case 0x2:
       LOG_CPU("LDRS, opc=0x%x, size=0x%x, V=%d\n", opc, size, vector);
@@ -826,7 +801,7 @@ void System::decode_ldst_reg_unsigned_imm(uint32_t inst) {
 
 */
 
-void System::decode_ldst_reg_immediate(uint32_t inst) {
+void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
   bool vector;
   uint8_t size, opc, rn, rt, idx;
   uint64_t imm9, offset;
@@ -872,7 +847,8 @@ void System::decode_ldst_reg_immediate(uint32_t inst) {
       LOG_CPU("load_store: register: STR: size=%d, rt=%d, rn=%d, "
               "offset=%lu\n",
               size_tbl[size], rt, rn, offset);
-      mem_.write((MemAccess)size, cpu_.xregs[rn] + offset, cpu_.xregs[rt]);
+      // TODO size
+      bus.store64(xregs[rn] + offset, xregs[rt]);
       break;
     case 0b01:
       /* LDR (unsigned) */
@@ -880,10 +856,11 @@ void System::decode_ldst_reg_immediate(uint32_t inst) {
               "offset=%lu\n",
               size_tbl[size], rt, rn, offset);
       if (size == 3) {
-        cpu_.xregs[rt] = mem_.read((MemAccess)size, cpu_.xregs[rn] + offset);
+        // TODO size
+        xregs[rt] = bus.load64(xregs[rn] + offset);
       } else {
-        cpu_.update_lower32(
-            rt, mem_.read((MemAccess)size, cpu_.xregs[rn] + offset));
+        // TODO size
+        update_lower32(rt, bus.load64(xregs[rn] + offset));
       }
       break;
     case 0b10:
@@ -895,8 +872,9 @@ void System::decode_ldst_reg_immediate(uint32_t inst) {
       LOG_CPU("load_store: register: LDR(signed 64bit): size=%d, rt=%d, rn=%d, "
               "offset=%lu\n",
               size_tbl[size], rt, rn, offset);
-      cpu_.xregs[rt] = signed_extend(
-          mem_.read((MemAccess)size, cpu_.xregs[rn] + offset), size_tbl[size]);
+      xregs[rt] = signed_extend(
+          // TODO size
+          bus.load64(xregs[rn] + offset), size_tbl[size]);
       break;
     case 0b11:
       /* LDR (signed 32bit) */
@@ -906,29 +884,29 @@ void System::decode_ldst_reg_immediate(uint32_t inst) {
       LOG_CPU("load_store: register: LDR(signed 32bit): size=%d, rt=%d, rn=%d, "
               "offset=%lu\n",
               size_tbl[size], rt, rn, offset);
-      cpu_.update_lower32(
+      update_lower32(
           rt,
-          signed_extend32(mem_.read((MemAccess)size, cpu_.xregs[rn] + offset),
-                          size_tbl[size]));
+          // TODO size
+          signed_extend32(bus.load64(xregs[rn] + offset), size_tbl[size]));
       break;
     }
 
     if (writeback) {
       LOG_CPU("\twriteback address\n");
-      cpu_.xregs[rn] = cpu_.xregs[rn] + offset;
+      xregs[rn] = xregs[rn] + offset;
     }
   }
 }
 
-void System::decode_ldst_reg_unpriviledged(uint32_t inst) {
+void Cpu::decode_ldst_reg_unpriviledged(uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_unpriviledged\n");
   LOG_CPU("%d\n", inst);
 }
-void System::decode_ldst_atomic_memory_op(uint32_t inst) {
+void Cpu::decode_ldst_atomic_memory_op(uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_atomic_memory_op\n");
   LOG_CPU("%d\n", inst);
 }
-void System::decode_ldst_reg_pac(uint32_t inst) {
+void Cpu::decode_ldst_reg_pac(uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_pca\n");
   LOG_CPU("%d\n", inst);
 }
@@ -996,7 +974,7 @@ static uint64_t shift_and_extend(uint64_t val, bool shift, uint8_t scale,
          @Rt: register to be transfered
 
 */
-void System::decode_ldst_reg_reg_offset(uint32_t inst) {
+void Cpu::decode_ldst_reg_reg_offset(uint32_t inst) {
   bool vector, shift;
   uint8_t size, scale, opc, opt, rm, rn, rt;
   uint64_t offset;
@@ -1018,11 +996,11 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
     case 0b00:
       /* store */
       // TODO: option = 0b011
-      offset =
-          shift_and_extend(cpu_.xregs[rm], shift, scale, extendtype_tbl[opt]);
-      mem_.write((MemAccess)size, cpu_.xregs[rn] + offset, cpu_.xregs[rt]);
+      offset = shift_and_extend(xregs[rm], shift, scale, extendtype_tbl[opt]);
+      // TODO size
+      bus.store64(xregs[rn] + offset, xregs[rt]);
       LOG_CPU("load_store: register offset: store: rt %d [rn] %lu offset %lu\n",
-              rt, cpu_.xregs[rn], offset);
+              rt, xregs[rn], offset);
       break;
     case 0b11: /* loads */
       if (size >= 0b10) {
@@ -1032,14 +1010,13 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
     case 0b01: /* loadu */
     case 0b10: /* loads */
                // TODO: option = 0b011
-      offset =
-          shift_and_extend(cpu_.xregs[rm], shift, scale, extendtype_tbl[opt]);
+      offset = shift_and_extend(xregs[rm], shift, scale, extendtype_tbl[opt]);
       LOG_CPU("load_store: register offset: load: rt=%d, rn=%d, [rn]=0x%lx, "
               "rm=%d, "
               "[rm]=0x%lx, offset=%lu vaddr=0x%lx\n",
-              rt, rn, cpu_.xregs[rn], rm, cpu_.xregs[rm], offset,
-              cpu_.xregs[rn] + offset);
-      cpu_.xregs[rt] = mem_.read((MemAccess)size, cpu_.xregs[rn] + offset);
+              rt, rn, xregs[rn], rm, xregs[rm], offset, xregs[rn] + offset);
+      // TODO size
+      xregs[rt] = bus.load64(xregs[rn] + offset);
       break;
     }
   }
@@ -1064,7 +1041,7 @@ void System::decode_ldst_reg_reg_offset(uint32_t inst) {
          @sh: if sh=1 then LSL #12
          @Rn: source gp regiter or sp
 */
-void System::decode_addsub_shifted_reg(uint32_t inst) {
+void Cpu::decode_addsub_shifted_reg(uint32_t inst) {
   uint8_t rd, rn, imm6;
   uint64_t rm, operand2;
   bool /*shift, setflag, if_64bit, */ if_sub;
@@ -1078,14 +1055,14 @@ void System::decode_addsub_shifted_reg(uint32_t inst) {
   rn = bitutil::shift(inst, 5, 9);
   rd = bitutil::shift(inst, 0, 4);
 
-  operand2 = cpu_.xregs[rm] << imm6;
+  operand2 = xregs[rm] << imm6;
 
   if (if_sub) {
     LOG_CPU("SUB rd=0x%x, rm=0x%lx, rn=0x%d\n", rd, rm, rn);
   } else {
     LOG_CPU("ADD rd=0x%x, rm=0x%lx, rn=0x%d, xregs[rn]=0x%lx, op2=0x%lx\n", rd,
-            rm, rn, cpu_.xregs[rn], operand2);
-    cpu_.xregs[rd] = cpu_.xregs[rn] + operand2;
+            rm, rn, xregs[rn], operand2);
+    xregs[rd] = xregs[rn] + operand2;
   }
 }
 
@@ -1102,7 +1079,7 @@ void System::decode_addsub_shifted_reg(uint32_t inst) {
          @N: not
          @Rn: source gp regiter or sp
 */
-void System::decode_logical_shifted_reg(uint32_t inst) {
+void Cpu::decode_logical_shifted_reg(uint32_t inst) {
   uint8_t opc, rd, rn, rm, imm6, shift;
   uint64_t op1, op2;
   // bool setflag, if_64bit, if_not;
@@ -1116,9 +1093,9 @@ void System::decode_logical_shifted_reg(uint32_t inst) {
   rn = bitutil::shift(inst, 5, 9);
   rd = bitutil::shift(inst, 0, 4);
 
-  op1 = rn == 31 ? 0 : cpu().xregs[rn];
+  op1 = rn == 31 ? 0 : xregs[rn];
 
-  op2 = cpu().xregs[rm];
+  op2 = xregs[rm];
   switch (shift) {
   case 0:
     op2 = op2 << imm6;
@@ -1133,8 +1110,8 @@ void System::decode_logical_shifted_reg(uint32_t inst) {
   switch (opc) {
   case 1:
     LOG_CPU("ORR rd[%d]:0x%lx, rn[%d]:0x%lx, rm[%d](shift:%d):0x%lx\n", rd,
-            cpu().xregs[rd], rn, op1, rm, imm6, op2);
-    cpu().xregs[rd] = op1 | op2;
+            xregs[rd], rn, op1, rm, imm6, op2);
+    xregs[rd] = op1 | op2;
     break;
   default:
     unsupported();
@@ -1144,7 +1121,7 @@ void System::decode_logical_shifted_reg(uint32_t inst) {
 
 /*
 ===========================================================
-   Branches, Exception Generating and System instructions
+   Branches, Exception Generating and Cpu instructions
 ===========================================================
 */
 
@@ -1219,7 +1196,7 @@ static bool check_b_flag(uint8_t cond, CPSR &cpsr) {
   return false;
 }
 
-void System::decode_conditional_branch_imm(uint32_t inst) {
+void Cpu::decode_conditional_branch_imm(uint32_t inst) {
   uint64_t offset;
   uint32_t imm19;
   uint8_t o1, o0, cond;
@@ -1234,15 +1211,15 @@ void System::decode_conditional_branch_imm(uint32_t inst) {
   }
 
   if (o0 == 0) {
-    if (check_b_flag(cond, cpu_.cpsr)) {
+    if (check_b_flag(cond, cpsr)) {
       offset = signed_extend(imm19 << 2, 20);
-      LOG_CPU("B.cond: pc=0x%lx offset=0x%lx, cond=0x%x\n", cpu_.pc + offset,
-              offset, cond);
-      cpu_.set_pc(cpu_.pc + offset);
+      LOG_CPU("B.cond: pc=0x%lx offset=0x%lx, cond=0x%x\n", pc + offset, offset,
+              cond);
+      set_pc(pc + offset);
       return;
     }
   }
-  cpu_.increment_pc();
+  increment_pc();
 }
 
 /*
@@ -1255,7 +1232,7 @@ void System::decode_conditional_branch_imm(uint32_t inst) {
 
          @op:
 */
-void System::decode_exception_generation(uint32_t inst) {
+void Cpu::decode_exception_generation(uint32_t inst) {
   uint8_t opc, op2, LL;
   uint64_t imm16;
 
@@ -1272,9 +1249,9 @@ void System::decode_exception_generation(uint32_t inst) {
     }
     switch (LL) {
     case 1:
-      LOG_CPU("SVC: w8=%ld, w0=%ld, w1=0x%lx, w2=%ld\n", cpu_.xregs[8],
-              cpu_.xregs[0], cpu_.xregs[1], cpu_.xregs[2]);
-      write(cpu_.xregs[0], (void *)(cpu_.xregs[1] + mem_.text_), cpu_.xregs[2]);
+      LOG_CPU("SVC: w8=%ld, w0=%ld, w1=0x%lx, w2=%ld\n", xregs[8], xregs[0],
+              xregs[1], xregs[2]);
+      write(xregs[0], (void *)(xregs[1] + bus.mem.text_), xregs[2]);
       break;
     case 2:
       LOG_CPU("HVC\n");
@@ -1290,7 +1267,7 @@ void System::decode_exception_generation(uint32_t inst) {
     unsupported();
     break;
   }
-  cpu_.increment_pc();
+  increment_pc();
 }
 
 /*
@@ -1303,9 +1280,9 @@ void System::decode_exception_generation(uint32_t inst) {
 
          @op:
 */
-void System::decode_unconditional_branch_reg(uint32_t inst) {
+void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
   uint8_t opc, /*op2,*/ op3, Rn, op4, n;
-  uint64_t target = cpu_.pc;
+  uint64_t target = pc;
 
   opc = bitutil::shift(inst, 21, 24);
   // op2 = bitutil::shift(inst, 16, 20);
@@ -1324,7 +1301,7 @@ void System::decode_unconditional_branch_reg(uint32_t inst) {
       // RET
       n = (Rn == 0) ? 30 : Rn;
       assert(n <= 31);
-      target = cpu_.xregs[n];
+      target = xregs[n];
       LOG_CPU("RET: target=xregs[%d](0x%lx)\n", n, target);
       if (target == 0) {
         exit(0);
@@ -1337,7 +1314,7 @@ void System::decode_unconditional_branch_reg(uint32_t inst) {
   default:
     unsupported();
   }
-  cpu_.set_pc(target);
+  set_pc(target);
 }
 
 /*
@@ -1351,7 +1328,7 @@ void System::decode_unconditional_branch_reg(uint32_t inst) {
          @op: 0->Branch, 1->Branch with Link
 
 */
-void System::decode_unconditional_branch_imm(uint32_t inst) {
+void Cpu::decode_unconditional_branch_imm(uint32_t inst) {
   uint64_t offset;
   uint32_t imm26;
   uint8_t op;
@@ -1363,16 +1340,16 @@ void System::decode_unconditional_branch_imm(uint32_t inst) {
 
   switch (op) {
   case 0:
-    LOG_CPU("B: pc=0x%lx offset=0x%lx, jumpto=0x%lx\n", cpu_.pc, offset,
-            cpu_.pc + offset);
+    LOG_CPU("B: pc=0x%lx offset=0x%lx, jumpto=0x%lx\n", pc, offset,
+            pc + offset);
     break;
   case 1:
-    cpu_.xregs[30] = cpu_.pc + 4;
-    LOG_CPU("BL: pc=0x%lx, offset=0x%lx, jumpto=0x%lx, xregs[30]=0x%lx\n",
-            cpu_.pc, offset, cpu_.pc + offset, cpu_.xregs[30]);
+    xregs[30] = pc + 4;
+    LOG_CPU("BL: pc=0x%lx, offset=0x%lx, jumpto=0x%lx, xregs[30]=0x%lx\n", pc,
+            offset, pc + offset, xregs[30]);
     break;
   }
-  cpu_.set_pc(cpu_.pc + offset);
+  set_pc(pc + offset);
 }
 
 /*
@@ -1387,7 +1364,7 @@ void System::decode_unconditional_branch_imm(uint32_t inst) {
                                  @op: 0->CBZ, 1->CBNZ
 
 */
-void System::decode_compare_and_branch_imm(uint32_t inst) {
+void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
   uint64_t offset;
   uint32_t imm19;
   uint8_t op, if_64bit, rt;
@@ -1401,22 +1378,22 @@ void System::decode_compare_and_branch_imm(uint32_t inst) {
   switch (op) {
   case 0: // CBZ
     if (if_64bit) {
-      if_jump = cpu_.xregs[rt] == 0;
+      if_jump = xregs[rt] == 0;
     } else {
-      if_jump = (uint32_t)cpu_.xregs[rt] == 0;
+      if_jump = (uint32_t)xregs[rt] == 0;
     }
     break;
   case 1: // CBNZ
     if (if_64bit) {
-      if_jump = cpu_.xregs[rt] != 0;
+      if_jump = xregs[rt] != 0;
     } else {
-      if_jump = (uint32_t)cpu_.xregs[rt] != 0;
+      if_jump = (uint32_t)xregs[rt] != 0;
     }
     break;
   }
 
   if (if_jump) {
     offset = signed_extend(imm19 << 2, 20);
-    cpu_.set_pc(cpu_.pc - 4 + offset);
+    set_pc(pc - 4 + offset);
   }
 }
