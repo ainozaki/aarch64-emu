@@ -58,6 +58,13 @@ namespace
     SXTX,
   };
 
+  const char *shift_type_strtbl[] = {
+      "LSL",
+      "LSR",
+      "ASR",
+      "ROR",
+  };
+
   const ExtendType extendtype_tbl[] = {
       ExtendType::UXTB,
       ExtendType::UXTH,
@@ -68,10 +75,7 @@ namespace
       ExtendType::SXTW,
       ExtendType::SXTX,
   };
-  static void unsupported()
-  {
-    LOG_CPU("unsuported inst\n");
-  }
+  static void unsupported() { LOG_CPU("unsuported inst\n"); }
 
   static void unallocated() { LOG_CPU("unallocated inst\n"); }
 
@@ -160,18 +164,53 @@ void Cpu::decode_data_processing_reg(uint32_t inst)
 
   op1 = bitutil::bit(inst, 28);
   op2 = bitutil::shift(inst, 21, 24);
-  LOG_CPU("data_processing_reg, op1=0x%x, op2=0x%x\n", op1, op2);
-  if ((op1 == 0) && (op2 == 8))
+  switch (op1)
   {
-    decode_addsub_shifted_reg(inst);
-  }
-  else if ((op1 == 0) && (op2 < 8))
-  {
-    decode_logical_shifted_reg(inst);
-  }
-  else
-  {
-    unsupported();
+  case 0:
+    if (op2 < 8)
+    {
+      decode_logical_shifted_reg(inst);
+    }
+    else if (op2 % 2 == 0)
+    {
+      decode_addsub_shifted_reg(inst);
+    }
+    else
+    {
+      decode_addsub_extended_reg(inst);
+    }
+    break;
+  case 1:
+    switch (op2)
+    {
+    case 0:
+      break;
+    case 2:
+      printf("conditional branch\n");
+      unsupported();
+      break;
+    case 4:
+      printf("conditional select\n");
+      unsupported();
+      break;
+    case 6:
+      printf("data processing 1 or 2 source\n");
+      unsupported();
+      break;
+    case 1:
+    case 3:
+    case 5:
+    case 7:
+      unallocated();
+      break;
+    default:
+      printf("data processing 3 source\n");
+      unsupported();
+      break;
+    }
+    break;
+  default:
+    assert(false);
   }
   increment_pc();
 }
@@ -290,12 +329,20 @@ void Cpu::decode_pc_rel(uint32_t inst)
 
 static uint64_t add_imm(uint64_t x, uint64_t y, uint8_t carry_in)
 {
+  if (carry_in)
+  {
+    return x + ~y + carry_in;
+  }
   return x + y + carry_in;
 }
 
 static uint32_t add_imm_s32(uint32_t x, uint32_t y, uint8_t carry_in,
                             CPSR &cpsr)
 {
+  if (carry_in)
+  {
+    y = ~y;
+  }
   int32_t sx = (int32_t)x;
   int32_t sy = (int32_t)y;
   uint64_t unsigned_sum = (uint64_t)x + (uint64_t)y + (uint64_t)carry_in;
@@ -315,6 +362,10 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
   if (!if_64bit)
   {
     return add_imm_s32(x, y, carry_in, cpsr);
+  }
+  if (carry_in)
+  {
+    y = ~y;
   }
   int64_t sx = (int64_t)x;
   int64_t sy = (int64_t)y;
@@ -349,66 +400,37 @@ void Cpu::decode_add_sub_imm(uint32_t inst)
 {
   uint8_t rd, rn;
   uint64_t imm;
-  bool shift, setflag, if_sub, if_64bit;
-  uint64_t result;
+  bool if_shift, if_setflag, if_sub, if_64bit;
+  uint64_t result, op1;
+  const char *op;
 
   rd = bitutil::shift(inst, 0, 4);
   rn = bitutil::shift(inst, 5, 9);
   imm = bitutil::shift(inst, 10, 21);
-  shift = bitutil::bit(inst, 22);
-  setflag = bitutil::bit(inst, 29);
+  if_shift = bitutil::bit(inst, 22);
+  if_setflag = bitutil::bit(inst, 29);
   if_sub = bitutil::bit(inst, 30);
   if_64bit = bitutil::bit(inst, 31);
+  op = if_sub ? "sub" : "add";
 
-  if (shift)
+  op1 = xregs[rn];
+  if (if_shift)
   {
     imm <<= 12;
   }
 
-  if (setflag)
+  if (if_setflag)
   {
-    if (if_sub)
-    {
-      /* SUBS */
-      LOG_CPU("SUBS: rd=%d, xregs[rn]=0x%lx, imm=0x%lx\n", rd, xregs[rn], ~imm);
-      result = add_imm_s(xregs[rn], ~imm, /*carry-in=*/1, cpsr, if_64bit);
-    }
-    else
-    {
-      /* ADDS */
-      LOG_CPU("ADDS: rd=%d, xregs[rn]=0x%lx, imm=0x%lx, if_64bit=%d\n", rd,
-              xregs[rn], imm, if_64bit);
-      result = add_imm_s(xregs[rn], imm, /*carry-in=*/0, cpsr, if_64bit);
-    }
-    if (rd == 31)
-    {
-      return;
-    }
+    result = add_imm_s(op1, imm, if_sub, cpsr, if_64bit);
+    LOG_CPU("%ss x%d, x%d, #%ld, LSL %d\n", op, rd, rn, imm, if_shift * 12);
   }
   else
   {
-    if (if_sub)
-    {
-      /* SUB */
-      LOG_CPU("SUB: rd=%d, xregs[rn]=0x%lx, imm=0x%lx\n", rd, xregs[rn], ~imm);
-      result = add_imm(xregs[rn], ~imm, /*carry-in=*/1);
-    }
-    else
-    {
-      /* ADD */
-      LOG_CPU("ADD: rd=%d, xregs[rn]=0x%lx, imm=0x%lx\n", rd, xregs[rn], imm);
-      result = add_imm(xregs[rn], imm, /*carry-in=*/0);
-    }
+    result = add_imm(op1, ~imm, if_sub);
+    LOG_CPU("%s x%d, x%d, #%ld, LSL %d\n", op, rd, rn, imm, if_shift * 12);
   }
 
-  if (if_64bit)
-  {
-    xregs[rd] = result;
-  }
-  else
-  {
-    xregs[rd] = bitutil::mask(32) & result;
-  }
+  xregs[rd] = if_64bit ? result : bitutil::set_lower32(xregs[rd], result);
 }
 
 void Cpu::decode_add_sub_imm_with_tags(uint32_t inst) { LOG_CPU("%d\n", inst); }
@@ -536,8 +558,8 @@ void Cpu::decode_logical_imm(uint32_t inst)
          +----+------+--------+-----+--------------+-----+
 
          @sf: 0->32bit, 1->64bit
-         @opc: 0->N, 1->unallocated, 2->Z, 3->K
-         @hw:
+         @opc: 00->N, 01->unallocated, 10->Z, 11->K
+         @hw: 1->unallocated
          @Rd: destination gp register or sp
 
 */
@@ -556,11 +578,11 @@ void Cpu::decode_move_wide_imm(uint32_t inst)
   if (opc == 1 || ((if_64bit == 0) & (hw >= 2)))
   {
     unallocated();
+    return;
   }
 
   shift = hw * 16;
   imm = imm << shift;
-  LOG_CPU("MOV rd=%d, imm=%lu\n", rd, imm);
 
   switch (opc)
   {
@@ -568,21 +590,17 @@ void Cpu::decode_move_wide_imm(uint32_t inst)
     imm = ~imm;
     [[fallthrough]];
   case 2: /* MOVZ */
-    if (if_64bit)
-    {
-      xregs[rd] = imm;
-    }
-    else
-    {
-      xregs[rd] = bitutil::clear_upper32(imm);
-    }
+    xregs[rd] =
+        if_64bit ? imm
+                 : (xregs[rd] & ~bitutil::mask(32)) | (imm & bitutil::mask(32));
     break;
   case 3: /* MOVK */
-    xregs[rd] = xregs[rd] | imm;
+    xregs[rd] = ~bitutil::extract(xregs[rd], 4 * shift + 16, 16) | imm;
     break;
   default:
     assert(false);
   }
+  LOG_CPU("mov x%d, 0x%lx\n", rd, xregs[rd]);
 }
 
 /*
@@ -872,38 +890,58 @@ void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst)
 
   if (vector)
   {
+    printf("ldst_reg_unsigned_imm\n");
     unsupported();
+    return;
   }
-  else
+
+  switch (size)
   {
+  case 0:
+  case 1:
+    printf("ldr/str 8/16\n");
+    unsupported();
+    return;
+  case 2:
+    offset = imm12 << size;
     switch (opc)
     {
-    case 0x0:
-      LOG_CPU("STR, opc=0x%x, size=0x%x, V=%d, rt=%d, rn=%d\n", opc, size,
-              vector, rt, rn);
-      offset = imm12 << size;
-      // TODO size
-      bus.store64(xregs[rn] + offset, rt == 31 ? 0 : xregs[rt]);
+    case 0:
+      bus.store32(xregs[rn] + offset, xregs[rt]);
+      LOG_CPU("str x%d, [x%d, #%ld]\n", rt, rn, offset);
       break;
-    case 0x1:
-      LOG_CPU("LDR, opc=0x%x, size=0x%x, V=%d, rt=%d, rn=%d, inst=0x%x\n", opc,
-              size, vector, rt, rn, inst);
-      offset = imm12 << size;
-      // TODO size
-      xregs[rt] = bus.load64(xregs[rn] + offset);
+    case 1:
+      xregs[rt] =
+          bitutil::set_lower32(xregs[rt], bus.load32(xregs[rn] + offset));
+      LOG_CPU("ldr x%d, [x%d, #%ld]\n", rt, rn, offset);
       break;
-    case 0x2:
-      LOG_CPU("LDRS, opc=0x%x, size=0x%x, V=%d\n", opc, size, vector);
+    case 2:
+      LOG_CPU("ldrsw\n");
       break;
-    case 0x3:
-      if (size >= 0x2)
-      {
-        unallocated();
-        return;
-      }
-      LOG_CPU("LDRS, opc=0x%x, size=0x%x, V=%d\n", opc, size, vector);
-      break;
+    default:
+      assert(false);
     }
+    return;
+  case 3:
+    offset = imm12 << size;
+    switch (opc)
+    {
+    case 0:
+      bus.store64(xregs[rn] + offset, xregs[rt]);
+      LOG_CPU("str x%d, [x%d, #%ld]\n", rt, rn, offset);
+      break;
+    case 1:
+      xregs[rt] = bus.load64(xregs[rn] + offset);
+      LOG_CPU("ldr x%d, [x%d, #%ld]\n", rt, rn, offset);
+      break;
+    case 2:
+      printf("prfm\n");
+      unsupported();
+      return;
+    }
+    break;
+  default:
+    assert(false);
   }
 }
 
@@ -1195,35 +1233,93 @@ void Cpu::decode_ldst_reg_reg_offset(uint32_t inst)
          @op: 0->ADD, 1->SUB
          @S: set flag
          @sh: if sh=1 then LSL #12
+         @imm6: shift amount
          @Rn: source gp regiter or sp
 */
 void Cpu::decode_addsub_shifted_reg(uint32_t inst)
 {
-  uint8_t rd, rn, imm6;
-  uint64_t rm, operand2;
-  bool /*shift, setflag, if_64bit, */ if_sub;
+  uint8_t shift_type, rd, rn, rm, shift_amount;
+  uint64_t op1, op2, result;
+  bool if_sub, if_setflag, if_64bit;
+  const char *op;
 
-  // if_64bit = bitutil::bit(inst, 31);
+  if_64bit = bitutil::bit(inst, 31);
   if_sub = bitutil::bit(inst, 30);
-  // setflag = bitutil::bit(inst, 29);
-  // shift = bitutil::shift(inst, 22, 23);
+  if_setflag = bitutil::bit(inst, 29);
+  shift_type = bitutil::shift(inst, 22, 23);
   rm = bitutil::shift(inst, 16, 20);
-  imm6 = bitutil::shift(inst, 10, 15);
+  shift_amount = bitutil::shift(inst, 10, 15);
   rn = bitutil::shift(inst, 5, 9);
   rd = bitutil::shift(inst, 0, 4);
+  op = if_sub ? "sub" : "add";
 
-  operand2 = xregs[rm] << imm6;
-
-  if (if_sub)
+  if (shift_type == 3 || (!if_64bit & (shift_amount >= 0b100000)))
   {
-    LOG_CPU("SUB rd=0x%x, rm=0x%lx, rn=0x%d\n", rd, rm, rn);
+    unallocated();
+  }
+
+  op1 = xregs[rn];
+  op2 = bitutil::shift_with_type(xregs[rm], shift_type, shift_amount);
+
+  if (if_setflag)
+  {
+    result = add_imm_s(op1, op2, if_sub, cpsr, if_64bit);
+    LOG_CPU("%ss x%d, x%d, x%d, %s #%d\n", op, rd, rn, rm,
+            shift_type_strtbl[shift_type], shift_amount);
   }
   else
   {
-    LOG_CPU("ADD rd=0x%x, rm=0x%lx, rn=0x%d, xregs[rn]=0x%lx, op2=0x%lx\n", rd,
-            rm, rn, xregs[rn], operand2);
-    xregs[rd] = xregs[rn] + operand2;
+    result = add_imm(op1, op2, if_sub);
+    LOG_CPU("%s x%d, x%d, x%d, %s #%d\n", op, rd, rn, rm,
+            shift_type_strtbl[shift_type], shift_amount);
   }
+
+  xregs[rd] = if_64bit ? result : bitutil::set_lower32(xregs[rd], result);
+}
+
+/*
+         Add/substruct (extended register)
+           31   30   29 28   24 2322  21  20  16 15    13 12  10 9   5 4   0
+         +----+----+---+-------+----+---+-------+--------+------+-----+-----+
+         | sf | op | S | 01011 | opt| 1 |  Rm   | option | imm3 | Rn  |  Rd |
+         +----+----+---+-------+----+---+-------+--------+------+-----+-----+
+
+         @sf: 0->32bit, 1->64bit
+         @op: 0->ADD, 1->SUB
+         @S: set flag
+         @opt: 01,10,11->unallocated
+         @option: extend type
+         @imm3: shift amount
+*/
+void Cpu::decode_addsub_extended_reg(uint32_t inst)
+{
+  uint8_t opt, extend_type, shift_amount, rm, rn, rd;
+  uint64_t op1, op2, result;
+  bool if_64bit, if_sub, if_setflag;
+  const char *op;
+
+  if_64bit = bitutil::bit(inst, 31);
+  if_sub = bitutil::bit(inst, 30);
+  if_setflag = bitutil::bit(inst, 29);
+  opt = bitutil::shift(inst, 22, 23);
+  rm = bitutil::shift(inst, 16, 20);
+  extend_type = bitutil::shift(inst, 13, 15);
+  shift_amount = bitutil::shift(inst, 10, 12);
+  rn = bitutil::shift(inst, 5, 9);
+  rd = bitutil::shift(inst, 0, 4);
+  op = if_sub ? "sub" : "add";
+
+  if (opt || (shift_amount > 4))
+  {
+    unallocated();
+    return;
+  }
+
+  op1 = xregs[rn];
+  op2 = xregs[rm]; // have to extend and shift
+  printf("addsub_extended_reg\n");
+  unsupported();
+  return;
 }
 
 /*
@@ -1243,9 +1339,10 @@ void Cpu::decode_logical_shifted_reg(uint32_t inst)
 {
   uint8_t opc, rd, rn, rm, imm6, shift;
   uint64_t op1, op2;
+  bool if_64bit;
   // bool setflag, if_64bit, if_not;
 
-  // if_64bit = bitutil::bit(inst, 31);
+  if_64bit = bitutil::bit(inst, 31);
   opc = bitutil::shift(inst, 29, 30);
   shift = bitutil::shift(inst, 22, 23);
   // if_not = bitutil::bit(inst, 21);
@@ -1269,14 +1366,18 @@ void Cpu::decode_logical_shifted_reg(uint32_t inst)
     unsupported();
   }
 
+  uint64_t result;
   switch (opc)
   {
   case 1:
-    LOG_CPU("ORR rd[%d]:0x%lx, rn[%d]:0x%lx, rm[%d](shift:%d):0x%lx\n", rd,
-            xregs[rd], rn, op1, rm, imm6, op2);
-    xregs[rd] = op1 | op2;
+    result = op1 | op2;
+    xregs[rd] = if_64bit ? result
+                         : (~bitutil::mask(32) & xregs[rd]) |
+                               (bitutil::mask(32) & result);
+    LOG_CPU("orr x%d, 0x%lx | 0x%lx\n", rd, op1, op2);
     break;
   default:
+    printf("decode_logical_shifted_reg\n");
     unsupported();
     break;
   }
@@ -1404,10 +1505,10 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst)
 void Cpu::decode_exception_generation(uint32_t inst)
 {
   uint8_t opc, op2, LL;
-  uint64_t imm16;
+  // uint64_t imm16;
 
   opc = bitutil::shift(inst, 21, 23);
-  imm16 = bitutil::shift(inst, 5, 20);
+  // imm16 = bitutil::shift(inst, 5, 20);
   op2 = bitutil::shift(inst, 2, 4);
   LL = bitutil::shift(inst, 0, 1);
 

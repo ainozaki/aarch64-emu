@@ -9,8 +9,7 @@
 #include "cpu.h"
 #include "loader.h"
 
-class Emulator
-{
+class Emulator {
 public:
   Cpu cpu;
   Loader loader;

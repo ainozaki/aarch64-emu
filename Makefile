@@ -7,7 +7,8 @@ SRC = \
 	src/cpu.cc \
 	src/emulator.cc \
 	src/loader.cc \
-	src/mem.cc
+	src/mem.cc \
+	src/utils.cc
 TEST_OBJ = \
 	tests/execute_unittest.o
 TEST_GENOBJ =\

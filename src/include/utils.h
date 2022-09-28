@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstdint>
 
 namespace bitutil {
 
@@ -18,7 +19,7 @@ inline uint64_t zero_extend(uint64_t val, uint8_t bit) {
   return (val & ((1 << bit) - 1)) | zero;
 }
 
-inline uint64_t mask(size_t n) {
+inline uint64_t mask(uint8_t n) {
   assert(0 <= n <= 64);
   if (n == 64) {
     return ~uint64_t(0);
@@ -26,4 +27,13 @@ inline uint64_t mask(size_t n) {
   return (uint64_t(1) << n) - 1;
 }
 
+inline uint64_t extract(uint64_t value, uint8_t start, uint8_t len) {
+  return value & (mask(start + 1) & ((uint64_t)1 << (start - len + 1)));
+}
+
+inline uint64_t extract_upper32(uint64_t value) { return value & ~mask(32); }
+
+uint64_t set_lower32(uint64_t original, uint64_t setvalue);
+
+uint64_t shift_with_type(uint64_t value, uint8_t type, uint8_t amount);
 } // namespace bitutil

@@ -4,8 +4,7 @@
 
 #include "mem.h"
 
-class Bus
-{
+class Bus {
 public:
   Bus() = default;
   ~Bus() = default;

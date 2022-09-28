@@ -18,21 +18,18 @@
 Emulator::Emulator(int argc, char **argv, char **envp)
     : loader(argc, argv, envp), filename_(argv[1]) {}
 
-Emulator::~Emulator()
-{
+Emulator::~Emulator() {
   // free
   free((void *)loader.sp_alloc_start);
   // ummap?
 }
 
-SysResult Emulator::init()
-{
+SysResult Emulator::init() {
   SysResult err;
   printf("emu: start emulating\n");
 
   err = loader.load();
-  if (err != SysResult::Success)
-  {
+  if (err != SysResult::Success) {
     return err;
   }
   cpu.pc = loader.entry;
@@ -41,15 +38,12 @@ SysResult Emulator::init()
   return SysResult::Success;
 }
 
-void Emulator::execute_loop()
-{
+void Emulator::execute_loop() {
 
   uint32_t inst;
-  while (true)
-  {
+  while (true) {
     inst = cpu.fetch();
-    if (!inst)
-    {
+    if (!inst) {
       break;
     }
     cpu.decode_start(inst);

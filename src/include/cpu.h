@@ -59,6 +59,7 @@ private:
 
   /* Data Processing Register */
   void decode_addsub_shifted_reg(uint32_t inst);
+  void decode_addsub_extended_reg(uint32_t inst);
   void decode_logical_shifted_reg(uint32_t inst);
 
   /* Data Processing Immediate */

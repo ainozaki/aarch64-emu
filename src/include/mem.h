@@ -4,8 +4,7 @@
 
 #include "const.h"
 
-class Mem
-{
+class Mem {
 public:
   uint8_t *mem_;
   uint8_t *text_;
