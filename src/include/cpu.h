@@ -37,6 +37,7 @@ private:
   void update_lower32(uint8_t reg, uint32_t value);
   void increment_pc() { pc += 4; }
   void set_pc(uint64_t new_pc) { pc = new_pc; }
+  bool check_b_flag(uint8_t cond);
 
   void decode_sme_encodings(uint32_t inst);
   void decode_unallocated(uint32_t inst);
@@ -61,6 +62,7 @@ private:
   void decode_addsub_shifted_reg(uint32_t inst);
   void decode_addsub_extended_reg(uint32_t inst);
   void decode_logical_shifted_reg(uint32_t inst);
+  void decode_conditional_select(uint32_t inst);
 
   /* Data Processing Immediate */
   void decode_pc_rel(uint32_t inst);
