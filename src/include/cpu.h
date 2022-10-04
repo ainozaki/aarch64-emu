@@ -31,6 +31,7 @@ public:
   uint32_t fetch();
   void decode_start(uint32_t inst);
   void show_regs();
+  void show_stack();
 
 private:
   void update_lower32(uint8_t reg, uint32_t value);

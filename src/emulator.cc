@@ -35,7 +35,6 @@ SysResult Emulator::init() {
   cpu.pc = loader.entry;
   cpu.xregs[31] = loader.init_sp;
   printf("Init pc=0x%lx, sp=0x%lx\n", cpu.pc, cpu.xregs[31]);
-
   return SysResult::Success;
 }
 

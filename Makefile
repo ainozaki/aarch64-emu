@@ -51,7 +51,7 @@ $(TEST_GENDATA): $(TEST_GENOBJ)
 
 -include $(DEP)
 
-BIN=./misc/static
+BIN=./misc/write
 
 run:
 	./$(TARGET) $(BIN)

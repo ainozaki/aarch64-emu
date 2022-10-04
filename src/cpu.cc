@@ -15,7 +15,8 @@ typedef __attribute__((mode(TI))) unsigned int uint128_t;
 typedef __attribute__((mode(TI))) int int128_t;
 
 uint32_t Cpu::fetch() {
-  show_regs();
+  // show_regs();
+  // show_stack();
   return bus.load32(pc);
 }
 
@@ -144,6 +145,14 @@ void Cpu::show_regs() {
     printf("\tw%2d: 0x%16lx\n", i + 3, xregs[i + 3]);
   }
   printf("\tpc: 0x%lx\n", pc);
+  std::cout << "=================================================" << std::endl;
+}
+void Cpu::show_stack() {
+  std::cout << "=================================================" << std::endl;
+  printf("stack:\n");
+  for (int i = 0; i < 20; i++) {
+    printf("\tsp+0x%x: 0x%16lx\n", i * 8, bus.load64(xregs[31] + 8 * i));
+  }
   std::cout << "=================================================" << std::endl;
 }
 
@@ -1269,7 +1278,7 @@ void Cpu::decode_addsub_shifted_reg(uint32_t inst) {
 void Cpu::decode_addsub_extended_reg(uint32_t inst) {
   uint8_t opt, shift_amount, extend_type, rm, rn, rd;
   uint64_t op1, op2, result;
-  bool if_64bit, if_sub, if_setflag;
+  bool if_64bit, if_op2_64bit, if_sub, if_setflag;
   const char *op;
 
   if_64bit = util::bit(inst, 31);
@@ -1282,6 +1291,7 @@ void Cpu::decode_addsub_extended_reg(uint32_t inst) {
   rn = util::shift(inst, 5, 9);
   rd = util::shift(inst, 0, 4);
   op = if_sub ? "sub" : "add";
+  if_op2_64bit = (opt % 4 == 3);
 
   if (opt || (shift_amount > 4)) {
     unallocated();
@@ -1289,12 +1299,13 @@ void Cpu::decode_addsub_extended_reg(uint32_t inst) {
   }
 
   op1 = xregs[rn];
-  op2 = ExtendValue(xregs[rm], extend_type, shift_amount);
+  op2 = if_op2_64bit ? xregs[rm] : util::clear_upper32(xregs[rm]);
+  op2 = ExtendValue(op2, extend_type, shift_amount);
   result = if_setflag ? add_imm_s(op1, op2, if_sub, cpsr, if_64bit)
                       : add_imm(op1, op2, if_sub);
   xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
-  LOG_CPU("%s x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", op, rd, xregs[rd], rn,
-          xregs[rn], rm, xregs[rm]);
+  LOG_CPU("%s x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), #%d\n", op, rd, xregs[rd],
+          rn, xregs[rn], rm, xregs[rm], shift_amount);
   return;
 }
 
