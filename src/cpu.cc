@@ -14,7 +14,10 @@
 typedef __attribute__((mode(TI))) unsigned int uint128_t;
 typedef __attribute__((mode(TI))) int int128_t;
 
-uint32_t Cpu::fetch() { return bus.load32(pc); }
+uint32_t Cpu::fetch() {
+  show_regs();
+  return bus.load32(pc);
+}
 
 void Cpu::decode_start(uint32_t inst) {
   uint8_t op1;
@@ -106,7 +109,7 @@ uint64_t ExtendValue(uint64_t value, uint8_t type, uint8_t shift) {
 
 const int size_tbl[] = {8, 16, 32, 64};
 
-const char *size_strtbl[] = {"b", "h", "(w)", "(x)"};
+const char *size_strtbl[] = {"b", "h", "w", "x"};
 
 const char *shift_type_strtbl[] = {
     "LSL",
@@ -140,9 +143,7 @@ void Cpu::show_regs() {
     printf("\tw%2d: 0x%16lx", i + 2, xregs[i + 2]);
     printf("\tw%2d: 0x%16lx\n", i + 3, xregs[i + 3]);
   }
-  std::cout << std::endl;
-  std::cout << "CPSR: [NZCV]=" << cpsr.N << cpsr.Z << cpsr.C << cpsr.Z
-            << std::endl;
+  printf("\tpc: 0x%lx\n", pc);
   std::cout << "=================================================" << std::endl;
 }
 
@@ -781,12 +782,9 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
 }
 
 void Cpu::decode_ldst_register(uint32_t inst) {
-  uint8_t op0, op1, op2, op3, op4, op;
+  uint8_t op0, op2, op;
   op0 = util::shift(inst, 28, 31);
-  op1 = util::bit(inst, 26);
   op2 = util::shift(inst, 23, 24);
-  op3 = util::shift(inst, 16, 21);
-  op4 = util::shift(inst, 10, 11);
 
   assert(op0 % 4 == 3);
   if (op2 >= 2) {
@@ -981,7 +979,7 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
     switch (opc) {
     case 0b00:
       /* STR */
-      LOG_CPU("str%s", size_strtbl[size]);
+      LOG_CPU("str%s ", size_strtbl[size]);
       switch (size) {
       case 0:
         bus.store8(address, xregs[rt]);
@@ -999,7 +997,7 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
       break;
     case 0b01:
       /* LDR (unsigned) */
-      LOG_CPU("ldr%s", size_strtbl[size]);
+      LOG_CPU("ldr%s ", size_strtbl[size]);
       switch (size) {
       case 0:
         xregs[rt] = util::set_lower32(xregs[rt], bus.load8(address));
@@ -1021,7 +1019,7 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
         unsupported();
         break;
       }
-      LOG_CPU("ldrs%s(64bit)", size_strtbl[size]);
+      LOG_CPU("ldrs%s(64bit) ", size_strtbl[size]);
       switch (size) {
       case 0:
         xregs[rt] = util::SIGN_EXTEND(bus.load8(address), 8);
@@ -1042,7 +1040,7 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
       if (size >= 2) {
         unallocated();
       }
-      LOG_CPU("ldrs%s(32bit)\n", size_strtbl[size]);
+      LOG_CPU("ldrs%s(32bit) ", size_strtbl[size]);
       switch (size) {
       case 0:
         xregs[rt] = util::set_lower32(xregs[rt],
@@ -1063,12 +1061,12 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
     if (writeback) {
       xregs[rn] = xregs[rn] + offset;
       if (post_indexed) {
-        LOG_CPU("x%d, [x%d], #0x%lx\n", rt, rn, offset);
+        LOG_CPU("x%d(=0x%lx), [x%d], #0x%lx\n", rt, xregs[rt], rn, offset);
       } else {
-        LOG_CPU("x%d, [x%d, #0x%lx]!\n", rt, rn, offset);
+        LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx]!\n", rt, xregs[rt], rn, offset);
       }
     } else {
-      LOG_CPU("x%d, [x%d, #0x%lx]\n", rt, rn, offset);
+      LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx]\n", rt, xregs[rt], rn, offset);
     }
   }
 }
@@ -1668,7 +1666,7 @@ void Cpu::decode_unconditional_branch_imm(uint32_t inst) {
 */
 void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
   uint64_t offset;
-  uint32_t imm19;
+  uint64_t imm19;
   uint8_t op, if_64bit, rt;
   bool if_jump = false;
 
@@ -1679,6 +1677,7 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
 
   switch (op) {
   case 0: // CBZ
+    LOG_CPU("cbz ");
     if (if_64bit) {
       if_jump = xregs[rt] == 0;
     } else {
@@ -1686,6 +1685,7 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
     }
     break;
   case 1: // CBNZ
+    LOG_CPU("cbnz ");
     if (if_64bit) {
       if_jump = xregs[rt] != 0;
     } else {
@@ -1693,9 +1693,11 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
     }
     break;
   }
-
+  offset = util::SIGN_EXTEND(imm19 << 2, 21);
+  LOG_CPU("x%d, 0x%lx\n", rt, pc + offset);
   if (if_jump) {
-    offset = signed_extend(imm19 << 2, 20);
-    set_pc(pc - 4 + offset);
+    set_pc(pc + offset);
+  } else {
+    increment_pc();
   }
 }

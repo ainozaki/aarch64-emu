@@ -2,6 +2,8 @@
 
 #include "mem.h"
 
+#include <stdio.h>
+
 uint8_t Bus::load8(uint64_t address) { return mem.load8(address); }
 
 uint16_t Bus::load16(uint64_t address) { return mem.load16(address); }

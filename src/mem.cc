@@ -113,11 +113,8 @@ uint32_t Mem::load32(uint64_t addr) {
 }
 
 uint64_t Mem::load64(uint64_t addr) {
-  uint8_t *p;
-  if (!(p = (uint8_t *)get_ptr(addr))) {
-    printf("cannot access to 0x%lx\n", addr);
-    return 0;
-  }
+  uint8_t *p = (uint8_t *)addr;
+
   return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24 | uint64_t(p[4]) << 32 |
          uint64_t(p[5]) << 40 | uint64_t(p[6]) << 48 | uint64_t(p[7]) << 56;
 }
