@@ -6,7 +6,7 @@
 #define ENABLE_LOG_DEBUG
 
 #ifdef ENABLE_LOG_CPU
-#define LOG_CPU(...) printf("\t\t"), printf(__VA_ARGS__)
+#define LOG_CPU(...) printf(__VA_ARGS__)
 #else
 #define LOG_CPU(...)
 #endif

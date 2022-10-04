@@ -5,7 +5,8 @@
 #include "bus.h"
 #include "log.h"
 
-struct CPSR {
+struct CPSR
+{
   char buff[27];
   uint8_t Q : 1;
   uint8_t V : 1;
@@ -14,7 +15,8 @@ struct CPSR {
   uint8_t N : 1;
 };
 
-class Cpu {
+class Cpu
+{
 public:
   Bus bus;
   uint64_t pc;
@@ -48,6 +50,7 @@ private:
   void decode_branches(uint32_t inst);
 
   /* loads/stores */
+  void decode_ldst_reg_unscaled_immediate(uint32_t inst);
   void decode_ldst_register_pair(uint32_t inst);
   void decode_ldst_register(uint32_t inst);
   void decode_ldst_reg_unsigned_imm(uint32_t inst);
