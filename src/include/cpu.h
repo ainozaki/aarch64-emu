@@ -5,8 +5,7 @@
 #include "bus.h"
 #include "log.h"
 
-struct CPSR
-{
+struct CPSR {
   char buff[27];
   uint8_t Q : 1;
   uint8_t V : 1;
@@ -15,8 +14,7 @@ struct CPSR
   uint8_t N : 1;
 };
 
-class Cpu
-{
+class Cpu {
 public:
   Bus bus;
   uint64_t pc;
