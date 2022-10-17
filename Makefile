@@ -51,13 +51,16 @@ $(TEST_GENDATA): $(TEST_GENOBJ)
 
 -include $(DEP)
 
-BIN=./misc/write
+BIN=./misc/hello
 
-run:
+run-hello:
 	./$(TARGET) $(BIN)
 
 run-test:
 	./$(TEST_TARGET)
+
+run:
+	./$(TARGET) ~/source/xv6-aarch64/kernel/kernel
 
 format: $(SRC) $(HEADER) $(MAIN)
 	find ./ -type f -name "*.cc" -or -name "*.h" | xargs clang-format -i

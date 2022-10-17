@@ -10,9 +10,14 @@ public:
   uint8_t *text_;
   uint8_t *text_end;
 
+  uint64_t text_start_;
+  uint64_t text_size_;
+  uint64_t map_base_;
+
   Mem() = default;
   ~Mem() = default;
 
+  void init(uint64_t text_start, uint64_t text_size, uint64_t map_base);
   void clean_mem();
   uint64_t get_ptr(uint64_t vaddr);
 

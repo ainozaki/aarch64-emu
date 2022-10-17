@@ -11,6 +11,7 @@ public:
 
   Mem mem;
 
+  void init(uint64_t text_start, uint64_t text_size, uint64_t map_base);
   uint8_t load8(uint64_t address);
   uint16_t load16(uint64_t address);
   uint32_t load32(uint64_t address);

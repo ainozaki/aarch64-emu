@@ -18,13 +18,15 @@ Loader::~Loader() {
 }
 
 namespace {
+
 const uint64_t PAGE_SIZE = sysconf(_SC_PAGESIZE);
 
-uint64_t PAGE_ROUNDDOWN(uint64_t v) { return v & ~(PAGE_SIZE - 1); }
+// uint64_t PAGE_ROUNDDOWN(uint64_t v) { return v & ~(PAGE_SIZE - 1); }
 
 uint64_t PAGE_ROUNDUP(uint64_t v) {
   return (v + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 }
+
 } // namespace
 
 SysResult Loader::init() {
@@ -40,7 +42,7 @@ SysResult Loader::init() {
     perror("mmap");
     return SysResult::ErrorElf;
   }
-  printf("file_map_start: %p\n", file_map_start_);
+  printf("\tfile_map_start: %p\n", file_map_start_);
   eh_ = (Elf64_Ehdr *)file_map_start_;
   ph_tbl_ = (Elf64_Phdr *)((uint64_t)file_map_start_ + eh_->e_phoff);
   sh_tbl_ = (Elf64_Shdr *)((uint64_t)file_map_start_ + eh_->e_shoff);
@@ -78,34 +80,35 @@ SysResult Loader::load() {
     }
 
     if (!map_done) {
-      uint64_t map_min_addr = get_map_min_addr();
-      uint64_t map_max_addr = get_map_max_addr();
-      uint64_t map_start = PAGE_ROUNDDOWN(map_min_addr);
-      uint64_t map_size = PAGE_ROUNDUP(map_max_addr - map_start);
-      uint64_t map_result;
-      printf("\tmap: min=0x%lx, max=0x%lx, start=0x%lx, size=0x%lx\n",
-             map_min_addr, map_max_addr, map_start, map_size);
-      if ((map_result = (uint64_t)mmap((void *)map_min_addr, map_size,
-                                       PROT_READ | PROT_EXEC | PROT_WRITE,
-                                       MAP_SHARED | MAP_ANONYMOUS, 0, 0)) ==
-          (uint64_t)-1) {
+      void *addr;
+      text_start = get_text_start_addr();
+      text_size = get_text_total_size();
+      printf("\ttext_start:0x%lx, text_size:0x%lx\n", text_start, text_size);
+      if ((addr = mmap(NULL, PAGE_ROUNDUP(text_size),
+                       PROT_READ | PROT_EXEC | PROT_WRITE,
+                       MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (void *)-1) {
         perror("mmap");
         return SysResult::ErrorElf;
       }
-      printf("\tmap_returned: 0x%lx\n", map_result);
+      map_base = (uint64_t)addr;
       map_done = true;
+      printf("\tmap_base_addr: 0x%lx\n", map_base);
     }
 
-    printf("\tmemcpy: range:0x%lx-0x%lx, size:0x%lx\n", ph->p_vaddr,
+    printf("\tmemcpy:\n");
+    printf("\t\temu : 0x%lx-0x%lx, size:0x%lx\n", ph->p_vaddr,
            ph->p_vaddr + ph->p_memsz, ph->p_memsz);
-    memcpy((void *)(ph->p_vaddr),
+    printf("\t\thost: 0x%lx-0x%lx\n", map_base + ph->p_vaddr - text_start,
+           map_base + ph->p_vaddr - text_start + ph->p_memsz);
+    memcpy((void *)(map_base + ph->p_vaddr - text_start),
            (void *)((uint64_t)file_map_start_ + ph->p_offset), ph->p_memsz);
 
     if (ph->p_memsz > ph->p_filesz) {
-      memset((void *)(ph->p_vaddr + ph->p_filesz), 0,
+      printf("\t\tzero clear .bss: from:0x%lx, size:0x%lx\n",
+             map_base + ph->p_vaddr + ph->p_filesz - text_start,
              ph->p_memsz - ph->p_filesz);
-      printf("\tzero clear .bss: from:0x%lx, size:0x%lx\n",
-             ph->p_vaddr + ph->p_filesz, ph->p_memsz - ph->p_filesz);
+      memset((void *)(map_base + ph->p_vaddr + ph->p_filesz - text_start), 0,
+             ph->p_memsz - ph->p_filesz);
     }
   }
 
@@ -179,8 +182,8 @@ const char *Loader::get_interp() const {
   return NULL;
 }
 
-uint64_t Loader::get_map_total_size() const {
-  uint64_t min_addr = 0;
+uint64_t Loader::get_text_total_size() const {
+  uint64_t min_addr = (uint64_t)-1;
   uint64_t max_addr = 0;
   for (int i = 0; i < eh_->e_phnum; i++) {
     if (ph_tbl_[i].p_type == PT_LOAD) {
@@ -190,17 +193,8 @@ uint64_t Loader::get_map_total_size() const {
   }
   return max_addr - min_addr;
 }
-uint64_t Loader::get_map_max_addr() const {
-  uint64_t max_addr = 0;
-  for (int i = 0; i < eh_->e_phnum; i++) {
-    if (ph_tbl_[i].p_type == PT_LOAD) {
-      max_addr = std::max(ph_tbl_[i].p_vaddr + ph_tbl_[i].p_memsz, max_addr);
-    }
-  }
-  return max_addr;
-}
 
-uint64_t Loader::get_map_min_addr() const {
+uint64_t Loader::get_text_start_addr() const {
   uint64_t min_addr = (uint64_t)-1;
   for (int i = 0; i < eh_->e_phnum; i++) {
     if (ph_tbl_[i].p_type == PT_LOAD) {

@@ -18,11 +18,7 @@
 Emulator::Emulator(int argc, char **argv, char **envp)
     : loader(argc, argv, envp), filename_(argv[1]) {}
 
-Emulator::~Emulator() {
-  // free
-  free((void *)loader.sp_alloc_start);
-  // ummap?
-}
+Emulator::~Emulator() {}
 
 SysResult Emulator::init() {
   SysResult err;
@@ -32,21 +28,29 @@ SysResult Emulator::init() {
   if (err != SysResult::Success) {
     return err;
   }
-  cpu.pc = loader.entry;
-  cpu.xregs[31] = loader.init_sp;
-  printf("Init pc=0x%lx, sp=0x%lx\n", cpu.pc, cpu.xregs[31]);
+
+  cpu.init(loader.entry, loader.init_sp, loader.text_start, loader.text_size,
+           loader.map_base);
+
+  init_done_ = true;
   return SysResult::Success;
 }
 
 void Emulator::execute_loop() {
 
   uint32_t inst;
+  int i = 0;
   while (true) {
     inst = cpu.fetch();
     if (!inst) {
       break;
     }
     cpu.decode_start(inst);
+    if (i >= 100) {
+      break;
+    }
+    i++;
   }
   cpu.show_regs();
+  free((void *)loader.sp_alloc_start);
 }

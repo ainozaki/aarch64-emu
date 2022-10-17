@@ -21,6 +21,5 @@ public:
 
 private:
   char *filename_;
-
-  SysResult load_elf();
+  bool init_done_;
 };

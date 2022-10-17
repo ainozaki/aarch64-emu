@@ -4,6 +4,10 @@
 
 #include <stdio.h>
 
+void Bus::init(uint64_t text_start, uint64_t text_size, uint64_t map_base) {
+  mem.init(text_start, text_size, map_base);
+}
+
 uint8_t Bus::load8(uint64_t address) { return mem.load8(address); }
 
 uint16_t Bus::load16(uint64_t address) { return mem.load16(address); }

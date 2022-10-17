@@ -14,6 +14,15 @@
 typedef __attribute__((mode(TI))) unsigned int uint128_t;
 typedef __attribute__((mode(TI))) int int128_t;
 
+void Cpu::init(uint64_t entry, uint64_t sp, uint64_t text_start,
+               uint64_t text_size, uint64_t map_base) {
+  pc = entry;
+  xregs[31] = sp;
+  printf("Init pc=0x%lx, sp=0x%lx\n", pc, xregs[31]);
+
+  bus.init(text_start, text_size, map_base);
+}
+
 uint32_t Cpu::fetch() {
   // show_regs();
   // show_stack();
@@ -24,7 +33,7 @@ void Cpu::decode_start(uint32_t inst) {
   uint8_t op1;
   op1 = util::shift(inst, 25, 28);
 
-  // LOG_CPU("PC=0x%lx\n", pc);
+  printf("0x%lx:\t", pc);
   const decode_func decode_inst_tbl[] = {
       &Cpu::decode_sme_encodings,
       &Cpu::decode_unallocated,
@@ -247,9 +256,8 @@ void Cpu::decode_data_processing_float(uint32_t inst) {
 }
 
 void Cpu::decode_branches(uint32_t inst) {
-  uint8_t op;
-  op = util::shift(inst, 29, 31);
-  switch (op) {
+  uint8_t op0 = util::shift(inst, 29, 31);
+  switch (op0) {
   case 0:
   case 4:
     decode_unconditional_branch_imm(inst);
@@ -262,24 +270,33 @@ void Cpu::decode_branches(uint32_t inst) {
     if (util::bit(inst, 25) == 0) {
       decode_compare_and_branch_imm(inst);
     } else {
+      printf("test_and_branch\n");
       unsupported();
+      increment_pc();
     }
     break;
   case 6:
     switch (util::shift(inst, 24, 25)) {
     case 0:
+      printf("exception_generation\n");
       decode_exception_generation(inst);
+      break;
+    case 1:
+      printf("system insts\n");
+      unsupported();
+      increment_pc();
       break;
     case 2:
     case 3:
+      printf("unconditional branch 0x%x\n", inst);
       decode_unconditional_branch_reg(inst);
       break;
     default:
-      unsupported();
+      printf("default\n");
     }
     break;
   default:
-    unsupported();
+    assert(false);
     break;
   }
 }
@@ -1564,7 +1581,9 @@ void Cpu::decode_exception_generation(uint32_t inst) {
     case 1:
       LOG_CPU("SVC: w8=%ld, w0=%ld, w1=0x%lx, w2=%ld\n", xregs[8], xregs[0],
               xregs[1], xregs[2]);
-      write(xregs[0], (void *)xregs[1], xregs[2]);
+      write(xregs[0],
+            (void *)(bus.mem.map_base_ + xregs[1] - bus.mem.text_start_),
+            xregs[2]);
       break;
     case 2:
       LOG_CPU("HVC\n");
@@ -1622,10 +1641,14 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
       break;
     default:
       unsupported();
+      increment_pc();
+      return;
     }
     break;
   default:
     unsupported();
+    increment_pc();
+    return;
   }
   set_pc(target);
 }

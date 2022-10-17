@@ -14,6 +14,9 @@ class Loader {
 public:
   uint64_t entry;
   uint64_t init_sp;
+  uint64_t map_base;
+  uint64_t text_start;
+  uint64_t text_size;
   uint64_t sp_alloc_start; // for free
 
   Loader(int argc, char **argv, char **envp);
@@ -35,7 +38,6 @@ private:
 
   SysResult init();
   const char *get_interp() const;
-  uint64_t get_map_total_size() const;
-  uint64_t get_map_min_addr() const;
-  uint64_t get_map_max_addr() const;
+  uint64_t get_text_total_size() const;
+  uint64_t get_text_start_addr() const;
 };

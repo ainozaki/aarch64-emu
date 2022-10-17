@@ -13,7 +13,9 @@ int main(int argc, char **argv, char **envp) {
 
   Emulator emu(argc, argv, envp);
   if (emu.init() != SysResult::Success) {
-    return -1;
+    printf("Emulator initialization failed.\n");
+    return 1;
   }
   emu.execute_loop();
+  return 0;
 }
