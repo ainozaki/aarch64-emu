@@ -282,6 +282,11 @@ void Cpu::decode_branches(uint32_t inst) {
       decode_exception_generation(inst);
       break;
     case 1:
+      if (util::bit(inst, 30) == 1) {
+        decode_system_register_move(inst);
+        increment_pc();
+        break;
+      }
       printf("system insts\n");
       unsupported();
       increment_pc();
@@ -808,8 +813,8 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
 }
 
 void Cpu::decode_ldst_register(uint32_t inst) {
-  uint8_t op0, op2, op;
-  op0 = util::shift(inst, 28, 31);
+  uint8_t op2, op;
+  // op0 = util::shift(inst, 28, 31);
   op2 = util::shift(inst, 23, 24);
 
   assert(op0 % 4 == 3);
@@ -833,7 +838,7 @@ void Cpu::decode_ldst_register(uint32_t inst) {
 }
 
 void Cpu::decode_ldst_reg_unscaled_immediate(uint32_t inst) {
-  LOG_CPU("ldst_reg_scucaled_imm\n");
+  LOG_CPU("ldst_reg_scucaled_imm %x\n", inst);
   unsupported();
 }
 
@@ -1400,9 +1405,9 @@ void Cpu::decode_logical_shifted_reg(uint32_t inst) {
 void Cpu::decode_conditional_select(uint32_t inst) {
   uint64_t result;
   uint8_t cond, op1, op2, rm, rn, rd;
-  bool if_64bit, s;
+  bool /*if_64bit, */ s;
 
-  if_64bit = util::bit(inst, 31);
+  // if_64bit = util::bit(inst, 31);
   op1 = util::bit(inst, 30);
   s = util::bit(inst, 29);
   rm = util::shift(inst, 16, 20);
@@ -1600,6 +1605,183 @@ void Cpu::decode_exception_generation(uint32_t inst) {
     break;
   }
   increment_pc();
+}
+
+/*
+         System register move
+
+          31 29 28 26 25  22 21  20   19  18 16 15  12 11  8  7  5  4    0
+         +-----+-----+------+---+---+----+-----+-----+-------+----+-----+
+         | 110 | 101 | 0100 | L | 1 | o0 | o1 |  CRn |  CRm  | op2|  Rt |
+         +-----+-----+------+---+---+----+-----+-----+-------+----+-----+
+
+         @L:0->MSR, 1->MRS
+*/
+void Cpu::decode_system_register_move(uint32_t inst) {
+  uint8_t o0, o1, CRn, CRm, op2, rt;
+  bool if_get;
+
+  if_get = util::bit(inst, 21);
+  o0 = util::bit(inst, 19) + 2;
+  o1 = util::shift(inst, 16, 18);
+  CRn = util::shift(inst, 12, 15);
+  CRm = util::shift(inst, 8, 11);
+  op2 = util::shift(inst, 5, 7);
+  rt = util::shift(inst, 0, 4);
+
+  switch (o0) {
+  case 0:
+    switch (o1) {
+    case 3:
+      switch (CRn) {
+      case 4:
+        switch (op2) {
+        case 6:
+          printf("DAIFSET ");
+          break;
+        case 7:
+          printf("DAIRCLR ");
+          break;
+        default:
+          unsupported();
+          break;
+        }
+        break;
+      default:
+        unsupported();
+        break;
+      }
+      break;
+    default:
+      unsupported();
+      break;
+    }
+    break;
+  case 3:
+    switch (o1) {
+    case 0:
+      switch (CRn) {
+      case 0:
+        switch (CRm) {
+        case 0:
+          switch (op2) {
+          case 5:
+            printf("MPIDR_EL1 ");
+            break;
+          default:
+            unsupported();
+            break;
+          }
+          break;
+        default:
+          unsupported();
+          break;
+        }
+        break;
+      case 1:
+        switch (CRm) {
+        case 0:
+          switch (op2) {
+          case 0:
+            printf("SCTLR_EL1 ");
+            break;
+          default:
+            unsupported();
+            break;
+          }
+          break;
+        default:
+          unsupported();
+          break;
+        }
+        break;
+      case 2:
+        switch (CRm) {
+        case 0:
+          switch (op2) {
+          case 0:
+            if (if_get) {
+              xregs[rt] = mmu.mmu_get_register(MMUregister::ttbr0_el1);
+              printf("MRS x%d, TTBR0_EL1\n", rt);
+            } else {
+              mmu.mmu_set_register(MMUregister::ttbr0_el1, xregs[rt]);
+              printf("MSR TTBR0_EL1, x%d\n", rt);
+            }
+            break;
+          case 1:
+            printf("TTBR1_EL1 ");
+            break;
+          case 2:
+            printf("TCR_EL1 ");
+            break;
+          default:
+            unsupported();
+            break;
+          }
+          break;
+        default:
+          unsupported();
+        }
+        break;
+      case 10:
+        switch (CRm) {
+        case 2:
+          switch (op2) {
+          case 0:
+            printf("MAIR_EL1 ");
+            break;
+          default:
+            unsupported();
+            break;
+          }
+          break;
+        default:
+          unsupported();
+          break;
+        }
+        break;
+      default:
+        unsupported();
+        break;
+      }
+      break;
+    case 3:
+      switch (CRn) {
+      case 4:
+        switch (CRm) {
+        case 2:
+          switch (op2) {
+          case 1:
+            printf("DAIF ");
+            break;
+          default:
+            unsupported();
+            break;
+          }
+          break;
+        default:
+          unsupported();
+        }
+        break;
+      default:
+        unsupported();
+        break;
+      }
+      break;
+    default:
+      unsupported();
+      break;
+    }
+    break;
+  default:
+    unsupported();
+    break;
+  }
+  if (if_get) {
+    printf("mrs\n");
+  } else {
+    printf("msr\n");
+  }
 }
 
 /*

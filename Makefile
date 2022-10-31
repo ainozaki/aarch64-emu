@@ -8,6 +8,7 @@ SRC = \
 	src/emulator.cc \
 	src/loader.cc \
 	src/mem.cc \
+	src/mmu.cc \
 	src/utils.cc
 TEST_OBJ = \
 	tests/execute_unittest.o

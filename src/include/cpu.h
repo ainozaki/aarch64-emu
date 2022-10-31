@@ -4,6 +4,7 @@
 
 #include "bus.h"
 #include "log.h"
+#include "mmu.h"
 
 struct CPSR {
   char buff[27];
@@ -17,6 +18,7 @@ struct CPSR {
 class Cpu {
 public:
   Bus bus;
+  MMU mmu;
   uint64_t pc;
   CPSR cpsr; /* Current Program Status Register*/
 
@@ -79,6 +81,7 @@ private:
   /* Branches, Exception Generating and System instructions */
   void decode_conditional_branch_imm(uint32_t inst);
   void decode_exception_generation(uint32_t inst);
+  void decode_system_register_move(uint32_t inst);
   void decode_unconditional_branch_reg(uint32_t inst);
   void decode_unconditional_branch_imm(uint32_t inst);
   void decode_compare_and_branch_imm(uint32_t inst);
