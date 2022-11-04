@@ -46,9 +46,11 @@ void Emulator::execute_loop() {
       break;
     }
     cpu.decode_start(inst);
+    /*
     if (i >= 100) {
       break;
     }
+    */
     i++;
   }
   cpu.show_regs();

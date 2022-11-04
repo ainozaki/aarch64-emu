@@ -187,10 +187,39 @@ void Cpu::decode_loads_and_stores(uint32_t inst) {
   op = util::shift(inst, 28, 29);
   switch (op) {
   case 0b00:
+    printf("case0b00\n");
     unsupported();
     break;
   case 0b01:
-    unsupported();
+    switch (util::shift(inst, 30, 31)) {
+    case 3:
+      printf("load/store memory tags\n");
+      unsupported();
+      break;
+    default:
+      switch (util::shift(inst, 22, 24)) {
+      case 0:
+      case 1:
+        decode_ldst_load_register_literal(inst);
+        break;
+      case 2:
+      case 3:
+        switch (util::shift(inst, 10, 11)) {
+        case 0:
+          printf("LDAPR/STLR (unscaled immediate)\n");
+          break;
+        case 1:
+          printf("Memory Copy and Memory Set\n");
+          break;
+        default:
+          assert(false);
+        }
+        break;
+      default:
+        assert(false);
+      }
+      break;
+    }
     break;
   case 0b10:
     Cpu::decode_ldst_register_pair(inst);
@@ -453,7 +482,8 @@ void Cpu::decode_add_sub_imm(uint32_t inst) {
     LOG_CPU("%ss x%d, x%d, #0x%lx, LSL %d\n", op, rd, rn, imm, if_shift * 12);
   } else {
     result = add_imm(op1, imm, if_sub);
-    LOG_CPU("%s x%d, x%d, #0x%lx, LSL %d\n", op, rd, rn, imm, if_shift * 12);
+    LOG_CPU("%s x%d, x%d(=0x%lx), #0x%lx, LSL %d\n", op, rd, rn, xregs[rn], imm,
+            if_shift * 12);
   }
 
   xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
@@ -528,19 +558,19 @@ void Cpu::decode_logical_imm(uint32_t inst) {
 
   switch (opc) {
   case 0b00:
-    LOG_CPU("AND: [rn]=%lu, imm=%d\n", xregs[rn], imm);
+    LOG_CPU("and x%d, x%d(=0x%lx), #%d\n", rd, rn, xregs[rn], imm);
     result = xregs[rn] & imm; /* AND */
     break;
   case 0b01:
-    LOG_CPU("ORR: [rn]=%lu, imm=%d\n", xregs[rn], imm);
+    LOG_CPU("orr x%d, x%d(=0x%lx), #%d\n", rd, rn, xregs[rn], imm);
     result = xregs[rn] | imm; /* ORR */
     break;
   case 0b10:
-    LOG_CPU("EOR: [rn]=%lu, imm=%d\n", xregs[rn], imm);
+    LOG_CPU("eor x%d, x%d(=0x%lx), #%d\n", rd, rn, xregs[rn], imm);
     result = xregs[rn] ^ imm; /* EOR */
     break;
   case 0b11:
-    LOG_CPU("ANDS: [rn]=%lu, imm=%d\n", xregs[rn], imm);
+    LOG_CPU("ands x%d, x%d(=0x%lx), #%d\n", rd, rn, xregs[rn], imm);
     result = xregs[rn] & imm; /* ANDS */
     if (if_64bit) {
       cpsr.N = (int64_t)result < 0;
@@ -1205,6 +1235,8 @@ void Cpu::decode_ldst_reg_reg_offset(uint32_t inst) {
       bus.store64(xregs[rn] + offset, xregs[rt]);
       LOG_CPU("load_store: register offset: store: rt %d [rn] %lu offset %lu\n",
               rt, xregs[rn], offset);
+      mmu.mmu_translate(xregs[rn] + offset);
+      // bus.store64(vaddr)
       break;
     case 0b11: /* loads */
       if (size >= 0b10) {
@@ -1224,6 +1256,56 @@ void Cpu::decode_ldst_reg_reg_offset(uint32_t inst) {
       break;
     }
   }
+}
+
+/*
+         Load/store load register (literal)
+
+         31   30 29 27 26  25 24 23                      5 4   0
+         +------+-----+---+----+--------------------------+----+
+         | opc  | 011 | V | 00 |         imm19            | Rt |
+         +------+-----+---+----+--------------------------+----+
+
+         @opc: 00->LDR(32bit), 01->LDR(64bit), 10->LDRSW, 11->PRFM
+         @V: simd
+*/
+
+void Cpu::decode_ldst_load_register_literal(uint32_t inst) {
+  bool if_vector;
+  uint8_t opc, rt;
+  uint64_t imm19, offset, address, data;
+
+  opc = util::shift(inst, 30, 31);
+  if_vector = util::bit(inst, 26);
+  imm19 = util::shift(inst, 5, 23);
+  rt = util::shift(inst, 0, 4);
+
+  if ((opc == 3) && if_vector) {
+    unallocated();
+    return;
+  }
+
+  offset = util::SIGN_EXTEND(imm19 << 2, 21);
+  address = pc + offset;
+  data = bus.load64(address);
+
+  switch (opc) {
+  case 0:
+    xregs[rt] = util::set_lower32(inst, data);
+    break;
+  case 1:
+    xregs[rt] = data;
+    break;
+  case 2:
+    xregs[rt] = util::SIGN_EXTEND(data, 32);
+    break;
+  default:
+    printf("ldst_load_register_literal, opc=3\n");
+    unsupported();
+    return;
+  }
+
+  printf("ldr x%d, 0x%lx\n", rt, address);
 }
 
 /*
@@ -1380,7 +1462,7 @@ void Cpu::decode_logical_shifted_reg(uint32_t inst) {
     xregs[rd] = if_64bit
                     ? result
                     : (~util::mask(32) & xregs[rd]) | (util::mask(32) & result);
-    LOG_CPU("orr x%d, 0x%lx | 0x%lx\n", rd, op1, op2);
+    LOG_CPU("orr x%d, x%d(0x%lx) | x%d(0x%lx)\n", rd, rn, op1, rm, op2);
     break;
   default:
     printf("decode_logical_shifted_reg\n");
@@ -1683,7 +1765,15 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         case 0:
           switch (op2) {
           case 0:
-            printf("SCTLR_EL1 ");
+            if (if_get) {
+              xregs[rt] = mmu.sctlr_el1;
+              printf("mrs x%d, SCTLR_EL1(0x%lx)\n", rt, xregs[rt]);
+              return;
+            } else {
+              mmu.sctlr_el1 = xregs[rt];
+              printf("msr SCTLR_EL1, x%d(0x%lx)\n", rt, mmu.sctlr_el1);
+              return;
+            }
             break;
           default:
             unsupported();
@@ -1701,11 +1791,13 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           switch (op2) {
           case 0:
             if (if_get) {
-              xregs[rt] = mmu.mmu_get_register(MMUregister::ttbr0_el1);
-              printf("MRS x%d, TTBR0_EL1\n", rt);
+              xregs[rt] = mmu.ttbr0_el1;
+              printf("mrs x%d, TTBR0_EL1\n", rt);
+              return;
             } else {
-              mmu.mmu_set_register(MMUregister::ttbr0_el1, xregs[rt]);
-              printf("MSR TTBR0_EL1, x%d\n", rt);
+              mmu.ttbr0_el1 = xregs[rt];
+              printf("msr TTBR0_EL1, x%d\n", rt);
+              return;
             }
             break;
           case 1:
