@@ -322,7 +322,6 @@ void Cpu::decode_branches(uint32_t inst) {
       break;
     case 2:
     case 3:
-      printf("unconditional branch 0x%x\n", inst);
       decode_unconditional_branch_reg(inst);
       break;
     default:
@@ -558,7 +557,7 @@ void Cpu::decode_logical_imm(uint32_t inst) {
 
   switch (opc) {
   case 0b00:
-    LOG_CPU("and x%d, x%d(=0x%lx), #%d\n", rd, rn, xregs[rn], imm);
+    LOG_CPU("and x%d, x%d(=0x%lx), #0x%x\n", rd, rn, xregs[rn], imm);
     result = xregs[rn] & imm; /* AND */
     break;
   case 0b01:
@@ -694,7 +693,7 @@ void Cpu::decode_bitfield(uint32_t inst) {
                 (xregs[rd] & (util::mask(len) << to));
     break;
   case 2:
-    LOG_CPU("UBFM\n");
+    LOG_CPU("ubfm x%d, x%d, #0x%x, #0x%x\n", rd, rn, immr, imms);
     xregs[rd] = imm;
     break;
   default:
@@ -1887,44 +1886,66 @@ void Cpu::decode_system_register_move(uint32_t inst) {
          @op:
 */
 void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
-  uint8_t opc, /*op2,*/ op3, Rn, op4, n;
+  uint8_t opc, op2, op3, Rn, op4, n;
   uint64_t target = pc;
-
+  
   opc = util::shift(inst, 21, 24);
-  // op2 = util::shift(inst, 16, 20);
+  op2 = util::shift(inst, 16, 20);
   op3 = util::shift(inst, 10, 15);
   Rn = util::shift(inst, 5, 9);
   op4 = util::shift(inst, 0, 4);
 
   switch (opc) {
-  case 2:
-    switch (op3) {
     case 0:
-      if (op4 != 0) {
+      if (op2 != 0b11111){
         unallocated();
-        break;
+        return;
       }
-      // RET
-      n = (Rn == 0) ? 30 : Rn;
-      assert(n <= 31);
-      target = xregs[n];
-      LOG_CPU("RET: target=xregs[%d](0x%lx)\n", n, target);
-      if (target == 0) {
-        exit(0);
+      switch (op3){
+        case 0:
+          if (op4 != 0){
+            unallocated();
+            return;
+          }
+          printf("br x%d(=0x%lx)\n", Rn, xregs[Rn]);
+          set_pc(xregs[Rn]);
+          return;
+        default:
+          printf("decode_unconditional_branch_reg\n");
+          unsupported();
+          increment_pc();
+          return;
+      }
+      break;
+    case 2:
+      switch (op3) {
+      case 0:
+        if (op4 != 0) {
+          unallocated();
+          break;
+        }
+        // RET
+        n = (Rn == 0) ? 30 : Rn;
+        assert(n <= 31);
+        target = xregs[n];
+        LOG_CPU("RET: target=xregs[%d](0x%lx)\n", n, target);
+        if (target == 0) {
+          exit(0);
+        }
+        break;
+      default:
+        printf("decode_unconditional_branch_reg\n");
+        unsupported();
+        increment_pc();
+        return;
       }
       break;
     default:
+      printf("decode_unconditional_branch_reg\n");
       unsupported();
       increment_pc();
       return;
-    }
-    break;
-  default:
-    unsupported();
-    increment_pc();
-    return;
   }
-  set_pc(target);
 }
 
 /*
