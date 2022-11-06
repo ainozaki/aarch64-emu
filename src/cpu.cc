@@ -33,6 +33,7 @@ void Cpu::decode_start(uint32_t inst) {
   uint8_t op1;
   op1 = util::shift(inst, 25, 28);
 
+  // printf("sp=0x%lx:\n", xregs[31]);
   printf("0x%lx:\t", pc);
   const decode_func decode_inst_tbl[] = {
       &Cpu::decode_sme_encodings,
@@ -484,7 +485,9 @@ void Cpu::decode_add_sub_imm(uint32_t inst) {
     LOG_CPU("%s x%d, x%d(=0x%lx), #0x%lx, LSL %d\n", op, rd, rn, xregs[rn], imm,
             if_shift * 12);
   }
-
+  if (rd == 31) {
+    return;
+  }
   xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
 }
 
@@ -584,6 +587,9 @@ void Cpu::decode_logical_imm(uint32_t inst) {
     assert(false);
   }
 
+  if (rd == 31) {
+    return;
+  }
   if (if_64bit) {
     xregs[rd] = result;
   } else {
@@ -812,6 +818,7 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
   if (!postindex) {
     address += (int64_t)offset;
   }
+  // printf("sp=0x%lx, address=0x%lx\n", xregs[31],address);
 
   if (if_load) {
     if (if_32bit) {
@@ -1360,6 +1367,9 @@ void Cpu::decode_addsub_shifted_reg(uint32_t inst) {
             shift_type_strtbl[shift_type], shift_amount);
   }
 
+  if (rd == 31) {
+    return;
+  }
   xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
 }
 
@@ -1406,7 +1416,9 @@ void Cpu::decode_addsub_extended_reg(uint32_t inst) {
   op2 = ExtendValue(op2, extend_type, shift_amount);
   result = if_setflag ? add_imm_s(op1, op2, if_sub, cpsr, if_64bit)
                       : add_imm(op1, op2, if_sub);
-  xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
+  if (rd != 31) {
+    xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
+  }
   LOG_CPU("%s x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), #%d\n", op, rd, xregs[rd],
           rn, xregs[rn], rm, xregs[rm], shift_amount);
   return;
@@ -1888,7 +1900,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
 void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
   uint8_t opc, op2, op3, Rn, op4, n;
   uint64_t target = pc;
-  
+
   opc = util::shift(inst, 21, 24);
   op2 = util::shift(inst, 16, 20);
   op3 = util::shift(inst, 10, 15);
@@ -1896,55 +1908,57 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
   op4 = util::shift(inst, 0, 4);
 
   switch (opc) {
+  case 0:
+    if (op2 != 0b11111) {
+      unallocated();
+      return;
+    }
+    switch (op3) {
     case 0:
-      if (op2 != 0b11111){
+      if (op4 != 0) {
         unallocated();
         return;
       }
-      switch (op3){
-        case 0:
-          if (op4 != 0){
-            unallocated();
-            return;
-          }
-          printf("br x%d(=0x%lx)\n", Rn, xregs[Rn]);
-          set_pc(xregs[Rn]);
-          return;
-        default:
-          printf("decode_unconditional_branch_reg\n");
-          unsupported();
-          increment_pc();
-          return;
-      }
-      break;
-    case 2:
-      switch (op3) {
-      case 0:
-        if (op4 != 0) {
-          unallocated();
-          break;
-        }
-        // RET
-        n = (Rn == 0) ? 30 : Rn;
-        assert(n <= 31);
-        target = xregs[n];
-        LOG_CPU("RET: target=xregs[%d](0x%lx)\n", n, target);
-        if (target == 0) {
-          exit(0);
-        }
+      printf("br x%d(=0x%lx)\n", Rn, xregs[Rn]);
+      set_pc(xregs[Rn]);
+      return;
+    default:
+      printf("decode_unconditional_branch_reg\n");
+      unsupported();
+      increment_pc();
+      return;
+    }
+    break;
+  case 2:
+    switch (op3) {
+    case 0:
+      if (op4 != 0) {
+        unallocated();
         break;
-      default:
-        printf("decode_unconditional_branch_reg\n");
-        unsupported();
-        increment_pc();
-        return;
       }
+      // RET
+      n = (Rn == 0) ? 30 : Rn;
+      assert(n <= 31);
+      target = xregs[n];
+      LOG_CPU("RET: target=xregs[%d](0x%lx)\n", n, target);
+      printf("sp=0x%lx\n", xregs[31]);
+      if (target == 0) {
+        exit(0);
+      }
+      set_pc(target);
       break;
     default:
       printf("decode_unconditional_branch_reg\n");
       unsupported();
       increment_pc();
       return;
+    }
+    break;
+  default:
+    printf("decode_unconditional_branch_reg\n");
+    unsupported();
+    increment_pc();
+    return;
   }
 }
 
