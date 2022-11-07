@@ -46,7 +46,7 @@ void Emulator::execute_loop() {
       break;
     }
     cpu.decode_start(inst);
-    if (i >= 100000) {
+    if (i >= 80000) {
       break;
     }
     i++;

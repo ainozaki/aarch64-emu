@@ -3,6 +3,8 @@
 #include <cassert>
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "utils.h"
 
@@ -20,44 +22,29 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
   if (!if_mmu_enabled()) {
     return addr;
   }
-
+  uint64_t *index;
   ttbrn = util::shift(addr, 39, 63);
   pud = util::shift(addr, 30, 38);
   pmd = util::shift(addr, 21, 29);
   pte = util::shift(addr, 12, 20);
   offset = util::shift(addr, 0, 11);
+  printf("======================\n");
   printf("addr   = 0x%lx\n", addr);
   printf("ttbrn   = 0x%x\n", ttbrn);
-  printf("pud     = 0x%x\n", pud);
-  printf("pmd     = 0x%x\n", pmd);
-  printf("pte     = 0x%x\n", pte);
+  printf("L1(pud) = 0x%x\n", pud);
+  printf("L2(pmd) = 0x%x\n", pmd);
+  printf("L3(pte) = 0x%x\n", pte);
   printf("offset  = 0x%x\n", offset);
+  printf("======================\n");
+  if (ttbrn == 0) {
+    printf("ttbr0_el1 = 0x%lx\n", ttbr0_el1);
+    index = (uint64_t *)ttbr0_el1;
+    index += pud;
+    printf("*(ttbr0_el1 + pud) = 0x%lx\n", *index);
+  } else {
+    printf("ttbr1_el1 = 0x%lx\n", ttbr1_el1);
+  }
+  printf("======================\n");
+  exit(0);
   return addr;
-}
-
-void MMU::mmu_set_register(MMUregister type, uint64_t value) {
-  switch (type) {
-  case MMUregister::ttbr0_el1:
-    ttbr0_el1 = value;
-    break;
-  case MMUregister::ttbr1_el1:
-    ttbr1_el1 = value;
-    break;
-  default:
-    assert(false);
-  }
-}
-
-uint64_t MMU::mmu_get_register(MMUregister type) {
-  switch (type) {
-  case MMUregister::ttbr0_el1:
-    return ttbr0_el1;
-    break;
-  case MMUregister::ttbr1_el1:
-    return ttbr1_el1;
-    break;
-  default:
-    assert(false);
-    return 0;
-  }
 }

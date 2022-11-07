@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <bitset>
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
@@ -26,7 +27,7 @@ void Cpu::init(uint64_t entry, uint64_t sp, uint64_t text_start,
 uint32_t Cpu::fetch() {
   // show_regs();
   // show_stack();
-  return bus.load32(pc);
+  return load(pc, MemAccessSize::Word);
 }
 
 void Cpu::decode_start(uint32_t inst) {
@@ -145,6 +146,16 @@ static inline uint32_t signed_extend32(uint32_t val, uint8_t topbit) {
 
 } // namespace
 
+void Cpu::store(uint64_t address, uint64_t value, MemAccessSize size) {
+  uint64_t paddr = mmu.mmu_translate(address);
+  bus.store(paddr, value, size);
+}
+
+uint64_t Cpu::load(uint64_t address, MemAccessSize size) {
+  uint64_t paddr = mmu.mmu_translate(address);
+  return bus.load(paddr, size);
+}
+
 void Cpu::show_regs() {
   std::cout << "=================================================" << std::endl;
   printf("registers:\n");
@@ -161,7 +172,8 @@ void Cpu::show_stack() {
   std::cout << "=================================================" << std::endl;
   printf("stack:\n");
   for (int i = 0; i < 20; i++) {
-    printf("\tsp+0x%x: 0x%16lx\n", i * 8, bus.load64(xregs[31] + 8 * i));
+    printf("\tsp+0x%x: 0x%16lx\n", i * 8,
+           load(xregs[31] + 8 * i, MemAccessSize::DWord));
   }
   std::cout << "=================================================" << std::endl;
 }
@@ -820,23 +832,26 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
   }
   // printf("sp=0x%lx, address=0x%lx\n", xregs[31],address);
 
+  uint64_t value1, value2;
   if (if_load) {
     if (if_32bit) {
-      xregs[rt] = bus.load32(address);
-      xregs[rt2] = bus.load32(address + 4);
+      value1 = load(address, MemAccessSize::Word);
+      value2 = load(address + 4, MemAccessSize::Word);
+      xregs[rt] = util::set_lower(xregs[rt], value1, MemAccessSize::Word);
+      xregs[rt2] = util::set_lower(xregs[rt2], value2, MemAccessSize::Word);
     } else {
-      xregs[rt] = bus.load64(address);
-      xregs[rt2] = bus.load64(address + 8);
+      xregs[rt] = load(address, MemAccessSize::DWord);
+      xregs[rt2] = load(address + 8, MemAccessSize::DWord);
     }
   } else {
     data1 = xregs[rt];
     data2 = xregs[rt2];
     if (if_32bit) {
-      bus.store32(address, data1);
-      bus.store32(address + 4, data2);
+      store(address, data1, MemAccessSize::Word);
+      store(address + 4, data2, MemAccessSize::Word);
     } else {
-      bus.store64(address, data1);
-      bus.store64(address + 8, data2);
+      store(address, data1, MemAccessSize::DWord);
+      store(address + 8, data2, MemAccessSize::DWord);
     }
   }
 
@@ -915,6 +930,7 @@ void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
     return;
   }
 
+  uint64_t value;
   switch (size) {
   case 0:
   case 1:
@@ -925,11 +941,12 @@ void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
     offset = imm12 << size;
     switch (opc) {
     case 0:
-      bus.store32(xregs[rn] + offset, xregs[rt]);
+      store(xregs[rn] + offset, xregs[rt], MemAccessSize::Word);
       LOG_CPU("str x%d(=0x%lx), [x%d, #%ld]\n", rt, xregs[rt], rn, offset);
       break;
     case 1:
-      xregs[rt] = util::set_lower32(xregs[rt], bus.load32(xregs[rn] + offset));
+      value = load(xregs[rn] + offset, MemAccessSize::Word);
+      xregs[rt] = util::set_lower(xregs[rt], value, MemAccessSize::Word);
       LOG_CPU("ldr x%d(=0x%lx), [x%d, #%ld]\n", rt, xregs[rt], rn, offset);
       break;
     case 2:
@@ -943,12 +960,12 @@ void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
     offset = imm12 << size;
     switch (opc) {
     case 0:
-      bus.store64(xregs[rn] + offset, xregs[rt]);
+      store(xregs[rn] + offset, xregs[rt], MemAccessSize::DWord);
       LOG_CPU("str x%d(=0x%lx), [x%d(=0x%lx), #%ld]\n", rt, xregs[rt], rn,
               xregs[rn], offset);
       break;
     case 1:
-      xregs[rt] = bus.load64(xregs[rn] + offset);
+      xregs[rt] = load(xregs[rn] + offset, MemAccessSize::DWord);
       LOG_CPU("ldr x%d(=0x%lx), [x%d, #%ld]\n", rt, xregs[rt], rn, offset);
       break;
     case 2:
@@ -1002,7 +1019,7 @@ void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
 void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
   bool vector;
   uint8_t size, opc, rn, rt, idx;
-  uint64_t imm9, imm12, offset, address;
+  uint64_t imm9, imm12, offset, address, value;
   bool post_indexed, writeback;
 
   size = util::shift(inst, 30, 31);
@@ -1036,105 +1053,75 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
 
   if (vector) {
     unsupported();
-  } else {
-    address = xregs[rn];
+    return;
+  }
 
-    if (!post_indexed) {
-      address += offset;
-    }
+  address = xregs[rn];
 
-    switch (opc) {
-    case 0b00:
-      /* STR */
-      LOG_CPU("str%s ", size_strtbl[size]);
-      switch (size) {
-      case 0:
-        bus.store8(address, xregs[rt]);
-        break;
-      case 1:
-        bus.store16(address, xregs[rt]);
-        break;
-      case 2:
-        bus.store32(address, xregs[rt]);
-        break;
-      case 3:
-        bus.store64(address, xregs[rt]);
-        break;
-      }
-      break;
-    case 0b01:
-      /* LDR (unsigned) */
-      LOG_CPU("ldr%s ", size_strtbl[size]);
-      switch (size) {
-      case 0:
-        xregs[rt] = util::set_lower32(xregs[rt], bus.load8(address));
-        break;
-      case 1:
-        xregs[rt] = util::set_lower32(xregs[rt], bus.load16(address));
-        break;
-      case 2:
-        xregs[rt] = util::set_lower32(xregs[rt], bus.load32(address));
-        break;
-      case 3:
-        xregs[rt] = bus.load64(address);
-        break;
-      }
-      break;
-    case 0b10:
-      /* LDR (signed 64bit) */
-      if (size == 3) {
-        unsupported();
-        break;
-      }
-      LOG_CPU("ldrs%s(64bit) ", size_strtbl[size]);
-      switch (size) {
-      case 0:
-        xregs[rt] = util::SIGN_EXTEND(bus.load8(address), 8);
-        break;
-      case 1:
-        xregs[rt] = util::SIGN_EXTEND(bus.load16(address), 8);
-        break;
-      case 2:
-        xregs[rt] = util::SIGN_EXTEND(bus.load32(address), 8);
-        break;
-      case 3:
-        unallocated();
-        break;
-      }
-      break;
-    case 0b11:
-      /* LDR (signed 32bit) */
-      if (size >= 2) {
-        unallocated();
-      }
-      LOG_CPU("ldrs%s(32bit) ", size_strtbl[size]);
-      switch (size) {
-      case 0:
-        xregs[rt] = util::set_lower32(xregs[rt],
-                                      util::SIGN_EXTEND(bus.load8(address), 8));
-        break;
-      case 1:
-        xregs[rt] = util::set_lower32(
-            xregs[rt], util::SIGN_EXTEND(bus.load16(address), 16));
-        break;
-      case 2:
-      case 3:
-        unallocated();
-        break;
-      }
+  if (!post_indexed) {
+    address += offset;
+  }
+
+  switch (opc) {
+  case 0b00:
+    /* STR */
+    LOG_CPU("str%s ", size_strtbl[size]);
+    store(address, xregs[rt], memsz_tbl[size]);
+    break;
+  case 0b01:
+    /* LDR (unsigned) */
+    LOG_CPU("ldr%s ", size_strtbl[size]);
+    value = load(address, memsz_tbl[size]);
+    xregs[rt] = util::set_lower(xregs[rt], value, memsz_tbl[size]);
+    break;
+  case 0b10:
+    /* LDR (signed 64bit) */
+    if (size == 3) {
+      unsupported();
       break;
     }
-
-    if (writeback) {
-      xregs[rn] = xregs[rn] + offset;
-      if (post_indexed) {
-        LOG_CPU("x%d(=0x%lx), [x%d], #0x%lx\n", rt, xregs[rt], rn, offset);
-      } else {
-        LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx]!\n", rt, xregs[rt], rn, offset);
-      }
+    LOG_CPU("ldrs%s(64bit) ", size_strtbl[size]);
+    switch (size) {
+    case 0:
+    case 1:
+    case 2:
+      value = load(address, memsz_tbl[size]);
+      xregs[rt] = util::SIGN_EXTEND(value, 8 * std::pow(2, size));
+      break;
+    case 3:
+      unallocated();
+      break;
+    }
+    break;
+  case 0b11:
+    /* LDR (signed 32bit) */
+    if (size >= 2) {
+      unallocated();
+    }
+    LOG_CPU("ldrs%s(32bit) ", size_strtbl[size]);
+    switch (size) {
+    case 0:
+    case 1:
+      value =
+          util::SIGN_EXTEND(load(address, memsz_tbl[size]), 8 * pow(2, size));
+      xregs[rt] = util::set_lower(xregs[rt], value, MemAccessSize::Word);
+      break;
+    case 2:
+    case 3:
+      unallocated();
+      break;
+    }
+    break;
+  }
+  if (writeback) {
+    xregs[rn] = xregs[rn] + offset;
+    if (post_indexed) {
+      LOG_CPU("x%d(=0x%lx), [x%d], #0x%lx\n", rt, xregs[rt], rn, offset);
     } else {
-      LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx]\n", rt, xregs[rt], rn, offset);
+      LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx]!\n", rt, xregs[rt], rn, offset);
     }
+  } else {
+    LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx]\n", rt, xregs[rt], rn, offset);
   }
 }
 
@@ -1238,11 +1225,9 @@ void Cpu::decode_ldst_reg_reg_offset(uint32_t inst) {
       // TODO: option = 0b011
       offset = shift_and_extend(xregs[rm], shift, scale, extendtype_tbl[opt]);
       // TODO size
-      bus.store64(xregs[rn] + offset, xregs[rt]);
+      store(xregs[rn] + offset, xregs[rt], memsz_tbl[size]);
       LOG_CPU("load_store: register offset: store: rt %d [rn] %lu offset %lu\n",
               rt, xregs[rn], offset);
-      mmu.mmu_translate(xregs[rn] + offset);
-      // bus.store64(vaddr)
       break;
     case 0b11: /* loads */
       if (size >= 0b10) {
@@ -1258,7 +1243,7 @@ void Cpu::decode_ldst_reg_reg_offset(uint32_t inst) {
               "[rm]=0x%lx, offset=%lu vaddr=0x%lx\n",
               rt, rn, xregs[rn], rm, xregs[rm], offset, xregs[rn] + offset);
       // TODO size
-      xregs[rt] = bus.load64(xregs[rn] + offset);
+      xregs[rt] = load(xregs[rn] + offset, MemAccessSize::DWord);
       break;
     }
   }
@@ -1293,7 +1278,7 @@ void Cpu::decode_ldst_load_register_literal(uint32_t inst) {
 
   offset = util::SIGN_EXTEND(imm19 << 2, 21);
   address = pc + offset;
-  data = bus.load64(address);
+  data = load(address, MemAccessSize::DWord);
 
   switch (opc) {
   case 0:
@@ -1812,7 +1797,15 @@ void Cpu::decode_system_register_move(uint32_t inst) {
             }
             break;
           case 1:
-            printf("TTBR1_EL1 ");
+            if (if_get) {
+              xregs[rt] = mmu.ttbr1_el1;
+              printf("mrs x%d, TTBR1_EL1(=0x%lx)\n", rt, xregs[rt]);
+              return;
+            } else {
+              mmu.ttbr1_el1 = xregs[rt];
+              printf("msr TTBR1_EL1, x%d(=0x%lx)\n", rt, xregs[rt]);
+              return;
+            }
             break;
           case 2:
             printf("TCR_EL1 ");
@@ -1941,7 +1934,7 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
       assert(n <= 31);
       target = xregs[n];
       LOG_CPU("RET: target=xregs[%d](0x%lx)\n", n, target);
-      printf("sp=0x%lx\n", xregs[31]);
+      // printf("sp=0x%lx\n", xregs[31]);
       if (target == 0) {
         exit(0);
       }

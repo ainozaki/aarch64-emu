@@ -38,6 +38,9 @@ public:
   void show_stack();
 
 private:
+  uint64_t load(uint64_t address, MemAccessSize size);
+  void store(uint64_t address, uint64_t value, MemAccessSize size);
+
   void update_lower32(uint8_t reg, uint32_t value);
   void increment_pc() { pc += 4; }
   void set_pc(uint64_t new_pc) { pc = new_pc; }

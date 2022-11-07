@@ -2,10 +2,8 @@
 
 #include <cstdint>
 
-enum class MMUregister {
-  ttbr0_el1,
-  ttbr1_el1,
-};
+const uint64_t uart_base = 0x09000000;
+const uint64_t uart_size = 0x00001000;
 
 class MMU {
 public:
@@ -17,9 +15,6 @@ public:
   uint64_t sctlr_el1 = 0; // system control register
 
   uint64_t mmu_translate(uint64_t vaddr);
-
-  void mmu_set_register(MMUregister type, uint64_t value);
-  uint64_t mmu_get_register(MMUregister type);
 
 private:
   bool if_mmu_enabled() { return sctlr_el1 & 1; }

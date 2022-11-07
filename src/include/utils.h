@@ -3,6 +3,8 @@
 #include <cassert>
 #include <cstdint>
 
+#include "bus.h"
+
 namespace util {
 
 inline uint64_t LSL(uint64_t val, uint8_t shift) {
@@ -25,7 +27,14 @@ inline uint64_t SIGN_EXTEND(uint64_t val, uint8_t topbit) {
   return ASR(LSL(val, 64 - (topbit)), 64 - (topbit));
 }
 
+inline uint64_t shift64(uint64_t inst, uint32_t bottom, uint32_t top) {
+  return ((inst >> bottom) & ((1 << (top - bottom + 1)) - 1));
+}
+
 inline uint32_t shift(uint32_t inst, uint32_t bottom, uint32_t top) {
+  if ((bottom >= 32) || (top >= 32)) {
+    return shift64(inst, bottom, top);
+  }
   return ((inst >> bottom) & ((1 << (top - bottom + 1)) - 1));
 }
 
@@ -53,7 +62,8 @@ inline uint64_t extract(uint64_t value, uint8_t start, uint8_t len) {
 
 inline uint64_t extract_upper32(uint64_t value) { return value & ~mask(32); }
 
-uint64_t set_lower32(uint64_t original, uint64_t setvalue);
+uint64_t set_lower32(uint64_t dst, uint64_t src);
+uint64_t set_lower(uint64_t dst, uint64_t src, MemAccessSize size);
 
 uint64_t shift_with_type(uint64_t value, uint8_t type, uint8_t amount);
 } // namespace util
