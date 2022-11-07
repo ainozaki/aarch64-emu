@@ -30,6 +30,16 @@ uint32_t Cpu::fetch() {
   return load(pc, MemAccessSize::Word);
 }
 
+uint64_t Cpu::load(uint64_t address, MemAccessSize size) {
+  uint64_t paddr = mmu.mmu_translate(address);
+  return bus.load(paddr, size);
+}
+
+void Cpu::store(uint64_t address, uint64_t value, MemAccessSize size) {
+  uint64_t paddr = mmu.mmu_translate(address);
+  bus.store(paddr, value, size);
+}
+
 void Cpu::decode_start(uint32_t inst) {
   uint8_t op1;
   op1 = util::shift(inst, 25, 28);
@@ -55,6 +65,28 @@ void Cpu::decode_start(uint32_t inst) {
       &Cpu::decode_data_processing_float,
   };
   (this->*decode_inst_tbl[op1])(inst);
+}
+
+void Cpu::show_regs() {
+  std::cout << "=================================================" << std::endl;
+  printf("registers:\n");
+  for (int i = 0; i < 32; i += 4) {
+    printf("\tw%2d: 0x%16lx", i, xregs[i]);
+    printf("\tw%2d: 0x%16lx", i + 1, xregs[i + 1]);
+    printf("\tw%2d: 0x%16lx", i + 2, xregs[i + 2]);
+    printf("\tw%2d: 0x%16lx\n", i + 3, xregs[i + 3]);
+  }
+  printf("\tpc: 0x%lx\n", pc);
+  std::cout << "=================================================" << std::endl;
+}
+void Cpu::show_stack() {
+  std::cout << "=================================================" << std::endl;
+  printf("stack:\n");
+  for (int i = 0; i < 20; i++) {
+    printf("\tsp+0x%x: 0x%16lx\n", i * 8,
+           load(xregs[31] + 8 * i, MemAccessSize::DWord));
+  }
+  std::cout << "=================================================" << std::endl;
 }
 
 namespace {
@@ -139,48 +171,7 @@ static inline uint64_t bitmask64(uint8_t len) { return ~0ULL >> (64 - len); }
 static inline uint64_t signed_extend(uint64_t val, uint8_t topbit) {
   return util::bit(val, topbit) ? (val | ~util::mask(topbit)) : val;
 }
-
-static inline uint32_t signed_extend32(uint32_t val, uint8_t topbit) {
-  return util::bit(val, topbit) ? (val | ~uint32_t(0) << topbit) : val;
-}
-
 } // namespace
-
-void Cpu::store(uint64_t address, uint64_t value, MemAccessSize size) {
-  uint64_t paddr = mmu.mmu_translate(address);
-  bus.store(paddr, value, size);
-}
-
-uint64_t Cpu::load(uint64_t address, MemAccessSize size) {
-  uint64_t paddr = mmu.mmu_translate(address);
-  return bus.load(paddr, size);
-}
-
-void Cpu::show_regs() {
-  std::cout << "=================================================" << std::endl;
-  printf("registers:\n");
-  for (int i = 0; i < 32; i += 4) {
-    printf("\tw%2d: 0x%16lx", i, xregs[i]);
-    printf("\tw%2d: 0x%16lx", i + 1, xregs[i + 1]);
-    printf("\tw%2d: 0x%16lx", i + 2, xregs[i + 2]);
-    printf("\tw%2d: 0x%16lx\n", i + 3, xregs[i + 3]);
-  }
-  printf("\tpc: 0x%lx\n", pc);
-  std::cout << "=================================================" << std::endl;
-}
-void Cpu::show_stack() {
-  std::cout << "=================================================" << std::endl;
-  printf("stack:\n");
-  for (int i = 0; i < 20; i++) {
-    printf("\tsp+0x%x: 0x%16lx\n", i * 8,
-           load(xregs[31] + 8 * i, MemAccessSize::DWord));
-  }
-  std::cout << "=================================================" << std::endl;
-}
-
-void Cpu::update_lower32(uint8_t reg, uint32_t value) {
-  xregs[reg] = (xregs[reg] & (uint64_t)0xffffffff << 32) | value;
-}
 
 void Cpu::decode_data_processing_imm(uint32_t inst) {
   uint8_t op0;
