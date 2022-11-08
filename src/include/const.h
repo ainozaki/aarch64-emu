@@ -1,7 +1,4 @@
 #pragma once
 
-enum class SysResult {
-  Success,
-  ErrorMemory,
-  ErrorElf,
-};
+const int ESUCCESS = 0;
+const int EFAILED = -1;

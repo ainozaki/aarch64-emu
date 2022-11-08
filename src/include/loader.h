@@ -9,6 +9,7 @@
 #include "const.h"
 
 const uint64_t STACK_SIZE = 1000 * 1000;
+const uint64_t PAGE_SIZE = sysconf(_SC_PAGESIZE);
 
 class Loader {
 public:
@@ -21,7 +22,9 @@ public:
 
   Loader(int argc, char **argv, char **envp);
   ~Loader();
-  SysResult load();
+
+  int init();
+  int load();
 
 private:
   int fd_; // for close
@@ -35,8 +38,8 @@ private:
   Elf64_Shdr *sh_tbl_;
   Elf64_Phdr *ph_tbl_;
   char *sh_name_;
+  bool use_paddr_;
 
-  SysResult init();
   const char *get_interp() const;
   uint64_t get_text_total_size() const;
   uint64_t get_text_start_addr() const;

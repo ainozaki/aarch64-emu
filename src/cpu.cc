@@ -31,6 +31,7 @@ uint32_t Cpu::fetch() {
 }
 
 uint64_t Cpu::load(uint64_t address, MemAccessSize size) {
+  // printf("load 0x%lx\n", address);
   uint64_t paddr = mmu.mmu_translate(address);
   return bus.load(paddr, size);
 }
@@ -1117,16 +1118,16 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
 }
 
 void Cpu::decode_ldst_reg_unpriviledged(uint32_t inst) {
-  LOG_CPU("load_store: ldst_reg_unpriviledged\n");
-  LOG_CPU("%d\n", inst);
+  printf("load_store: ldst_reg_unpriviledged 0x%x\n", inst);
+  unsupported();
 }
 void Cpu::decode_ldst_atomic_memory_op(uint32_t inst) {
-  LOG_CPU("load_store: ldst_reg_atomic_memory_op\n");
-  LOG_CPU("%d\n", inst);
+  printf("load_store: ldst_reg_atomic_memory_op 0x%x\n", inst);
+  unsupported();
 }
 void Cpu::decode_ldst_reg_pac(uint32_t inst) {
-  LOG_CPU("load_store: ldst_reg_pca\n");
-  LOG_CPU("%d\n", inst);
+  printf("load_store: ldst_reg_pca 0x%x\n", inst);
+  unsupported();
 }
 
 // ExtendReg() in ARM
@@ -1217,8 +1218,8 @@ void Cpu::decode_ldst_reg_reg_offset(uint32_t inst) {
       offset = shift_and_extend(xregs[rm], shift, scale, extendtype_tbl[opt]);
       // TODO size
       store(xregs[rn] + offset, xregs[rt], memsz_tbl[size]);
-      LOG_CPU("load_store: register offset: store: rt %d [rn] %lu offset %lu\n",
-              rt, xregs[rn], offset);
+      LOG_CPU("str x%d, [x%d, x%d {#%d}] (=0x%lx)\n", rt, rn, rm, shift * 3,
+              xregs[rn] + offset);
       break;
     case 0b11: /* loads */
       if (size >= 0b10) {
@@ -1229,10 +1230,8 @@ void Cpu::decode_ldst_reg_reg_offset(uint32_t inst) {
     case 0b10: /* loads */
                // TODO: option = 0b011
       offset = shift_and_extend(xregs[rm], shift, scale, extendtype_tbl[opt]);
-      LOG_CPU("load_store: register offset: load: rt=%d, rn=%d, [rn]=0x%lx, "
-              "rm=%d, "
-              "[rm]=0x%lx, offset=%lu vaddr=0x%lx\n",
-              rt, rn, xregs[rn], rm, xregs[rm], offset, xregs[rn] + offset);
+      LOG_CPU("ldr x%d, [x%d, x%d {#%d}] (=0x%lx)\n", rt, rn, rm, shift * 3,
+              xregs[rn] + offset);
       // TODO size
       xregs[rt] = load(xregs[rn] + offset, MemAccessSize::DWord);
       break;

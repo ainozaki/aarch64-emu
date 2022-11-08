@@ -40,7 +40,7 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
     printf("ttbr0_el1 = 0x%lx\n", ttbr0_el1);
     index = (uint64_t *)ttbr0_el1;
     index += pud;
-    printf("*(ttbr0_el1 + pud) = 0x%lx\n", *index);
+    printf("ttbr0_el1 + pud = 0x%lx\n", (uint64_t)index);
   } else {
     printf("ttbr1_el1 = 0x%lx\n", ttbr1_el1);
   }

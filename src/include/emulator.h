@@ -16,7 +16,7 @@ public:
 
   Emulator(int argc, char **argv, char **envp);
   ~Emulator();
-  SysResult init();
+  int init();
   void execute_loop();
 
 private:
