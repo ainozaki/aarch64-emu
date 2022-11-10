@@ -21,6 +21,7 @@ TEST_GENOBJ =\
 	tests/data/b.o \
 	tests/data/ret.o
 
+HEADERS=$(SRC:.cc=.h)
 OBJ=$(SRC:.cc=.o)
 DEP=$(SRC:.cc=.d)
 
@@ -31,7 +32,7 @@ TEST_GENDATA = emu-testgen
 all: $(TARGET)
 test: $(TEST_TARGET) $(TEST_GENDATA)
 
-$(TARGET): $(OBJ) src/main.o
+$(TARGET): $(OBJ)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(TEST_TARGET): $(OBJ) $(TEST_OBJ)
@@ -41,7 +42,7 @@ $(TEST_GENDATA): $(TEST_GENOBJ)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 	./tests/gen-testdata.sh
 
-%.o: %.cc
+%.o: %.cc %.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
 %.o: %.s
