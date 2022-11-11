@@ -8,6 +8,11 @@
 
 #include "utils.h"
 
+void MMU::init(Bus *bus){
+  assert(bus);
+  bus_ = bus;
+}
+
 uint64_t MMU::mmu_translate(uint64_t addr) {
   //    vaddr
   //     63   39 38    30 29    21 20    12 11       0
@@ -22,7 +27,15 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
   if (!if_mmu_enabled()) {
     return addr;
   }
-  uint64_t *index;
+  
+  
+  if ((addr >= ram_base) && (addr <= ram_base + ram_size)){
+    return addr;
+  }else { 
+    uint64_t mapped_addr = addr - 0xffffff8000000000;
+    return mapped_addr;
+  }
+
   ttbrn = util::shift(addr, 39, 63);
   pud = util::shift(addr, 30, 38);
   pmd = util::shift(addr, 21, 29);
@@ -36,14 +49,37 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
   printf("L3(pte) = 0x%x\n", pte);
   printf("offset  = 0x%x\n", offset);
   printf("======================\n");
+  
+  uint64_t base_addr, index, value, paddr;
   if (ttbrn == 0) {
-    printf("ttbr0_el1 = 0x%lx\n", ttbr0_el1);
-    index = (uint64_t *)ttbr0_el1;
-    index += pud;
-    printf("ttbr0_el1 + pud = 0x%lx\n", (uint64_t)index);
+    // L0
+    base_addr = ttbr0_el1;
+    index = pud * 8;
+    value = bus_->load((uint64_t)(base_addr + index), MemAccessSize::DWord);
+    printf("L1");
+    printf("\tbase_addr   = 0x%lx\n", base_addr);
+    printf("\t*0x%lx = 0x%lx\n", base_addr + index ,value);
+  
+    // L2
+    base_addr = value;
+    index = pmd * 8;
+    value = bus_->load((uint64_t)(base_addr + index), MemAccessSize::DWord);
+    printf("L2");
+    printf("\tbase_addr   = 0x%lx\n", base_addr);
+    printf("\t*0x%lx = 0x%lx\n", base_addr + index ,value);
+    
+    // L3
+    base_addr = value;
+    index = pte * 8;
+    value = bus_->load((uint64_t)(base_addr + index), MemAccessSize::DWord);
+    printf("L3");
+    printf("\tbase_addr   = 0x%lx\n", base_addr);
+    printf("\t*0x%lx = 0x%lx\n", base_addr + index ,value);
   } else {
     printf("ttbr1_el1 = 0x%lx\n", ttbr1_el1);
   }
+  paddr = (util::shift(value, 12, 38) << 12) | offset;
+  printf("paddr = 0x%lx\n", paddr);
   printf("======================\n");
   exit(0);
   return addr;

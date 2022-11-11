@@ -2,13 +2,14 @@
 
 #include <cstdint>
 
-const uint64_t uart_base = 0x09000000;
-const uint64_t uart_size = 0x00001000;
+#include "bus.h"
 
 class MMU {
 public:
   MMU() = default;
   ~MMU() = default;
+
+  void init(Bus *bus);
 
   uint64_t ttbr0_el1; // translation table register
   uint64_t ttbr1_el1;
@@ -17,5 +18,7 @@ public:
   uint64_t mmu_translate(uint64_t vaddr);
 
 private:
+  Bus *bus_;
+
   bool if_mmu_enabled() { return sctlr_el1 & 1; }
 };

@@ -22,12 +22,13 @@ void Cpu::init(uint64_t entry, uint64_t sp, uint64_t text_start,
   printf("Init pc=0x%lx, sp=0x%lx\n", pc, xregs[31]);
 
   bus.init(text_start, text_size, map_base);
+  mmu.init(&bus);
 }
 
 uint32_t Cpu::fetch() {
   // show_regs();
   // show_stack();
-  return load(pc, MemAccessSize::Word);
+  return bus.load(pc, MemAccessSize::Word);
 }
 
 uint64_t Cpu::load(uint64_t address, MemAccessSize size) {
@@ -489,7 +490,7 @@ void Cpu::decode_add_sub_imm(uint32_t inst) {
     LOG_CPU("%s x%d, x%d(=0x%lx), #0x%lx, LSL %d\n", op, rd, rn, xregs[rn], imm,
             if_shift * 12);
   }
-  if (rd == 31) {
+  if ((rd == 31) && if_setflag) {
     return;
   }
   xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
@@ -586,14 +587,14 @@ void Cpu::decode_logical_imm(uint32_t inst) {
     cpsr.Z = result == 0;
     cpsr.C = 0;
     cpsr.V = 0;
+    if (rd == 31){
+      return;
+    }
     break;
   default:
     assert(false);
   }
 
-  if (rd == 31) {
-    return;
-  }
   if (if_64bit) {
     xregs[rd] = result;
   } else {
@@ -812,7 +813,7 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
   case 3:
     wback = true;
     postindex = false;
-    LOG_CPU("%s x%d, x%d, [x%d, #%ld]!\n", op, rt, rt2, rn, (int64_t)offset);
+    LOG_CPU("%s x%d, x%d, [x%d(=0x%lx), #%ld]!\n", op, rt, rt2, rn, xregs[rn], (int64_t)offset);
     break;
   default:
     unallocated();
@@ -1286,7 +1287,7 @@ void Cpu::decode_ldst_load_register_literal(uint32_t inst) {
     return;
   }
 
-  printf("ldr x%d, 0x%lx\n", rt, address);
+  printf("ldr x%d(=0x%lx), 0x%lx\n", rt, xregs[rt], address);
 }
 
 /*
@@ -1342,7 +1343,7 @@ void Cpu::decode_addsub_shifted_reg(uint32_t inst) {
             shift_type_strtbl[shift_type], shift_amount);
   }
 
-  if (rd == 31) {
+  if (if_setflag && (rd == 31)) {
     return;
   }
   xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
@@ -1903,7 +1904,7 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
         return;
       }
       printf("br x%d(=0x%lx)\n", Rn, xregs[Rn]);
-      set_pc(xregs[Rn]);
+      set_pc(mmu.mmu_translate(xregs[Rn]));
       return;
     default:
       printf("decode_unconditional_branch_reg\n");
