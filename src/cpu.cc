@@ -22,7 +22,7 @@ void Cpu::init(uint64_t entry, uint64_t sp, uint64_t text_start,
   printf("Init pc=0x%lx, sp=0x%lx\n", pc, xregs[31]);
 
   bus.init(text_start, text_size, map_base);
-  mmu.init(&bus);
+  mmu.init(&bus, &CurrentEL);
 }
 
 uint32_t Cpu::fetch() {
@@ -587,7 +587,7 @@ void Cpu::decode_logical_imm(uint32_t inst) {
     cpsr.Z = result == 0;
     cpsr.C = 0;
     cpsr.V = 0;
-    if (rd == 31){
+    if (rd == 31) {
       return;
     }
     break;
@@ -813,7 +813,8 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
   case 3:
     wback = true;
     postindex = false;
-    LOG_CPU("%s x%d, x%d, [x%d(=0x%lx), #%ld]!\n", op, rt, rt2, rn, xregs[rn], (int64_t)offset);
+    LOG_CPU("%s x%d, x%d, [x%d(=0x%lx), #%ld]!\n", op, rt, rt2, rn, xregs[rn],
+            (int64_t)offset);
     break;
   default:
     unallocated();
@@ -1800,6 +1801,15 @@ void Cpu::decode_system_register_move(uint32_t inst) {
             break;
           case 2:
             printf("TCR_EL1 ");
+            if (if_get) {
+              xregs[rt] = mmu.tcr_el1.value;
+              printf("mrs x%d, TCR_EL1(=0x%lx)\n", rt, xregs[rt]);
+              return;
+            } else {
+              mmu.tcr_el1.value = xregs[rt];
+              printf("msr TCR_EL1, x%d(=0x%lx)\n", rt, xregs[rt]);
+              return;
+            }
             break;
           default:
             unsupported();
@@ -1808,6 +1818,27 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           break;
         default:
           unsupported();
+        }
+        break;
+      case 4:
+        switch (CRm) {
+        case 2:
+          switch (op2) {
+          case 2:
+            if (!if_get) {
+              assert(false);
+            }
+            xregs[rt] = CurrentEL;
+            printf("mrs CurrentEL(=0x%lx)\n", xregs[rt]);
+            break;
+          default:
+            unsupported();
+            break;
+          }
+          break;
+        default:
+          unsupported();
+          break;
         }
         break;
       case 10:

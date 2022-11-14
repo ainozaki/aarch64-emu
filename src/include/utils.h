@@ -27,15 +27,25 @@ inline uint64_t SIGN_EXTEND(uint64_t val, uint8_t topbit) {
   return ASR(LSL(val, 64 - (topbit)), 64 - (topbit));
 }
 
+// mask n digits
+// ex) mask(3) returns 0b111
+inline uint64_t mask(uint8_t n) {
+  assert(0 <= n <= 64);
+  if (n == 64) {
+    return ~uint64_t(0);
+  }
+  return (uint64_t(1) << n) - 1;
+}
+
 inline uint64_t shift64(uint64_t inst, uint32_t bottom, uint32_t top) {
-  return ((inst >> bottom) & ((1 << (top - bottom + 1)) - 1));
+  return (inst & mask(top + 1)) >> bottom;
 }
 
 inline uint32_t shift(uint32_t inst, uint32_t bottom, uint32_t top) {
   if ((bottom >= 32) || (top >= 32)) {
     return shift64(inst, bottom, top);
   }
-  return ((inst >> bottom) & ((1 << (top - bottom + 1)) - 1));
+  return (inst & mask(top + 1)) >> bottom;
 }
 
 inline uint32_t bit(uint32_t inst, uint8_t bit) { return (inst >> bit) & 1; }
@@ -46,14 +56,6 @@ inline uint64_t clear_upper32(uint64_t x) { return x & 0xffffffff; }
 inline uint64_t zero_extend(uint64_t val, uint8_t bit) {
   uint64_t zero = 0;
   return (val & ((1 << bit) - 1)) | zero;
-}
-
-inline uint64_t mask(uint8_t n) {
-  assert(0 <= n <= 64);
-  if (n == 64) {
-    return ~uint64_t(0);
-  }
-  return (uint64_t(1) << n) - 1;
 }
 
 inline uint64_t extract(uint64_t value, uint8_t start, uint8_t len) {
