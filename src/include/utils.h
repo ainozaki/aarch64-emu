@@ -5,6 +5,15 @@
 
 #include "bus.h"
 
+//#define DEBUG_ON
+#ifdef DEBUG_ON
+#define LOG_EMU(...)                                          \
+  printf("[%s][%d][%s] ", __FILE__, __LINE__, __func__), \
+      printf(__VA_ARGS__)
+#else
+#define LOG_EMU(...)
+#endif
+
 namespace util {
 
 inline uint64_t LSL(uint64_t val, uint8_t shift) {

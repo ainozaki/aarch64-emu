@@ -22,136 +22,128 @@ void MMU::init(Bus *bus, uint64_t *current_el) {
 }
 
 void MMU::mmu_debug(uint64_t addr) {
-  uint32_t ttbrn;
-  uint16_t pud, pmd, pte;
-  uint64_t offset;
-  ttbrn = util::shift(addr, 39, 63);
-  pud = util::shift(addr, 30, 38);
-  pmd = util::shift(addr, 21, 29);
-  pte = util::shift(addr, 12, 20);
-  offset = util::shift(addr, 0, 11);
-
   // TCR debug
-  printf("========TCR========\n");
-  printf("ipa: 000->32bits, 101->48bits\n");
-  printf("\tipa = 0x%x\n", tcr_el1.get_ipa());
-  printf("tg1: 01->16KB, 10->4KB, 11->64KB\n");
-  printf("\ttg1 = 0x%x\n", tcr_el1.get_tg1());
-  printf("tg0: 00->4KB, 01->64KB, 10->16KB\n");
-  printf("\ttg0 = 0x%x\n", tcr_el1.get_tg0());
-  printf("tnsz: memory region size 2**(64-T0SZ)\n");
-  printf("\t64 - t1sz = %d\n", 64 - tcr_el1.get_t1sz());
-  printf("\t64 - t0sz = %d\n", 64 - tcr_el1.get_t0sz());
+  LOG_EMU("========TCR========\n");
+  LOG_EMU("ipa: 000->32bits, 101->48bits\n");
+  LOG_EMU("\tipa = 0x%x\n", tcr_el1.get_ipa());
+  LOG_EMU("tg1: 01->16KB, 10->4KB, 11->64KB\n");
+  LOG_EMU("\ttg1 = 0x%x\n", tcr_el1.get_tg1());
+  LOG_EMU("tg0: 00->4KB, 01->64KB, 10->16KB\n");
+  LOG_EMU("\ttg0 = 0x%x\n", tcr_el1.get_tg0());
+  LOG_EMU("tnsz: memory region size 2**(64-T0SZ)\n");
+  LOG_EMU("\t64 - t1sz = %d\n", 64 - tcr_el1.get_t1sz());
+  LOG_EMU("\t64 - t0sz = %d\n", 64 - tcr_el1.get_t0sz());
 
   // translation table debug
-  printf("========VADDR========\n");
-  printf("addr   = 0x%lx\n", addr);
-  printf("ttbrn   = 0x%x\n", ttbrn);
-  printf("L1(pud) = 0x%x\n", pud);
-  printf("L2(pmd) = 0x%x\n", pmd);
-  printf("L3(pte) = 0x%x\n", pte);
-  printf("offset  = 0x%lx\n", offset);
-  printf("======================\n");
+  LOG_EMU("========VADDR========\n");
+  LOG_EMU("addr   = 0x%lx\n", addr);
+  LOG_EMU("ttbrn   = 0x%x\n", util::shift(addr, g4kb_l0_start_bit + g4kb_index_sz, 63));
+  LOG_EMU("L0_index = 0x%x\n", util::shift(addr, g4kb_l0_start_bit, g4kb_index_sz));
+  LOG_EMU("L1_index = 0x%x\n", util::shift(addr, g4kb_l1_start_bit, g4kb_index_sz));
+  LOG_EMU("L2_index = 0x%x\n", util::shift(addr, g4kb_l2_start_bit, g4kb_index_sz));
+  LOG_EMU("L3_index = 0x%x\n", util::shift(addr, g4kb_l3_start_bit, g4kb_index_sz));
+  LOG_EMU("offset  = 0x%lx\n", util::shift(addr, 0, 11));
+  LOG_EMU("======================\n");
 }
 
 uint64_t MMU::l0_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, next;
 
-  printf("L0\n");
+  LOG_EMU("L0\n");
   index = util::shift(addr, g4kb_l0_start_bit,
                       g4kb_l0_start_bit + g4kb_index_sz - 1);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
-  printf("\tbase  = 0x%lx\n", base);
-  printf("\tindex = 0x%ld\n", index);
-  printf("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
+  LOG_EMU("\tbase  = 0x%lx\n", base);
+  LOG_EMU("\tindex = 0x%ld\n", index);
+  LOG_EMU("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
   if (!(entry & 1)) {
-    printf("invalid entry\n");
+    LOG_EMU("invalid entry\n");
     return 1;
   }
 
   assert(entry & 2);
-  printf("table entry\n");
+  LOG_EMU("table entry\n");
   next = util::shift(entry, 12, 27) << 12;
-  printf("\tnext  = 0x%lx\n", next);
+  LOG_EMU("\tnext  = 0x%lx\n", next);
   return l1_translate(addr, next);
 }
 
 uint64_t MMU::l1_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, next, output;
-  printf("L1\n");
+  LOG_EMU("L1\n");
   index = util::shift(addr, g4kb_l1_start_bit,
                       g4kb_l1_start_bit + g4kb_index_sz - 1);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
-  printf("\tbase  = 0x%lx\n", base);
-  printf("\tindex = 0x%ld\n", index);
-  printf("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
+  LOG_EMU("\tbase  = 0x%lx\n", base);
+  LOG_EMU("\tindex = 0x%ld\n", index);
+  LOG_EMU("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
   if (!(entry & 1)) {
-    printf("invalid entry\n");
+    LOG_EMU("invalid entry\n");
     return 1;
   }
 
   if (entry & 2) {
-    printf("\ttable entry\n");
+    LOG_EMU("\ttable entry\n");
     next = util::shift(entry, 12, 47) << 12;
-    printf("\tnext  = 0x%lx\n", next);
+    LOG_EMU("\tnext  = 0x%lx\n", next);
     return l2_translate(addr, next);
   } else {
-    printf("block entry\n");
+    LOG_EMU("block entry\n");
     output = util::shift(entry, 30, 47) << 30;
-    printf("\toutput = 0x%lx\n", output);
+    LOG_EMU("\toutput = 0x%lx\n", output);
     return output;
   }
 }
 
 uint64_t MMU::l2_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, next, output;
-  printf("L2\n");
+  LOG_EMU("L2\n");
   index = util::shift(addr, g4kb_l2_start_bit,
                       g4kb_l2_start_bit + g4kb_index_sz - 1);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
-  printf("\tbase  = 0x%lx\n", base);
-  printf("\tindex = 0x%ld\n", index);
-  printf("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
+  LOG_EMU("\tbase  = 0x%lx\n", base);
+  LOG_EMU("\tindex = 0x%ld\n", index);
+  LOG_EMU("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
   if (!(entry & 1)) {
-    printf("invalid entry\n");
+    LOG_EMU("invalid entry\n");
     return 1;
   }
 
   if (entry & 2) {
-    printf("\ttable entry\n");
+    LOG_EMU("\ttable entry\n");
     next = util::shift(entry, 12, 47) << 12;
-    printf("\tnext  = 0x%lx\n", next);
+    LOG_EMU("\tnext  = 0x%lx\n", next);
     return l3_translate(addr, next);
   } else {
-    printf("\tblock entry\n");
+    LOG_EMU("\tblock entry\n");
     output = util::shift(entry, 21, 47) << 21;
-    printf("\toutput = 0x%lx\n", output);
+    LOG_EMU("\toutput = 0x%lx\n", output);
     return output;
   }
 }
 
 uint64_t MMU::l3_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, output;
-  printf("L3\n");
+  LOG_EMU("L3\n");
   index = util::shift(addr, g4kb_l3_start_bit,
                       g4kb_l3_start_bit + g4kb_index_sz - 1);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
-  printf("\tbase  = 0x%lx\n", base);
-  printf("\tindex = 0x%ld\n", index);
-  printf("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
+  LOG_EMU("\tbase  = 0x%lx\n", base);
+  LOG_EMU("\tindex = 0x%ld\n", index);
+  LOG_EMU("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
   if (!(entry & 1)) {
-    printf("invalid entry\n");
+    LOG_EMU("invalid entry\n");
     return 1;
   }
 
   assert(!(entry & 2));
-  printf("\tblock entry\n");
+  LOG_EMU("\tblock entry\n");
   output = util::shift(entry, 21, 47) << 21;
-  printf("\toutput = 0x%lx\n", output);
+  LOG_EMU("\toutput = 0x%lx\n", output);
   return output;
 }
 
@@ -189,7 +181,7 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
   }
 
   paddr = paddr | offset;
-  printf("paddr = 0x%lx\n", paddr);
+  LOG_EMU("paddr = 0x%lx\n", paddr);
 
   return paddr;
 }
