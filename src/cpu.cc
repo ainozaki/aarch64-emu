@@ -430,6 +430,8 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
   if (!if_64bit) {
     return add_imm_s32(x, y, carry_in, cpsr);
   }
+  printf("x = 0x%lx\n", x);
+  printf("y = 0x%lx\n", y);
   if (carry_in) {
     y = ~y;
   }
@@ -437,11 +439,14 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
   int64_t sy = (int64_t)y;
   uint128_t unsigned_sum = (uint128_t)x + (uint128_t)y + (uint128_t)carry_in;
   int128_t signed_sum = (int128_t)sx + (int128_t)sy + (uint128_t)carry_in;
-  uint64_t result = unsigned_sum & util::mask(64);
-
+  uint64_t result = unsigned_sum & 0xffffffffffffffff;
   cpsr.N = util::bit64(result, 63);
   cpsr.Z = result == 0;
-  cpsr.C = unsigned_sum != result;
+  if (carry_in){
+    cpsr.C = (int64_t)x >= (int64_t)~y;
+  }else {
+    cpsr.C = (int64_t)x > (int64_t)y;
+  }
   cpsr.V = signed_sum != (int64_t)result;
   return result;
 }
@@ -546,7 +551,7 @@ static uint64_t decode_bit_masks(uint8_t n, uint8_t imms, uint8_t immr) {
 void Cpu::decode_logical_imm(uint32_t inst) {
   uint8_t rd, rn, imms, immr, opc;
   bool N, if_64bit;
-  uint32_t imm;
+  uint64_t imm;
   uint64_t result;
 
   rd = util::shift(inst, 0, 4);
@@ -566,19 +571,19 @@ void Cpu::decode_logical_imm(uint32_t inst) {
 
   switch (opc) {
   case 0b00:
-    LOG_CPU("and x%d, x%d(=0x%lx), #0x%x\n", rd, rn, xregs[rn], imm);
+    LOG_CPU("and x%d, x%d(=0x%lx), #0x%lx\n", rd, rn, xregs[rn], imm);
     result = xregs[rn] & imm; /* AND */
     break;
   case 0b01:
-    LOG_CPU("orr x%d, x%d(=0x%lx), #%d\n", rd, rn, xregs[rn], imm);
+    LOG_CPU("orr x%d, x%d(=0x%lx), #%lx\n", rd, rn, xregs[rn], imm);
     result = xregs[rn] | imm; /* ORR */
     break;
   case 0b10:
-    LOG_CPU("eor x%d, x%d(=0x%lx), #%d\n", rd, rn, xregs[rn], imm);
+    LOG_CPU("eor x%d, x%d(=0x%lx), #%lx\n", rd, rn, xregs[rn], imm);
     result = xregs[rn] ^ imm; /* EOR */
     break;
   case 0b11:
-    LOG_CPU("ands x%d, x%d(=0x%lx), #%d\n", rd, rn, xregs[rn], imm);
+    LOG_CPU("ands x%d, x%d(=0x%lx), #%lx\n", rd, rn, xregs[rn], imm);
     result = xregs[rn] & imm; /* ANDS */
     if (if_64bit) {
       cpsr.N = (int64_t)result < 0;
@@ -645,7 +650,7 @@ void Cpu::decode_move_wide_imm(uint32_t inst) {
         if_64bit ? imm : (xregs[rd] & ~util::mask(32)) | (imm & util::mask(32));
     break;
   case 3: /* MOVK */
-    xregs[rd] = ~util::extract(xregs[rd], 4 * shift + 16, 16) | imm;
+    xregs[rd] = (xregs[rd] & ~util::mask(shift + 15)) | imm | (xregs[rd] & util::mask(shift));
     break;
   default:
     assert(false);
@@ -1615,17 +1620,31 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst) {
   if (o1 == 1) {
     unallocated();
   }
-
-  if (o0 == 0) {
-    if (check_b_flag(cond)) {
-      offset = signed_extend(imm19 << 2, 20);
-      LOG_CPU("B.cond: pc=0x%lx offset=0x%lx, cond=0x%x\n", pc + offset, offset,
-              cond);
-      set_pc(pc + offset);
-      return;
-    }
+  switch (o0){
+    case 0:
+      printf("cpsr.Z = %d\n", cpsr.Z);
+      printf("cpsr.N = %d\n", cpsr.N);
+      printf("cpsr.C = %d\n", cpsr.C);
+      printf("cpsr.V = %d\n", cpsr.V);
+      if (check_b_flag(cond)) {
+        offset = signed_extend(imm19 << 2, 20);
+        set_pc(pc + offset);
+        LOG_CPU("B.cond: pc=0x%lx offset=0x%lx, cond=0x%x\n", pc + offset, offset,cond);
+        return;
+      }else {
+        increment_pc();
+        LOG_CPU("B.cond(not match): cond=0x%x\n", cond);
+        return;
+      }
+      break;
+    case 1:
+      printf("BC.cond");
+      unsupported();
+      increment_pc();
+      break;
+    default:
+      assert(false);
   }
-  increment_pc();
 }
 
 /*
