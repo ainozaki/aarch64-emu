@@ -28,7 +28,7 @@ void Cpu::init(uint64_t entry, uint64_t sp, uint64_t text_start,
 uint32_t Cpu::fetch() {
   // show_regs();
   // show_stack();
-  return bus.load(pc, MemAccessSize::Word);
+  return bus.load(mmu.mmu_translate(pc), MemAccessSize::Word);
 }
 
 uint64_t Cpu::load(uint64_t address, MemAccessSize size) {
@@ -38,6 +38,7 @@ uint64_t Cpu::load(uint64_t address, MemAccessSize size) {
 }
 
 void Cpu::store(uint64_t address, uint64_t value, MemAccessSize size) {
+  //printf("store addr=0x%lx\n", address);
   uint64_t paddr = mmu.mmu_translate(address);
   bus.store(paddr, value, size);
 }
@@ -47,7 +48,7 @@ void Cpu::decode_start(uint32_t inst) {
   op1 = util::shift(inst, 25, 28);
 
   // printf("sp=0x%lx:\n", xregs[31]);
-  printf("0x%lx:\t", pc);
+  printf("0x%lx: \t", pc);
   const decode_func decode_inst_tbl[] = {
       &Cpu::decode_sme_encodings,
       &Cpu::decode_unallocated,
@@ -341,17 +342,17 @@ void Cpu::decode_branches(uint32_t inst) {
 }
 
 void Cpu::decode_sme_encodings(uint32_t inst) {
-  LOG_CPU("sme_encodings %d\n", inst);
+  LOG_CPU("sme_encodings 0x%x\n", inst);
   increment_pc();
 }
 
 void Cpu::decode_unallocated(uint32_t inst) {
-  LOG_CPU("unallocated %d\n", inst);
+  LOG_CPU("unallocated %x\n", inst);
   increment_pc();
 }
 
 void Cpu::decode_sve_encodings(uint32_t inst) {
-  LOG_CPU("sve_encodings %d\n", inst);
+  LOG_CPU("sve_encodings %x\n", inst);
   increment_pc();
 }
 
@@ -1935,7 +1936,7 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
         return;
       }
       printf("br x%d(=0x%lx)\n", Rn, xregs[Rn]);
-      set_pc(mmu.mmu_translate(xregs[Rn]));
+      set_pc(xregs[Rn]);
       return;
     default:
       printf("decode_unconditional_branch_reg\n");
