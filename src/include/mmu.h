@@ -20,7 +20,7 @@ public:
 
   // STCLR (System Control Register)
   // enable/disable mmu
-  uint64_t sctlr_el1 = 0;
+  uint64_t sctlr_el1 = 0xc50838;
 
   // TCR_ELn (Translation Control Register)
   // controls memory management features

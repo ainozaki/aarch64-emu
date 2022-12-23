@@ -48,7 +48,12 @@ void Cpu::decode_start(uint32_t inst) {
   op1 = util::shift(inst, 25, 28);
 
   // printf("sp=0x%lx:\n", xregs[31]);
-  printf("0x%lx: \t", pc);
+  //printf("0x%lx: \t", pc);
+  printf("pc 0x%lx\n", pc);
+  printf("sp 0x%lx\n", xregs[31]);
+  printf("w0 0x%lx\n", xregs[0]);
+  printf("w1 0x%lx\n", xregs[1]);
+  printf("w2 0x%lx\n", xregs[2]);
   const decode_func decode_inst_tbl[] = {
       &Cpu::decode_sme_encodings,
       &Cpu::decode_unallocated,
@@ -314,7 +319,6 @@ void Cpu::decode_branches(uint32_t inst) {
   case 6:
     switch (util::shift(inst, 24, 25)) {
     case 0:
-      printf("exception_generation\n");
       decode_exception_generation(inst);
       break;
     case 1:
@@ -430,8 +434,6 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
   if (!if_64bit) {
     return add_imm_s32(x, y, carry_in, cpsr);
   }
-  printf("x = 0x%lx\n", x);
-  printf("y = 0x%lx\n", y);
   if (carry_in) {
     y = ~y;
   }
@@ -1622,10 +1624,6 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst) {
   }
   switch (o0){
     case 0:
-      printf("cpsr.Z = %d\n", cpsr.Z);
-      printf("cpsr.N = %d\n", cpsr.N);
-      printf("cpsr.C = %d\n", cpsr.C);
-      printf("cpsr.V = %d\n", cpsr.V);
       if (check_b_flag(cond)) {
         offset = signed_extend(imm19 << 2, 20);
         set_pc(pc + offset);
@@ -1659,13 +1657,12 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst) {
 */
 void Cpu::decode_exception_generation(uint32_t inst) {
   uint8_t opc, op2, LL;
-  // uint64_t imm16;
+  uint64_t imm16;
 
   opc = util::shift(inst, 21, 23);
-  // imm16 = util::shift(inst, 5, 20);
+  imm16 = util::shift(inst, 5, 20);
   op2 = util::shift(inst, 2, 4);
   LL = util::shift(inst, 0, 1);
-
   switch (opc) {
   case 0:
     if (op2 != 0) {
@@ -1681,7 +1678,7 @@ void Cpu::decode_exception_generation(uint32_t inst) {
             xregs[2]);
       break;
     case 2:
-      LOG_CPU("HVC\n");
+      LOG_CPU("HVC 0x%lx\n", imm16);
       break;
     case 3:
       LOG_CPU("SMC\n");
@@ -1691,6 +1688,7 @@ void Cpu::decode_exception_generation(uint32_t inst) {
     }
     break;
   default:
+    printf("exception_generation\n");
     unsupported();
     break;
   }
@@ -1756,7 +1754,11 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         case 0:
           switch (op2) {
           case 5:
-            printf("MPIDR_EL1 ");
+            if (!if_get){
+              assert(false);
+            }
+            xregs[rt] = mpidr_el1;
+            printf("mrs x%d, MPIDR_EL1(0x%lx)\n", rt, xregs[rt]);
             break;
           default:
             unsupported();
@@ -1859,6 +1861,29 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         default:
           unsupported();
           break;
+        }
+        break;
+      case 6:
+        switch (CRm){
+          case 0:
+            switch (op2){
+              case 0:
+                if (if_get){
+                  unsupported();
+                  break;
+                }
+                VBAR_EL1 = xregs[rt];
+                printf("msr VBAR_EL1=0x%lx)\n", xregs[rt]);
+                sleep(3);
+                break;
+              default:
+                unsupported();
+                break;
+            }
+            break;
+          default:
+            unsupported();
+            break;
         }
         break;
       case 10:

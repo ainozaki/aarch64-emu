@@ -51,15 +51,14 @@ void Emulator::execute_loop() {
 
   uint32_t inst;
   int i = 0;
-  while (true) {
+  int num_insts = 90000;
+  while (i < num_insts) {
     inst = cpu.fetch();
     if (!inst) {
       break;
     }
+    printf("=== %d\n", i);
     cpu.decode_start(inst);
-    if (i >= 80000) {
-      break;
-    }
     i++;
   }
   cpu.show_regs();
