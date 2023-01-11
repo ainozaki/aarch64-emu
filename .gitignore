@@ -3,3 +3,5 @@ misc
 text
 .vscode/
 emu-log.txt
+*.o
+emu-aarch64

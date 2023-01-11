@@ -2,7 +2,7 @@
 
 #include <cassert>
 #include <cstdint>
-
+#include <unistd.h>
 #include "bus.h"
 
 //#define DEBUG_ON
@@ -14,7 +14,13 @@
 #define LOG_EMU(...)
 #endif
 
+const uint64_t PAGE_SIZE = sysconf(_SC_PAGESIZE);
+
 namespace util {
+
+inline uint64_t PAGE_ROUNDUP(uint64_t v) {
+  return (v + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+}
 
 inline uint64_t LSL(uint64_t val, uint8_t shift) {
   return shift >= 64 ? 0 : val << shift;

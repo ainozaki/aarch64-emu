@@ -9,7 +9,6 @@
 #include "const.h"
 
 const uint64_t STACK_SIZE = 1000 * 1000;
-const uint64_t PAGE_SIZE = sysconf(_SC_PAGESIZE);
 
 class Loader {
 public:

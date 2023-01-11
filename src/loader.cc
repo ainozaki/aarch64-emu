@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "utils.h"
+
 Loader::Loader(int argc, char **argv, char **envp)
     : filename_(argv[1]), argc_(argc), argv_(argv), envp_(envp) {}
 
@@ -17,13 +19,6 @@ Loader::~Loader() {
   munmap(file_map_start_, sb_.st_size);
 }
 
-namespace {
-
-uint64_t PAGE_ROUNDUP(uint64_t v) {
-  return (v + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-}
-
-} // namespace
 
 int Loader::init() {
   printf("Loading %s\n", filename_);
@@ -84,7 +79,7 @@ int Loader::load() {
       text_start = get_text_start_addr();
       text_size = get_text_total_size();
       printf("\ttext_start:0x%lx, text_size:0x%lx\n", text_start, text_size);
-      if ((addr = mmap(NULL, PAGE_ROUNDUP(text_size),
+      if ((addr = mmap(NULL, util::PAGE_ROUNDUP(text_size),
                        PROT_READ | PROT_EXEC | PROT_WRITE,
                        MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (void *)-1) {
         perror("mmap");

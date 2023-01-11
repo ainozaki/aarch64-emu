@@ -54,6 +54,7 @@ void Cpu::decode_start(uint32_t inst) {
   printf("w0 0x%lx\n", xregs[0]);
   printf("w1 0x%lx\n", xregs[1]);
   printf("w2 0x%lx\n", xregs[2]);
+  printf("w3 0x%lx\n", xregs[3]);
   const decode_func decode_inst_tbl[] = {
       &Cpu::decode_sme_encodings,
       &Cpu::decode_unallocated,
@@ -571,22 +572,23 @@ void Cpu::decode_logical_imm(uint32_t inst) {
     return;
   }
 
+  uint64_t xrn = rn == 31 ? 0 : xregs[rn];
   switch (opc) {
   case 0b00:
-    LOG_CPU("and x%d, x%d(=0x%lx), #0x%lx\n", rd, rn, xregs[rn], imm);
-    result = xregs[rn] & imm; /* AND */
+    LOG_CPU("and x%d, x%d(=0x%lx), #0x%lx\n", rd, rn, xrn, imm);
+    result = xrn & imm; /* AND */
     break;
   case 0b01:
-    LOG_CPU("orr x%d, x%d(=0x%lx), #%lx\n", rd, rn, xregs[rn], imm);
-    result = xregs[rn] | imm; /* ORR */
+    LOG_CPU("orr x%d, x%d(=0x%lx), #%lx\n", rd, rn, xrn, imm);
+    result = xrn | imm; /* ORR */
     break;
   case 0b10:
-    LOG_CPU("eor x%d, x%d(=0x%lx), #%lx\n", rd, rn, xregs[rn], imm);
-    result = xregs[rn] ^ imm; /* EOR */
+    LOG_CPU("eor x%d, x%d(=0x%lx), #%lx\n", rd, rn, xrn, imm);
+    result = xrn ^ imm; /* EOR */
     break;
   case 0b11:
-    LOG_CPU("ands x%d, x%d(=0x%lx), #%lx\n", rd, rn, xregs[rn], imm);
-    result = xregs[rn] & imm; /* ANDS */
+    LOG_CPU("ands x%d, x%d(=0x%lx), #%lx\n", rd, rn, xrn, imm);
+    result = xrn & imm; /* ANDS */
     if (if_64bit) {
       cpsr.N = (int64_t)result < 0;
     } else {
@@ -648,8 +650,7 @@ void Cpu::decode_move_wide_imm(uint32_t inst) {
     imm = ~imm;
     [[fallthrough]];
   case 2: /* MOVZ */
-    xregs[rd] =
-        if_64bit ? imm : (xregs[rd] & ~util::mask(32)) | (imm & util::mask(32));
+    xregs[rd] = if_64bit ? imm : imm & util::mask(32);
     break;
   case 3: /* MOVK */
     xregs[rd] = (xregs[rd] & ~util::mask(shift + 15)) | imm | (xregs[rd] & util::mask(shift));
@@ -1344,7 +1345,7 @@ void Cpu::decode_addsub_shifted_reg(uint32_t inst) {
 
   if (if_setflag) {
     result = add_imm_s(op1, op2, if_sub, cpsr, if_64bit);
-    LOG_CPU("%ss x%d, x%d, x%d, %s #%d\n", op, rd, rn, rm,
+    LOG_CPU("%ss x%d, x%d(=0x%lx), x%d(=0x%lx), %s #%d\n", op, rd, rn, xregs[rn], rm, xregs[rm],
             shift_type_strtbl[shift_type], shift_amount);
   } else {
     result = add_imm(op1, op2, if_sub);
@@ -1352,10 +1353,10 @@ void Cpu::decode_addsub_shifted_reg(uint32_t inst) {
             shift_type_strtbl[shift_type], shift_amount);
   }
 
-  if (if_setflag && (rd == 31)) {
+  if (rd == 31) {
     return;
   }
-  xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
+  xregs[rd] = if_64bit ? result : util::mask(32) & result;
 }
 
 /*
@@ -1679,7 +1680,9 @@ void Cpu::decode_exception_generation(uint32_t inst) {
       break;
     case 2:
       LOG_CPU("HVC 0x%lx\n", imm16);
-      break;
+      xregs[0] = (uint64_t)-2;
+      set_pc(xregs[30]);
+      return;
     case 3:
       LOG_CPU("SMC\n");
       break;
@@ -1725,11 +1728,11 @@ void Cpu::decode_system_register_move(uint32_t inst) {
       case 4:
         switch (op2) {
         case 6:
-          printf("DAIFSET ");
-          break;
+          printf("DAIFSET \n");
+          return;
         case 7:
-          printf("DAIRCLR ");
-          break;
+          printf("DAIRCLR \n");
+          return;
         default:
           unsupported();
           break;
@@ -1759,7 +1762,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
             }
             xregs[rt] = mpidr_el1;
             printf("mrs x%d, MPIDR_EL1(0x%lx)\n", rt, xregs[rt]);
-            break;
+            return;
           default:
             unsupported();
             break;
@@ -1852,7 +1855,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
             }
             xregs[rt] = CurrentEL;
             printf("mrs CurrentEL(=0x%lx)\n", xregs[rt]);
-            break;
+            return;
           default:
             unsupported();
             break;
@@ -1874,8 +1877,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
                 }
                 VBAR_EL1 = xregs[rt];
                 printf("msr VBAR_EL1=0x%lx)\n", xregs[rt]);
-                sleep(3);
-                break;
+                return;
               default:
                 unsupported();
                 break;
@@ -1891,8 +1893,8 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         case 2:
           switch (op2) {
           case 0:
-            printf("MAIR_EL1 ");
-            break;
+            printf("MAIR_EL1 \n");
+            return;
           default:
             unsupported();
             break;
@@ -1915,8 +1917,8 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         case 2:
           switch (op2) {
           case 1:
-            printf("DAIF ");
-            break;
+            printf("DAIF \n");
+            return;
           default:
             unsupported();
             break;
