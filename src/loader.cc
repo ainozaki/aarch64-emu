@@ -19,7 +19,6 @@ Loader::~Loader() {
   munmap(file_map_start_, sb_.st_size);
 }
 
-
 int Loader::init() {
   printf("Loading %s\n", filename_);
 
@@ -60,11 +59,10 @@ int Loader::load() {
 
   // allocate RAM for emulator
   void *addr;
-  if ((addr = mmap(NULL, RAM_SIZE,
-                       PROT_READ | PROT_EXEC | PROT_WRITE,
-                       MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (void *)-1) {
-        perror("mmap");
-        return EFAILED;
+  if ((addr = mmap(NULL, RAM_SIZE, PROT_READ | PROT_EXEC | PROT_WRITE,
+                   MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (void *)-1) {
+    perror("mmap");
+    return EFAILED;
   }
   map_base = (uint64_t)addr;
   printf("\tmap_base:0x%lx, RAM_SIZE:0x%x\n", map_base, RAM_SIZE);
@@ -84,7 +82,7 @@ int Loader::load() {
     if (ph->p_vaddr != ph->p_paddr) {
       use_paddr_ = true;
     }
-    
+
     // memcpy LOAD segment
     printf("\tmemcpy:\n");
     uint64_t start = use_paddr_ ? ph->p_paddr : ph->p_paddr;

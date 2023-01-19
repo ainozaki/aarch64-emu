@@ -32,7 +32,7 @@ public:
   const uint64_t mpidr_el1 = 0x80000000;
   uint64_t VBAR_EL1;
 
-  /* 
+  /*
   DAIF, Interrupt Mask Bits
   Allows access to the interrupt mask bits.
   D[9]: Debug
