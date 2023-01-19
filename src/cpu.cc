@@ -38,7 +38,6 @@ uint64_t Cpu::load(uint64_t address, MemAccessSize size) {
 }
 
 void Cpu::store(uint64_t address, uint64_t value, MemAccessSize size) {
-  //printf("store addr=0x%lx\n", address);
   uint64_t paddr = mmu.mmu_translate(address);
   bus.store(paddr, value, size);
 }
@@ -51,10 +50,13 @@ void Cpu::decode_start(uint32_t inst) {
   //printf("0x%lx: \t", pc);
   printf("pc 0x%lx\n", pc);
   printf("sp 0x%lx\n", xregs[31]);
-  printf("w0 0x%lx\n", xregs[0]);
-  printf("w1 0x%lx\n", xregs[1]);
-  printf("w2 0x%lx\n", xregs[2]);
-  printf("w3 0x%lx\n", xregs[3]);
+  printf("x0 0x%lx\n", xregs[0]);
+  printf("x1 0x%lx\n", xregs[1]);
+  printf("x2 0x%lx\n", xregs[2]);
+  printf("x3 0x%lx\n", xregs[3]);
+  printf("x19 0x%lx\n", xregs[19]);
+  printf("x29 0x%lx\n", xregs[29]);
+  printf("x30 0x%lx\n", xregs[30]);
   const decode_func decode_inst_tbl[] = {
       &Cpu::decode_sme_encodings,
       &Cpu::decode_unallocated,
@@ -1020,7 +1022,6 @@ void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
 */
 
 void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
-  printf("ldst_reg_immediate\n");
   bool vector;
   uint8_t size, opc, rn, rt, idx;
   uint64_t imm9, imm12, offset, address, value;
@@ -1076,7 +1077,7 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
     /* LDR (unsigned) */
     LOG_CPU("ldr%s ", size_strtbl[size]);
     value = load(address, memsz_tbl[size]);
-    xregs[rt] = util::set_lower(xregs[rt], value, memsz_tbl[size]);
+    xregs[rt] = util::zero_extend(value, 8 * std::pow(2, size));
     break;
   case 0b10:
     /* LDR (signed 64bit) */
@@ -1120,12 +1121,12 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
   if (writeback) {
     xregs[rn] = xregs[rn] + offset;
     if (post_indexed) {
-      LOG_CPU("x%d(=0x%lx), [x%d], #0x%lx\n", rt, xregs[rt], rn, offset);
+      LOG_CPU("x%d(=0x%lx), [x%d], #0x%lx, address=0x%lx\n", rt, xregs[rt], rn, offset, address);
     } else {
-      LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx]!\n", rt, xregs[rt], rn, offset);
+      LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx]!, address=0x%lx\n", rt, xregs[rt], rn, offset, address);
     }
   } else {
-    LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx]\n", rt, xregs[rt], rn, offset);
+    LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx], address=0x%lx\n", rt, xregs[rt], rn, offset, address);
   }
 }
 
@@ -1918,7 +1919,13 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         case 2:
           switch (op2) {
           case 1:
-            printf("DAIF \n");
+            if (if_get){
+              printf("mrs x%d, DAIF=0x%lx\n", rt, daif);
+              xregs[rt] = daif;
+            }else {
+              printf("msr DAIF, x%d(=0x%lx)\n", rt, xregs[rt]);
+              daif = xregs[rt];
+            }
             return;
           default:
             unsupported();

@@ -32,6 +32,17 @@ public:
   const uint64_t mpidr_el1 = 0x80000000;
   uint64_t VBAR_EL1;
 
+  /* 
+  DAIF, Interrupt Mask Bits
+  Allows access to the interrupt mask bits.
+  D[9]: Debug
+  A[8]: SError interrupt mask
+  I[7]: IRQ mask
+  F[6]: FIQ mask
+  0: not masked, 1: masked
+  */
+  uint64_t daif = 0x3c0;
+
   Cpu() = default;
   ~Cpu() = default;
   void init(uint64_t pc, uint64_t sp, uint64_t text_start, uint64_t text_size,

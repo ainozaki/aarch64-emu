@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdint>
 #include <unistd.h>
+#include <stdio.h>
 #include "bus.h"
 
 //#define DEBUG_ON
@@ -69,6 +70,9 @@ inline uint64_t bit64(uint64_t inst, uint8_t bit) { return (inst >> bit) & 1; }
 inline uint64_t clear_upper32(uint64_t x) { return x & 0xffffffff; }
 
 inline uint64_t zero_extend(uint64_t val, uint8_t bit) {
+  if (bit == 64){
+    return val;
+  }
   uint64_t zero = 0;
   return (val & ((1 << bit) - 1)) | zero;
 }
