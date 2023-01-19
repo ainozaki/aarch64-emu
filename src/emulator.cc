@@ -51,7 +51,7 @@ void Emulator::execute_loop() {
 
   uint32_t inst;
   int i = 0;
-  int num_insts = 90000;
+  int num_insts = 10;
   while (i < num_insts) {
     inst = cpu.fetch();
     if (!inst) {
@@ -63,6 +63,7 @@ void Emulator::execute_loop() {
   }
   cpu.show_regs();
   free((void *)loader.sp_alloc_start);
+  munmap((void *)loader.map_base, RAM_SIZE);
 }
 
 int main(int argc, char **argv, char **envp) {

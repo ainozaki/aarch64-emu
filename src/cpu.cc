@@ -1020,6 +1020,7 @@ void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
 */
 
 void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
+  printf("ldst_reg_immediate\n");
   bool vector;
   uint8_t size, opc, rn, rt, idx;
   uint64_t imm9, imm12, offset, address, value;
