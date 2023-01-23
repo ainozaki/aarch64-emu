@@ -1,0 +1,12 @@
+target remote localhost:1234
+b main
+c
+define run-si
+x/i $pc
+info registers x0
+info registers x1
+info registers x2
+info registers x19
+x/4xw $x19
+si
+end
