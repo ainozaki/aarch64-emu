@@ -10,6 +10,7 @@
 #include <iostream>
 
 #include "log.h"
+#include "utils.h"
 
 void Mem::init(uint64_t text_start, uint64_t text_size, uint64_t map_base) {
   text_start_ = text_start;
@@ -37,20 +38,7 @@ void Mem::show_stack(uint64_t sp) {
 }
 
 uint64_t Mem::get_ptr(uint64_t vaddr) {
-  /*
-  if (vaddr >= mem_size)
-  {
-    fprintf(stderr,
-            "=====Warning:memory access out of range vaddr=0x%lx=====\n",
-            vaddr);
-    return 0;
-  }
-  return (uint64_t)(vaddr + mem_);
-  */
-  if ((vaddr >= text_start_) && (vaddr <= text_start_ + text_size_)) {
-    vaddr = vaddr - text_start_ + map_base_;
-  }
-  return vaddr;
+  return vaddr - text_start_ + map_base_;
 }
 
 void Mem::store8(uint64_t addr, const uint8_t value) {

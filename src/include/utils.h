@@ -1,20 +1,26 @@
 #pragma once
 
+#include "bus.h"
 #include <cassert>
 #include <cstdint>
-
-#include "bus.h"
+#include <stdio.h>
+#include <unistd.h>
 
 //#define DEBUG_ON
 #ifdef DEBUG_ON
-#define LOG_EMU(...)                                          \
-  printf("[%s][%d][%s] ", __FILE__, __LINE__, __func__), \
-      printf(__VA_ARGS__)
+#define LOG_EMU(...)                                                           \
+  printf("[%s][%d][%s] ", __FILE__, __LINE__, __func__), printf(__VA_ARGS__)
 #else
 #define LOG_EMU(...)
 #endif
 
+const uint64_t PAGE_SIZE = sysconf(_SC_PAGESIZE);
+
 namespace util {
+
+inline uint64_t PAGE_ROUNDUP(uint64_t v) {
+  return (v + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+}
 
 inline uint64_t LSL(uint64_t val, uint8_t shift) {
   return shift >= 64 ? 0 : val << shift;
@@ -63,6 +69,9 @@ inline uint64_t bit64(uint64_t inst, uint8_t bit) { return (inst >> bit) & 1; }
 inline uint64_t clear_upper32(uint64_t x) { return x & 0xffffffff; }
 
 inline uint64_t zero_extend(uint64_t val, uint8_t bit) {
+  if (bit == 64) {
+    return val;
+  }
   uint64_t zero = 0;
   return (val & ((1 << bit) - 1)) | zero;
 }

@@ -38,7 +38,6 @@ uint64_t Cpu::load(uint64_t address, MemAccessSize size) {
 }
 
 void Cpu::store(uint64_t address, uint64_t value, MemAccessSize size) {
-  //printf("store addr=0x%lx\n", address);
   uint64_t paddr = mmu.mmu_translate(address);
   bus.store(paddr, value, size);
 }
@@ -48,7 +47,16 @@ void Cpu::decode_start(uint32_t inst) {
   op1 = util::shift(inst, 25, 28);
 
   // printf("sp=0x%lx:\n", xregs[31]);
-  printf("0x%lx: \t", pc);
+  // printf("0x%lx: \t", pc);
+  printf("pc 0x%lx\n", pc);
+  printf("sp 0x%lx\n", xregs[31]);
+  printf("x0 0x%lx\n", xregs[0]);
+  printf("x1 0x%lx\n", xregs[1]);
+  printf("x2 0x%lx\n", xregs[2]);
+  printf("x3 0x%lx\n", xregs[3]);
+  printf("x19 0x%lx\n", xregs[19]);
+  printf("x29 0x%lx\n", xregs[29]);
+  printf("x30 0x%lx\n", xregs[30]);
   const decode_func decode_inst_tbl[] = {
       &Cpu::decode_sme_encodings,
       &Cpu::decode_unallocated,
@@ -314,7 +322,6 @@ void Cpu::decode_branches(uint32_t inst) {
   case 6:
     switch (util::shift(inst, 24, 25)) {
     case 0:
-      printf("exception_generation\n");
       decode_exception_generation(inst);
       break;
     case 1:
@@ -430,8 +437,6 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
   if (!if_64bit) {
     return add_imm_s32(x, y, carry_in, cpsr);
   }
-  printf("x = 0x%lx\n", x);
-  printf("y = 0x%lx\n", y);
   if (carry_in) {
     y = ~y;
   }
@@ -442,9 +447,9 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
   uint64_t result = unsigned_sum & 0xffffffffffffffff;
   cpsr.N = util::bit64(result, 63);
   cpsr.Z = result == 0;
-  if (carry_in){
+  if (carry_in) {
     cpsr.C = (int64_t)x >= (int64_t)~y;
-  }else {
+  } else {
     cpsr.C = (int64_t)x > (int64_t)y;
   }
   cpsr.V = signed_sum != (int64_t)result;
@@ -569,22 +574,23 @@ void Cpu::decode_logical_imm(uint32_t inst) {
     return;
   }
 
+  uint64_t xrn = rn == 31 ? 0 : xregs[rn];
   switch (opc) {
   case 0b00:
-    LOG_CPU("and x%d, x%d(=0x%lx), #0x%lx\n", rd, rn, xregs[rn], imm);
-    result = xregs[rn] & imm; /* AND */
+    LOG_CPU("and x%d, x%d(=0x%lx), #0x%lx\n", rd, rn, xrn, imm);
+    result = xrn & imm; /* AND */
     break;
   case 0b01:
-    LOG_CPU("orr x%d, x%d(=0x%lx), #%lx\n", rd, rn, xregs[rn], imm);
-    result = xregs[rn] | imm; /* ORR */
+    LOG_CPU("orr x%d, x%d(=0x%lx), #%lx\n", rd, rn, xrn, imm);
+    result = xrn | imm; /* ORR */
     break;
   case 0b10:
-    LOG_CPU("eor x%d, x%d(=0x%lx), #%lx\n", rd, rn, xregs[rn], imm);
-    result = xregs[rn] ^ imm; /* EOR */
+    LOG_CPU("eor x%d, x%d(=0x%lx), #%lx\n", rd, rn, xrn, imm);
+    result = xrn ^ imm; /* EOR */
     break;
   case 0b11:
-    LOG_CPU("ands x%d, x%d(=0x%lx), #%lx\n", rd, rn, xregs[rn], imm);
-    result = xregs[rn] & imm; /* ANDS */
+    LOG_CPU("ands x%d, x%d(=0x%lx), #%lx\n", rd, rn, xrn, imm);
+    result = xrn & imm; /* ANDS */
     if (if_64bit) {
       cpsr.N = (int64_t)result < 0;
     } else {
@@ -646,11 +652,11 @@ void Cpu::decode_move_wide_imm(uint32_t inst) {
     imm = ~imm;
     [[fallthrough]];
   case 2: /* MOVZ */
-    xregs[rd] =
-        if_64bit ? imm : (xregs[rd] & ~util::mask(32)) | (imm & util::mask(32));
+    xregs[rd] = if_64bit ? imm : imm & util::mask(32);
     break;
   case 3: /* MOVK */
-    xregs[rd] = (xregs[rd] & ~util::mask(shift + 15)) | imm | (xregs[rd] & util::mask(shift));
+    xregs[rd] = (xregs[rd] & ~util::mask(shift + 15)) | imm |
+                (xregs[rd] & util::mask(shift));
     break;
   default:
     assert(false);
@@ -1072,7 +1078,7 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
     /* LDR (unsigned) */
     LOG_CPU("ldr%s ", size_strtbl[size]);
     value = load(address, memsz_tbl[size]);
-    xregs[rt] = util::set_lower(xregs[rt], value, memsz_tbl[size]);
+    xregs[rt] = util::zero_extend(value, 8 * std::pow(2, size));
     break;
   case 0b10:
     /* LDR (signed 64bit) */
@@ -1116,12 +1122,15 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
   if (writeback) {
     xregs[rn] = xregs[rn] + offset;
     if (post_indexed) {
-      LOG_CPU("x%d(=0x%lx), [x%d], #0x%lx\n", rt, xregs[rt], rn, offset);
+      LOG_CPU("x%d(=0x%lx), [x%d], #0x%lx, address=0x%lx\n", rt, xregs[rt], rn,
+              offset, address);
     } else {
-      LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx]!\n", rt, xregs[rt], rn, offset);
+      LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx]!, address=0x%lx\n", rt, xregs[rt], rn,
+              offset, address);
     }
   } else {
-    LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx]\n", rt, xregs[rt], rn, offset);
+    LOG_CPU("x%d(=0x%lx), [x%d, #0x%lx], address=0x%lx\n", rt, xregs[rt], rn,
+            offset, address);
   }
 }
 
@@ -1342,18 +1351,19 @@ void Cpu::decode_addsub_shifted_reg(uint32_t inst) {
 
   if (if_setflag) {
     result = add_imm_s(op1, op2, if_sub, cpsr, if_64bit);
-    LOG_CPU("%ss x%d, x%d, x%d, %s #%d\n", op, rd, rn, rm,
-            shift_type_strtbl[shift_type], shift_amount);
+    LOG_CPU("%ss x%d, x%d(=0x%lx), x%d(=0x%lx), %s #%d\n", op, rd, rn,
+            xregs[rn], rm, xregs[rm], shift_type_strtbl[shift_type],
+            shift_amount);
   } else {
     result = add_imm(op1, op2, if_sub);
     LOG_CPU("%s x%d, x%d, x%d, %s #%d\n", op, rd, rn, rm,
             shift_type_strtbl[shift_type], shift_amount);
   }
 
-  if (if_setflag && (rd == 31)) {
+  if (rd == 31) {
     return;
   }
-  xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
+  xregs[rd] = if_64bit ? result : util::mask(32) & result;
 }
 
 /*
@@ -1620,30 +1630,27 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst) {
   if (o1 == 1) {
     unallocated();
   }
-  switch (o0){
-    case 0:
-      printf("cpsr.Z = %d\n", cpsr.Z);
-      printf("cpsr.N = %d\n", cpsr.N);
-      printf("cpsr.C = %d\n", cpsr.C);
-      printf("cpsr.V = %d\n", cpsr.V);
-      if (check_b_flag(cond)) {
-        offset = signed_extend(imm19 << 2, 20);
-        set_pc(pc + offset);
-        LOG_CPU("B.cond: pc=0x%lx offset=0x%lx, cond=0x%x\n", pc + offset, offset,cond);
-        return;
-      }else {
-        increment_pc();
-        LOG_CPU("B.cond(not match): cond=0x%x\n", cond);
-        return;
-      }
-      break;
-    case 1:
-      printf("BC.cond");
-      unsupported();
+  switch (o0) {
+  case 0:
+    if (check_b_flag(cond)) {
+      offset = signed_extend(imm19 << 2, 20);
+      set_pc(pc + offset);
+      LOG_CPU("B.cond: pc=0x%lx offset=0x%lx, cond=0x%x\n", pc + offset, offset,
+              cond);
+      return;
+    } else {
       increment_pc();
-      break;
-    default:
-      assert(false);
+      LOG_CPU("B.cond(not match): cond=0x%x\n", cond);
+      return;
+    }
+    break;
+  case 1:
+    printf("BC.cond");
+    unsupported();
+    increment_pc();
+    break;
+  default:
+    assert(false);
   }
 }
 
@@ -1659,13 +1666,12 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst) {
 */
 void Cpu::decode_exception_generation(uint32_t inst) {
   uint8_t opc, op2, LL;
-  // uint64_t imm16;
+  uint64_t imm16;
 
   opc = util::shift(inst, 21, 23);
-  // imm16 = util::shift(inst, 5, 20);
+  imm16 = util::shift(inst, 5, 20);
   op2 = util::shift(inst, 2, 4);
   LL = util::shift(inst, 0, 1);
-
   switch (opc) {
   case 0:
     if (op2 != 0) {
@@ -1681,8 +1687,10 @@ void Cpu::decode_exception_generation(uint32_t inst) {
             xregs[2]);
       break;
     case 2:
-      LOG_CPU("HVC\n");
-      break;
+      LOG_CPU("HVC 0x%lx\n", imm16);
+      xregs[0] = (uint64_t)-2;
+      set_pc(xregs[30]);
+      return;
     case 3:
       LOG_CPU("SMC\n");
       break;
@@ -1691,6 +1699,7 @@ void Cpu::decode_exception_generation(uint32_t inst) {
     }
     break;
   default:
+    printf("exception_generation\n");
     unsupported();
     break;
   }
@@ -1727,11 +1736,11 @@ void Cpu::decode_system_register_move(uint32_t inst) {
       case 4:
         switch (op2) {
         case 6:
-          printf("DAIFSET ");
-          break;
+          printf("DAIFSET \n");
+          return;
         case 7:
-          printf("DAIRCLR ");
-          break;
+          printf("DAIRCLR \n");
+          return;
         default:
           unsupported();
           break;
@@ -1756,8 +1765,12 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         case 0:
           switch (op2) {
           case 5:
-            printf("MPIDR_EL1 ");
-            break;
+            if (!if_get) {
+              assert(false);
+            }
+            xregs[rt] = mpidr_el1;
+            printf("mrs x%d, MPIDR_EL1(0x%lx)\n", rt, xregs[rt]);
+            return;
           default:
             unsupported();
             break;
@@ -1850,7 +1863,29 @@ void Cpu::decode_system_register_move(uint32_t inst) {
             }
             xregs[rt] = CurrentEL;
             printf("mrs CurrentEL(=0x%lx)\n", xregs[rt]);
+            return;
+          default:
+            unsupported();
             break;
+          }
+          break;
+        default:
+          unsupported();
+          break;
+        }
+        break;
+      case 6:
+        switch (CRm) {
+        case 0:
+          switch (op2) {
+          case 0:
+            if (if_get) {
+              unsupported();
+              break;
+            }
+            VBAR_EL1 = xregs[rt];
+            printf("msr VBAR_EL1=0x%lx)\n", xregs[rt]);
+            return;
           default:
             unsupported();
             break;
@@ -1866,8 +1901,8 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         case 2:
           switch (op2) {
           case 0:
-            printf("MAIR_EL1 ");
-            break;
+            printf("MAIR_EL1 \n");
+            return;
           default:
             unsupported();
             break;
@@ -1890,8 +1925,14 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         case 2:
           switch (op2) {
           case 1:
-            printf("DAIF ");
-            break;
+            if (if_get) {
+              printf("mrs x%d, DAIF=0x%lx\n", rt, daif);
+              xregs[rt] = daif;
+            } else {
+              printf("msr DAIF, x%d(=0x%lx)\n", rt, xregs[rt]);
+              daif = xregs[rt];
+            }
+            return;
           default:
             unsupported();
             break;

@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "utils.h"
+
 Loader::Loader(int argc, char **argv, char **envp)
     : filename_(argv[1]), argc_(argc), argv_(argv), envp_(envp) {}
 
@@ -16,14 +18,6 @@ Loader::~Loader() {
   close(fd_);
   munmap(file_map_start_, sb_.st_size);
 }
-
-namespace {
-
-uint64_t PAGE_ROUNDUP(uint64_t v) {
-  return (v + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-}
-
-} // namespace
 
 int Loader::init() {
   printf("Loading %s\n", filename_);
@@ -52,8 +46,6 @@ int Loader::init() {
 }
 
 int Loader::load() {
-  bool map_done;
-
   // ELF check
   // TODO
 
@@ -64,6 +56,19 @@ int Loader::load() {
     printf("cannot load dynamic linked program\n");
     return EFAILED;
   }
+
+  // allocate RAM for emulator
+  void *addr;
+  if ((addr = mmap(NULL, RAM_SIZE, PROT_READ | PROT_EXEC | PROT_WRITE,
+                   MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (void *)-1) {
+    perror("mmap");
+    return EFAILED;
+  }
+  map_base = (uint64_t)addr;
+  printf("\tmap_base:0x%lx, RAM_SIZE:0x%x\n", map_base, RAM_SIZE);
+
+  text_start = get_text_start_addr();
+  printf("\ttext_start:0x%lx\n", text_start);
 
   // load segment
   Elf64_Phdr *ph;
@@ -76,23 +81,6 @@ int Loader::load() {
 
     if (ph->p_vaddr != ph->p_paddr) {
       use_paddr_ = true;
-    }
-
-    if (!map_done) {
-      // allocate contiguous memory space.
-      void *addr;
-      text_start = get_text_start_addr();
-      text_size = get_text_total_size();
-      printf("\ttext_start:0x%lx, text_size:0x%lx\n", text_start, text_size);
-      if ((addr = mmap(NULL, PAGE_ROUNDUP(text_size),
-                       PROT_READ | PROT_EXEC | PROT_WRITE,
-                       MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (void *)-1) {
-        perror("mmap");
-        return EFAILED;
-      }
-      map_base = (uint64_t)addr;
-      map_done = true;
-      printf("\tmap_base_addr: 0x%lx\n", map_base);
     }
 
     // memcpy LOAD segment

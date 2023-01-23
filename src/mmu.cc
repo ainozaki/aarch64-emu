@@ -37,11 +37,16 @@ void MMU::mmu_debug(uint64_t addr) {
   // translation table debug
   LOG_EMU("========VADDR========\n");
   LOG_EMU("addr   = 0x%lx\n", addr);
-  LOG_EMU("ttbrn   = 0x%x\n", util::shift(addr, g4kb_l0_start_bit + g4kb_index_sz, 63));
-  LOG_EMU("L0_index = 0x%x\n", util::shift(addr, g4kb_l0_start_bit, g4kb_index_sz));
-  LOG_EMU("L1_index = 0x%x\n", util::shift(addr, g4kb_l1_start_bit, g4kb_index_sz));
-  LOG_EMU("L2_index = 0x%x\n", util::shift(addr, g4kb_l2_start_bit, g4kb_index_sz));
-  LOG_EMU("L3_index = 0x%x\n", util::shift(addr, g4kb_l3_start_bit, g4kb_index_sz));
+  LOG_EMU("ttbrn   = 0x%x\n",
+          util::shift(addr, g4kb_l0_start_bit + g4kb_index_sz, 63));
+  LOG_EMU("L0_index = 0x%x\n",
+          util::shift(addr, g4kb_l0_start_bit, g4kb_index_sz));
+  LOG_EMU("L1_index = 0x%x\n",
+          util::shift(addr, g4kb_l1_start_bit, g4kb_index_sz));
+  LOG_EMU("L2_index = 0x%x\n",
+          util::shift(addr, g4kb_l2_start_bit, g4kb_index_sz));
+  LOG_EMU("L3_index = 0x%x\n",
+          util::shift(addr, g4kb_l3_start_bit, g4kb_index_sz));
   LOG_EMU("offset  = 0x%lx\n", util::shift(addr, 0, 11));
   LOG_EMU("======================\n");
 }
@@ -70,7 +75,7 @@ uint64_t MMU::l0_translate(uint64_t addr, uint64_t base) {
 }
 
 uint64_t MMU::l1_translate(uint64_t addr, uint64_t base) {
-  uint64_t index, entry, next, output;
+  uint64_t index, entry, next, output, offset;
   LOG_EMU("L1\n");
   index = util::shift(addr, g4kb_l1_start_bit,
                       g4kb_l1_start_bit + g4kb_index_sz - 1);
@@ -92,13 +97,15 @@ uint64_t MMU::l1_translate(uint64_t addr, uint64_t base) {
   } else {
     LOG_EMU("block entry\n");
     output = util::shift(entry, 30, 47) << 30;
+    offset = util::shift(addr, 0, g4kb_l1_start_bit - 1);
+    output |= offset;
     LOG_EMU("\toutput = 0x%lx\n", output);
     return output;
   }
 }
 
 uint64_t MMU::l2_translate(uint64_t addr, uint64_t base) {
-  uint64_t index, entry, next, output;
+  uint64_t index, entry, next, output, offset;
   LOG_EMU("L2\n");
   index = util::shift(addr, g4kb_l2_start_bit,
                       g4kb_l2_start_bit + g4kb_index_sz - 1);
@@ -120,13 +127,15 @@ uint64_t MMU::l2_translate(uint64_t addr, uint64_t base) {
   } else {
     LOG_EMU("\tblock entry\n");
     output = util::shift(entry, 21, 47) << 21;
+    offset = util::shift(addr, 0, g4kb_l2_start_bit - 1);
+    output |= offset;
     LOG_EMU("\toutput = 0x%lx\n", output);
     return output;
   }
 }
 
 uint64_t MMU::l3_translate(uint64_t addr, uint64_t base) {
-  uint64_t index, entry, output;
+  uint64_t index, entry, output, offset;
   LOG_EMU("L3\n");
   index = util::shift(addr, g4kb_l3_start_bit,
                       g4kb_l3_start_bit + g4kb_index_sz - 1);
@@ -143,12 +152,14 @@ uint64_t MMU::l3_translate(uint64_t addr, uint64_t base) {
   assert(!(entry & 2));
   LOG_EMU("\tblock entry\n");
   output = util::shift(entry, 21, 47) << 21;
+  offset = util::shift(entry, 0, g4kb_l0_start_bit - 1);
+  output |= offset;
   LOG_EMU("\toutput = 0x%lx\n", output);
   return output;
 }
 
 uint64_t MMU::mmu_translate(uint64_t addr) {
-  //    vaddr
+  //    4kb granule
   //     63   48 47    39 38    30 29    21 20    12 11       0
   //    +-------+--------+--------+--------+--------+----------+
   //    | TTBRn | level0 | level1 | level2 | level3 | page off |
@@ -156,7 +167,7 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
   //    +-------+--------+--------+--------+--------+----------+
   //
   uint8_t addr_sz;
-  uint64_t offset, ttbrn, msbs, paddr;
+  uint64_t ttbrn, msbs, paddr;
 
   if (!if_mmu_enabled()) {
     return addr;
@@ -165,7 +176,6 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
   addr_sz = current_el_ ? 64 - tcr_el1.get_t1sz() : 64 - tcr_el1.get_t0sz();
   addr_sz = std::min(addr_sz, tcr_el1.get_max_addrsz());
   msbs = util::shift(addr, addr_sz, 63);
-  offset = util::shift64(addr, 0, 11);
 
   // mmu_debug(addr);
   ttbrn = msbs ? ttbr1_el1 : ttbr0_el1;
@@ -180,7 +190,6 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
     paddr = l3_translate(addr, ttbrn);
   }
 
-  paddr = paddr | offset;
   LOG_EMU("paddr = 0x%lx\n", paddr);
 
   return paddr;

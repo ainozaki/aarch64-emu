@@ -29,6 +29,19 @@ public:
   uint64_t elr_el[4]; /* Exception Linked Registers */
   const uint64_t xzr = 0;
   uint64_t CurrentEL;
+  const uint64_t mpidr_el1 = 0x80000000;
+  uint64_t VBAR_EL1;
+
+  /*
+  DAIF, Interrupt Mask Bits
+  Allows access to the interrupt mask bits.
+  D[9]: Debug
+  A[8]: SError interrupt mask
+  I[7]: IRQ mask
+  F[6]: FIQ mask
+  0: not masked, 1: masked
+  */
+  uint64_t daif = 0x3c0;
 
   Cpu() = default;
   ~Cpu() = default;
