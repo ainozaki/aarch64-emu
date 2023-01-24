@@ -47,7 +47,7 @@ void MMU::mmu_debug(uint64_t addr) {
           util::shift(addr, g4kb_l2_start_bit, g4kb_index_sz));
   LOG_EMU("L3_index = 0x%x\n",
           util::shift(addr, g4kb_l3_start_bit, g4kb_index_sz));
-  LOG_EMU("offset  = 0x%lx\n", util::shift(addr, 0, 11));
+  LOG_EMU("offset  = 0x%x\n", util::shift(addr, 0, 11));
   LOG_EMU("======================\n");
 }
 
@@ -177,7 +177,7 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
   addr_sz = std::min(addr_sz, tcr_el1.get_max_addrsz());
   msbs = util::shift(addr, addr_sz, 63);
 
-  // mmu_debug(addr);
+  //mmu_debug(addr);
   ttbrn = msbs ? ttbr1_el1 : ttbr0_el1;
 
   if (addr_sz >= g4kb_l0_start_bit) {
