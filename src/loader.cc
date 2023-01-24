@@ -58,17 +58,16 @@ int Loader::load() {
   }
 
   // allocate RAM for emulator
-  void *addr;
-  if ((addr = mmap(NULL, RAM_SIZE, PROT_READ | PROT_EXEC | PROT_WRITE,
+  void *ram_base;
+  if ((ram_base = mmap(NULL, RAM_SIZE, PROT_READ | PROT_EXEC | PROT_WRITE,
                    MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (void *)-1) {
     perror("mmap");
     return EFAILED;
   }
-  map_base = (uint64_t)addr;
-  printf("\tmap_base:0x%lx, RAM_SIZE:0x%x\n", map_base, RAM_SIZE);
+  map_base = (uint64_t)ram_base;
+  printf("\tmap_base(host):0x%lx, RAM_SIZE:0x%x\n", map_base, RAM_SIZE);
 
-  text_start = get_text_start_addr();
-  printf("\ttext_start:0x%lx\n", text_start);
+  printf("\ttext_start_paddr:0x%lx\n", text_start_paddr);
 
   // load segment
   Elf64_Phdr *ph;
@@ -85,18 +84,18 @@ int Loader::load() {
 
     // memcpy LOAD segment
     printf("\tmemcpy:\n");
-    uint64_t start = use_paddr_ ? ph->p_paddr : ph->p_paddr;
-    printf("\t\temu : 0x%lx-0x%lx, size:0x%lx\n", start, start + ph->p_memsz,
-           ph->p_memsz);
-    memcpy((void *)(map_base + ph->p_paddr - text_start),
+    printf("\t\tload (emu): 0x%lx-0x%lx, size:0x%lx\n", ph->p_paddr, ph->p_paddr + ph->p_memsz, ph->p_memsz);
+    memcpy((void *)(map_base + ph->p_paddr - text_start_paddr),
            (void *)((uint64_t)file_map_start_ + ph->p_offset), ph->p_memsz);
 
     // zero clear .bss section
     if (ph->p_memsz > ph->p_filesz) {
-      printf("\t\tzero clear .bss: from:0x%lx, size:0x%lx\n",
-             map_base + ph->p_paddr + ph->p_filesz - text_start,
+      printf("\t\tzeroclear .bss (host):from:0x%lx, size:0x%lx\n",
+             map_base + ph->p_paddr + ph->p_filesz - text_start_paddr,
              ph->p_memsz - ph->p_filesz);
-      memset((void *)(map_base + ph->p_paddr + ph->p_filesz - text_start), 0,
+      printf("\t\tzeroclear .bss (emu) :from:0x%lx, size:0x%lx\n", 
+            ph->p_paddr + ph->p_filesz, ph->p_memsz - ph->p_filesz);
+      memset((void *)(map_base + ph->p_paddr + ph->p_filesz - text_start_paddr), 0,
              ph->p_memsz - ph->p_filesz);
     }
     entry = eh_->e_entry - ph->p_vaddr + ph->p_paddr;
