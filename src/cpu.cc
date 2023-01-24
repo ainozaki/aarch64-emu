@@ -50,13 +50,15 @@ void Cpu::decode_start(uint32_t inst) {
   // printf("0x%lx: \t", pc);
   printf("pc 0x%lx\n", pc);
   printf("sp 0x%lx\n", xregs[31]);
+  printf("x2 0x%lx\n", xregs[2]);
+  /*
   printf("x0 0x%lx\n", xregs[0]);
   printf("x1 0x%lx\n", xregs[1]);
-  printf("x2 0x%lx\n", xregs[2]);
   printf("x3 0x%lx\n", xregs[3]);
   printf("x19 0x%lx\n", xregs[19]);
   printf("x29 0x%lx\n", xregs[29]);
   printf("x30 0x%lx\n", xregs[30]);
+  */
   const decode_func decode_inst_tbl[] = {
       &Cpu::decode_sme_encodings,
       &Cpu::decode_unallocated,
@@ -202,13 +204,30 @@ void Cpu::decode_loads_and_stores(uint32_t inst) {
   op = util::shift(inst, 28, 29);
   switch (op) {
   case 0b00:
-    printf("case0b00\n");
-    unsupported();
+    switch (util::shift(inst, 30, 31)){
+      case 0b00:
+      case 0b01:
+        LOG_CPU("load/store op0 = 00xx or 01xx\n");
+        unsupported();
+        break;
+      case 0b10:
+      case 0b11:
+        switch (util::shift(inst, 23, 24)){
+          case 0:
+            decode_ldst_exclusive(inst);
+            break;
+          default:
+            LOG_CPU("load/store op0 = 10xx or 11xx\n");
+        }
+        break;
+      default:
+        assert(false);
+    }
     break;
   case 0b01:
     switch (util::shift(inst, 30, 31)) {
     case 3:
-      printf("load/store memory tags\n");
+      LOG_CPU("load/store memory tags\n");
       unsupported();
       break;
     default:
@@ -221,10 +240,10 @@ void Cpu::decode_loads_and_stores(uint32_t inst) {
       case 3:
         switch (util::shift(inst, 10, 11)) {
         case 0:
-          printf("LDAPR/STLR (unscaled immediate)\n");
+          LOG_CPU("LDAPR/STLR (unscaled immediate)\n");
           break;
         case 1:
-          printf("Memory Copy and Memory Set\n");
+          LOG_CPU("Memory Copy and Memory Set\n");
           break;
         default:
           assert(false);
@@ -1304,6 +1323,70 @@ void Cpu::decode_ldst_load_register_literal(uint32_t inst) {
   }
 
   printf("ldr x%d(=0x%lx), 0x%lx\n", rt, xregs[rt], address);
+}
+
+/*
+         Load/store exclusive pair
+
+          31   30  29    23  22   21  20   16  15  14      10 9    5 4   0
+         +---+----+---------+---+----+-------+----+----------+------+-----+
+         | 1 | sz | 0010000 | L | 1 |   Rs   | o0 |   Rt2    |  Rn  |  Rt |
+         +---+----+---------+---+----+-------+----+----------+------+-----+
+
+         Load/store exclusive register
+
+          31 30  29    23  22   21  20   16  15  14      10 9    5 4   0
+         +------+---------+---+----+-------+----+----------+------+-----+
+         | size | 0010000 | L | 0 |   Rs   | o0 |   Rt2    |  Rn  |  Rt |
+         +------+---------+---+----+-------+----+----------+------+-----+
+
+         @opc: 00->LDR(32bit), 01->LDR(64bit), 10->LDRSW, 11->PRFM
+         @V: simd
+*/
+
+void Cpu::decode_ldst_exclusive(uint32_t inst) {
+  bool if_pair, if_load, if_acquire;
+  uint8_t size, rs, /*rt2,*/ rt, rn;
+  uint64_t data, address;
+
+  if_pair = util::bit(inst, 21);
+  size = util::shift(inst, 30, 31);
+  if_load = util::bit(inst, 22);
+  rs = util::shift(inst, 16, 20);
+  if_acquire = util::bit(inst, 15);
+  // rt2 = util::shift(inst, 10, 14);
+  rn = util::shift(inst, 5, 9);
+  rt = util::shift(inst, 0, 4);
+
+  address = xregs[rn];
+
+  if (if_pair){
+    if (if_load){
+      LOG_CPU("LDXP\n");
+    }else {
+      LOG_CPU("STXP\n");
+    }
+  }else {
+    if (if_load){
+      if (if_acquire){
+        LOG_CPU("LDAXR\n");
+        unsupported();
+      }else {
+        data = load(address, memsz_tbl[size]);
+        xregs[rt] = (size == 11) ? util::zero_extend(data, 64) : util::zero_extend(data, 32);
+        LOG_CPU("LDXR x%d(=0x%lx), x%d(=0x%lx)\n", rt, xregs[rt], rn, address);
+      }
+    }else {
+      if (if_acquire){
+        LOG_CPU("STLXR\n");
+        unsupported();
+      }else {
+        store(address, xregs[rt], memsz_tbl[size]);
+        xregs[rs] = 0;
+        LOG_CPU("STXR x%d, x%d(=0x%lx), x%d(=0x%lx)\n", rs, rt, xregs[rt], rn, xregs[rn]);
+      }
+    }
+  }
 }
 
 /*

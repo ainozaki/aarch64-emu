@@ -80,6 +80,7 @@ private:
   void decode_ldst_reg_pac(uint32_t inst);
   void decode_ldst_reg_reg_offset(uint32_t inst);
   void decode_ldst_load_register_literal(uint32_t inst);
+  void decode_ldst_exclusive(uint32_t inst);
 
   /* Data Processing Register */
   void decode_addsub_shifted_reg(uint32_t inst);
