@@ -344,13 +344,17 @@ void Cpu::decode_branches(uint32_t inst) {
       decode_exception_generation(inst);
       break;
     case 1:
-      if (util::bit(inst, 30) == 1) {
+      if (util::bit(inst, 20)) {
         decode_system_register_move(inst);
-        increment_pc();
-        break;
+      }else if (util::bit(inst, 19)){
+        LOG_CPU("system instructions\n");
+        unsupported();
+      }else if (util::shift(inst, 12, 17) == 0b110011){
+        decode_barriers(inst);
+      }else {
+        LOG_CPU("Systems\n");
+        unsupported();
       }
-      printf("system insts\n");
-      unsupported();
       increment_pc();
       break;
     case 2:
@@ -358,7 +362,7 @@ void Cpu::decode_branches(uint32_t inst) {
       decode_unconditional_branch_reg(inst);
       break;
     default:
-      printf("default\n");
+      assert(false);
     }
     break;
   default:
@@ -1787,6 +1791,32 @@ void Cpu::decode_exception_generation(uint32_t inst) {
     break;
   }
   increment_pc();
+}
+
+/*
+         Barriers
+
+          31                  12 11  8   7  5  4    0
+         +----------------------+-------+----+-----+
+         | 11010101000000110011 |  CRm  | op2|  Rt |
+         +----------------------+-------+----+-----+
+
+         @L:0->MSR, 1->MRS
+*/
+void Cpu::decode_barriers(uint32_t inst) {
+  uint8_t CRm, op2 /*,rt*/;
+  
+  CRm = util::shift(inst, 8, 11);
+  op2 = util::shift(inst, 5, 7);
+  //rt = util::shift(inst, 0, 4);
+
+  switch(op2){
+    case 0b101:
+      LOG_CPU("dmb type = 0x%x\n", CRm);
+      break;
+    default:
+      unsupported();
+  }
 }
 
 /*
