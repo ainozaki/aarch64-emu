@@ -36,11 +36,11 @@ int Emulator::init() {
 
   printf("loader.entry = 0x%lx\n", loader.entry);
   printf("loader.init_sp = 0x%lx\n", loader.init_sp);
-  printf("loader.text_start = 0x%lx\n", loader.text_start);
+  printf("loader.text_start = 0x%lx\n", loader.text_start_paddr);
   printf("loader.text_size = 0x%lx\n", loader.text_size);
   printf("loader.map_base = 0x%lx\n", loader.map_base);
 
-  cpu.init(loader.entry, loader.init_sp, loader.text_start, loader.text_size,
+  cpu.init(loader.entry, loader.init_sp, loader.text_start_paddr, loader.text_size,
            loader.map_base);
 
   init_done_ = true;
@@ -51,7 +51,7 @@ void Emulator::execute_loop() {
 
   uint32_t inst;
   int i = 0;
-  int num_insts = 88345;
+  int num_insts = 90000;
   while (i < num_insts) {
     inst = cpu.fetch();
     if (!inst) {

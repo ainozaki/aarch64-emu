@@ -16,9 +16,9 @@ public:
   uint64_t entry;
   uint64_t init_sp;
   uint64_t map_base;
-  uint64_t text_start;
   uint64_t text_size;
   uint64_t sp_alloc_start; // for free
+  const uint64_t text_start_paddr = 0x40000000;
 
   Loader(int argc, char **argv, char **envp);
   ~Loader();
