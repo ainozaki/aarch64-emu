@@ -6,14 +6,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-//#define DEBUG_ON
-#ifdef DEBUG_ON
-#define LOG_EMU(...)                                                           \
-  printf("[%s][%d][%s] ", __FILE__, __LINE__, __func__), printf(__VA_ARGS__)
-#else
-#define LOG_EMU(...)
-#endif
-
 const uint64_t PAGE_SIZE = sysconf(_SC_PAGESIZE);
 
 namespace util {
@@ -73,7 +65,7 @@ inline uint64_t zero_extend(uint64_t val, uint8_t bit) {
     return val;
   }
   uint64_t zero = 0;
-  return (val & ((1 << bit) - 1)) | zero;
+  return (val & (((uint64_t)1 << bit) - 1)) | zero;
 }
 
 inline uint64_t extract(uint64_t value, uint8_t start, uint8_t len) {

@@ -124,6 +124,5 @@ uint64_t Mem::load64(uint64_t addr) {
 }
 
 void Mem::debug_mem(uint64_t paddr){
-  printf("debug 0x%lx\n", paddr);
   printf("0x%lx: %lx %lx %lx %lx\n", paddr, load64(paddr), load64(paddr + 8), load64(paddr + 16), load64(paddr + 24));
 }

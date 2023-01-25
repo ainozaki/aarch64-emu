@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "log.h"
 #include "utils.h"
 
 const uint8_t g4kb_index_sz = 9;
@@ -40,13 +41,13 @@ void MMU::mmu_debug(uint64_t addr) {
   LOG_EMU("ttbrn   = 0x%x\n",
           util::shift(addr, g4kb_l0_start_bit + g4kb_index_sz, 63));
   LOG_EMU("L0_index = 0x%x\n",
-          util::shift(addr, g4kb_l0_start_bit, g4kb_index_sz));
+          util::shift(addr, g4kb_l0_start_bit, g4kb_l0_start_bit + 8));
   LOG_EMU("L1_index = 0x%x\n",
-          util::shift(addr, g4kb_l1_start_bit, g4kb_index_sz));
+          util::shift(addr, g4kb_l1_start_bit, g4kb_l1_start_bit + 8));
   LOG_EMU("L2_index = 0x%x\n",
-          util::shift(addr, g4kb_l2_start_bit, g4kb_index_sz));
+          util::shift(addr, g4kb_l2_start_bit, g4kb_l2_start_bit + 8));
   LOG_EMU("L3_index = 0x%x\n",
-          util::shift(addr, g4kb_l3_start_bit, g4kb_index_sz));
+          util::shift(addr, g4kb_l3_start_bit, g4kb_l3_start_bit + 8));
   LOG_EMU("offset  = 0x%x\n", util::shift(addr, 0, 11));
   LOG_EMU("======================\n");
 }
@@ -56,7 +57,7 @@ uint64_t MMU::l0_translate(uint64_t addr, uint64_t base) {
 
   LOG_EMU("L0\n");
   index = util::shift(addr, g4kb_l0_start_bit,
-                      g4kb_l0_start_bit + g4kb_index_sz - 1);
+                      g4kb_l0_start_bit + 8);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
   LOG_EMU("\tbase  = 0x%lx\n", base);
@@ -78,7 +79,7 @@ uint64_t MMU::l1_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, next, output, offset;
   LOG_EMU("L1\n");
   index = util::shift(addr, g4kb_l1_start_bit,
-                      g4kb_l1_start_bit + g4kb_index_sz - 1);
+                      g4kb_l1_start_bit + 8);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
   LOG_EMU("\tbase  = 0x%lx\n", base);
@@ -108,7 +109,7 @@ uint64_t MMU::l2_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, next, output, offset;
   LOG_EMU("L2\n");
   index = util::shift(addr, g4kb_l2_start_bit,
-                      g4kb_l2_start_bit + g4kb_index_sz - 1);
+                      g4kb_l2_start_bit + 8);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
   LOG_EMU("\tbase  = 0x%lx\n", base);
@@ -138,7 +139,7 @@ uint64_t MMU::l3_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, output, offset;
   LOG_EMU("L3\n");
   index = util::shift(addr, g4kb_l3_start_bit,
-                      g4kb_l3_start_bit + g4kb_index_sz - 1);
+                      g4kb_l3_start_bit + 8);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
   LOG_EMU("\tbase  = 0x%lx\n", base);
@@ -190,7 +191,7 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
     paddr = l3_translate(addr, ttbrn);
   }
 
-  LOG_EMU("paddr = 0x%lx\n", paddr);
+  LOG_EMU("vaddr = 0x%lx, paddr = 0x%lx\n", addr, paddr);
 
   return paddr;
 }
