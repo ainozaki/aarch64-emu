@@ -104,6 +104,7 @@ private:
   void decode_unconditional_branch_reg(uint32_t inst);
   void decode_unconditional_branch_imm(uint32_t inst);
   void decode_compare_and_branch_imm(uint32_t inst);
+  void decode_test_and_branch_imm(uint32_t inst);
 };
 
 typedef void (Cpu::*decode_func)(uint32_t inst);

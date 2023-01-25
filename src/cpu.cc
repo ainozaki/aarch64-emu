@@ -341,9 +341,7 @@ void Cpu::decode_branches(uint32_t inst) {
     if (util::bit(inst, 25) == 0) {
       decode_compare_and_branch_imm(inst);
     } else {
-      printf("test_and_branch\n");
-      unsupported();
-      increment_pc();
+      decode_test_and_branch_imm(inst);
     }
     break;
   case 6:
@@ -2251,4 +2249,44 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
   } else {
     increment_pc();
   }
+}
+
+/*
+         Test and branch (immediate)
+
+           31   30   25  24   23  19  18          5  4      0
+         +----+--------+----+-------+---------------+------+
+         | b5 | 011011 | op |  b40  |    imm14      |  Rt  |
+         +----+--------+----+-------+---------------+------+
+
+         @op: 0->TBZ, 1->TBNZ
+         @sh: 0->32bit, 1->64bit
+                                 @op: 0->CBZ, 1->CBNZ
+
+*/
+void Cpu::decode_test_and_branch_imm(uint32_t inst) {
+  uint64_t imm14, offset;
+  uint8_t op, if_64bit, rt, b5, b4, bit;
+
+  b5 = util::bit(inst, 31);
+  op = util::bit(inst, 24);
+  b4 = util::shift(inst, 19, 23);
+  imm14 = util::shift(inst, 5, 18);
+  rt = util::shift(inst, 0, 4);
+
+  offset = imm14 << 2;
+  bit = (b5 << 4) | b4;
+
+  if (!if_64bit){
+    assert(bit < 32);
+  }
+
+  const char *name = op ? "tbnz" : "tbz";  
+  LOG_CPU("%s x%d, #%d, 0x%lx\n", name, rt, bit, pc + offset);
+
+  if (util::bit(xregs[rt], bit) != op){
+    return;
+  }
+
+  set_pc(pc + offset);
 }
