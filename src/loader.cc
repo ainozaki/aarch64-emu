@@ -102,12 +102,9 @@ int Loader::load() {
   }
 
   // prepare stack
-  uint64_t stack_tp = (uint64_t)calloc(STACK_SIZE, sizeof(char *));
-  sp_alloc_start = stack_tp;
-  stack_tp = stack_tp - (stack_tp % 16) + 16;
-  init_sp = stack_tp + STACK_SIZE - 16 * 4 * 200;
-  printf("stack: 0x%lx - 0x%lx, init_sp: 0x%lx\n", stack_tp,
-         stack_tp + STACK_SIZE, init_sp);
+  init_sp = text_start_paddr + RAM_SIZE;
+  init_sp = init_sp - (init_sp % 16) + 16;
+  printf("\tinit_sp: 0x%lx\n", init_sp);
   return ESUCCESS;
 }
 

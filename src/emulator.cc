@@ -62,7 +62,6 @@ void Emulator::execute_loop() {
     i++;
   }
   cpu.show_regs();
-  free((void *)loader.sp_alloc_start);
   munmap((void *)loader.map_base, RAM_SIZE);
 }
 

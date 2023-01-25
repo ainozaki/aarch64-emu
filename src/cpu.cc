@@ -15,10 +15,10 @@
 typedef __attribute__((mode(TI))) unsigned int uint128_t;
 typedef __attribute__((mode(TI))) int int128_t;
 
-void Cpu::init(uint64_t entry, uint64_t sp, uint64_t text_start,
+void Cpu::init(uint64_t entry, uint64_t sp_base, uint64_t text_start,
                uint64_t text_size, uint64_t map_base) {
   pc = entry;
-  sp = sp;
+  sp = sp_base;
   printf("Init pc=0x%lx, sp=0x%lx\n", pc, sp);
 
   bus.init(text_start, text_size, map_base);
@@ -61,9 +61,10 @@ void Cpu::decode_start(uint32_t inst) {
   printf("x30 0x%lx\n", xregs[30]);
   /*
   if (mmu.if_mmu_enabled()){
-    bus.mem.debug_mem(mmu.mmu_translate(0xffffff8040016130));
-  }else {
-    bus.mem.debug_mem(0x40016130);
+    bus.mem.debug_mem(mmu.mmu_translate(0xffffff8040016118));
+  }
+  else {
+    bus.mem.debug_mem(0x40016118);
   }
   */
   const decode_func decode_inst_tbl[] = {
@@ -518,7 +519,7 @@ void Cpu::decode_add_sub_imm(uint32_t inst) {
   if_64bit = util::bit(inst, 31);
   op = if_sub ? "sub" : "add";
 
-  op1 = xregs[rn];
+  op1 = (rn == 31) ? sp : xregs[rn];
   if (if_shift) {
     imm <<= 12;
   }
@@ -531,10 +532,17 @@ void Cpu::decode_add_sub_imm(uint32_t inst) {
     LOG_CPU("%s x%d, x%d(=0x%lx), #0x%lx, LSL %d\n", op, rd, rn, xregs[rn], imm,
             if_shift * 12);
   }
-  if ((rd == 31) && if_setflag) {
-    return;
+  if (rd == 31){
+    if (if_setflag) {
+      // ADDS/SUBS xzr
+      return;
+    }else {
+      // ADD/SUB sp
+      sp = if_64bit ? result : util::set_lower32(xregs[rd], result);
+    }
+  }else {
+    xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
   }
-  xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
 }
 
 void Cpu::decode_add_sub_imm_with_tags(uint32_t inst) { LOG_CPU("%d\n", inst); }
@@ -845,28 +853,28 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
   case 1:
     wback = true;
     postindex = true;
-    LOG_CPU("%s x%d, x%d, [x%d], #%ld\n", op, rt, rt2, rn, (int64_t)offset);
+    LOG_CPU("%s x%d, x%d, [x%d], #%ld ", op, rt, rt2, rn, (int64_t)offset);
     break;
   case 2:
     wback = false;
     postindex = false;
-    LOG_CPU("%s x%d, x%d, [x%d, #%ld]\n", op, rt, rt2, rn, (int64_t)offset);
+    LOG_CPU("%s x%d, x%d, [x%d, #%ld] ", op, rt, rt2, rn, (int64_t)offset);
     break;
   case 3:
     wback = true;
     postindex = false;
-    LOG_CPU("%s x%d, x%d, [x%d(=0x%lx), #%ld]!\n", op, rt, rt2, rn, xregs[rn],
+    LOG_CPU("%s x%d, x%d, [x%d(=0x%lx), #%ld]! ", op, rt, rt2, rn, xregs[rn],
             (int64_t)offset);
     break;
   default:
     unallocated();
   }
 
-  address = xregs[rn];
+  address = (rn == 31) ? sp : xregs[rn];
   if (!postindex) {
     address += (int64_t)offset;
   }
-  // printf("sp=0x%lx, address=0x%lx\n", sp,address);
+  printf(",address=0x%lx\n", address);
 
   uint64_t value1, value2;
   if (if_load) {
@@ -895,7 +903,11 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
     if (postindex) {
       address += offset;
     }
-    xregs[rn] = address;
+    if (rn == 31){
+      sp = address;
+    }else{
+      xregs[rn] = address;
+    }
   }
 }
 
@@ -1092,7 +1104,7 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
     return;
   }
 
-  address = xregs[rn];
+  address = (rn == 31) ? sp : xregs[rn];
 
   if (!post_indexed) {
     address += offset;
@@ -1889,7 +1901,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
               assert(false);
             }
             xregs[rt] = mpidr_el1;
-            printf("mrs x%d, MPIDR_EL1(0x%lx)\n", rt, xregs[rt]);
+            printf("mrs x%d, MPIDR_EL1(0x%lx)\n", rt, mpidr_el1);
             return;
           default:
             unsupported();
