@@ -5,6 +5,7 @@
 
 #include "mem.h"
 #include "mmu.h"
+#include "loader.h"
 #include "utils.h"
 
 void Bus::init(uint64_t text_start, uint64_t text_size, uint64_t map_base) {
@@ -39,7 +40,7 @@ uint64_t Bus::load(uint64_t address, MemAccessSize size) {
       assert(false);
     }
   } else {
-    printf("unknown address: 0x%lx\n", address);
+    printf("load unknown address: 0x%lx\n", address);
     exit(0);
   }
   assert(false);
@@ -79,8 +80,8 @@ void Bus::store(uint64_t address, uint64_t value, MemAccessSize size) {
       assert(false);
     }
     return;
-  } else {
-    printf("unknown address: 0x%lx\n", address);
+  }else {
+    printf("store unknown address: 0x%lx\n", address);
     exit(0);
   }
 }

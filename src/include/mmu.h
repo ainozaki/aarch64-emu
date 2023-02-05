@@ -83,12 +83,12 @@ public:
   } tcr_el1;
 
   uint64_t mmu_translate(uint64_t vaddr);
+  bool if_mmu_enabled() { return sctlr_el1 & 1; }
 
 private:
   Bus *bus_;
   uint64_t *current_el_;
 
-  bool if_mmu_enabled() { return sctlr_el1 & 1; }
   void mmu_debug(uint64_t addr);
 
   uint64_t l0_translate(uint64_t value, uint64_t base);

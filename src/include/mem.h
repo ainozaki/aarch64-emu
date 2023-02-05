@@ -30,6 +30,8 @@ public:
   void store32(uint64_t addr, uint32_t value);
   void store64(uint64_t addr, uint64_t value);
 
+  void debug_mem(uint64_t paddr);
+
 private:
   void show_stack(uint64_t sp);
 

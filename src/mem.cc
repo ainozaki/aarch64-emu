@@ -37,8 +37,8 @@ void Mem::show_stack(uint64_t sp) {
   }
 }
 
-uint64_t Mem::get_ptr(uint64_t vaddr) {
-  return vaddr - text_start_ + map_base_;
+uint64_t Mem::get_ptr(uint64_t paddr) {
+  return paddr - text_start_ + map_base_;
 }
 
 void Mem::store8(uint64_t addr, const uint8_t value) {
@@ -121,4 +121,8 @@ uint64_t Mem::load64(uint64_t addr) {
   return uint64_t(p[0]) | uint64_t(p[1]) << 8 | uint64_t(p[2]) << 16 |
          uint64_t(p[3]) << 24 | uint64_t(p[4]) << 32 | uint64_t(p[5]) << 40 |
          uint64_t(p[6]) << 48 | uint64_t(p[7]) << 56;
+}
+
+void Mem::debug_mem(uint64_t paddr){
+  printf("0x%lx: %lx %lx %lx %lx\n", paddr, load64(paddr), load64(paddr + 8), load64(paddr + 16), load64(paddr + 24));
 }

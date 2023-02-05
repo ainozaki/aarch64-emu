@@ -345,11 +345,11 @@ TEST(Func, sum) {
     LOG_DEBUG("w0=0x%016lx, w1=0x%016lx\n", sys.cpu().xregs[0],
               sys.cpu().xregs[1]);
     LOG_DEBUG("\tpc=0x%016lx, sp=0x%016lx\n", sys.cpu().pc,
-              sys.cpu().xregs[31]);
+              sys.cpu().sp);
     LOG_DEBUG("\t24(SP):0x%lx\n", sys.mem().read(core::mem::MemAccess::Size64,
-                                                 sys.cpu().xregs[31] + 24));
+                                                 sys.cpu().sp + 24));
     LOG_DEBUG("\t28(SP):0x%lx\n", sys.mem().read(core::mem::MemAccess::Size64,
-                                                 sys.cpu().xregs[31] + 28));
+                                                 sys.cpu().sp + 28));
     EXPECT_EQ(sys.cpu().xregs[0], w0);
     EXPECT_EQ(sys.cpu().xregs[1], w1);
   }
@@ -400,8 +400,8 @@ TEST(Func, fibonacci) {
     LOG_DEBUG("\tw29=0x%016lx, w30=0x%016lx\n", sys.cpu().xregs[29],
               sys.cpu().xregs[30]);
     LOG_DEBUG("\tpc=0x%016lx, sp=0x%016lx\n", sys.cpu().pc,
-              sys.cpu().xregs[31]);
-    // LOG_DEBUG("\t28(SP):0x%lx\n", sys.mem().read(3, sys.cpu().xregs[31]
+              sys.cpu().sp);
+    // LOG_DEBUG("\t28(SP):0x%lx\n", sys.mem().read(3, sys.cpu().sp
     // + 28)); EXPECT_EQ(sys.cpu().xregs[0], w0); EXPECT_EQ(sys.cpu().xregs[1],
     // w1);
     EXPECT_EQ(sys.cpu().xregs[0], w0);
