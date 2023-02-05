@@ -13,7 +13,8 @@ class Log:
         self.idx_inst = 0
         self.num_insts = int(self.loglist_emu[0], 10)
         self.pc = 0
-        self.registers = ["pc", "sp", "x0", "x1", "x2", "x3", "x19", "x29", "x30"]
+        #self.registers = ["pc", "sp", "cpsr", "x0", "x1", "x2", "x3", "x19", "x20", "x29", "x30"]
+        self.registers = ["pc"]
         self.idx_delta = 0
     
     def read_gdb_oneline(self):
@@ -33,7 +34,7 @@ class Log:
         assert(tmp1[0] == name)
         assert(tmp2[0] == name)
         
-        if (name == "sp"):
+        if (name == "sp" or name == "cpsr"):
             return
         if (name == "pc"):
             self.pc = int(tmp1[1], 16)
@@ -46,11 +47,11 @@ class Log:
             self.idx_delta += 1
             tmp = self.read_emu_oneline()
             assert(tmp[0] == "===")
-            for i in range(len(self.registers)):
+            for register in self.registers:
                 tmp = self.read_emu_oneline()
-                assert(tmp[0] == self.registers[i])
-            tmp = self.read_emu_oneline()
-            if (tmp[0] == name):
+                assert(tmp[0] == register)
+            inst = self.read_emu_oneline()
+            if (inst[0] == name):
                 break
             
 
@@ -68,23 +69,9 @@ class Log:
             # index
             assert(int(tmp1[1]) == int(tmp2[1]) - self.idx_delta)
 
-            # pc
-            self.compare_item("pc")
-            
-            # sp
-            self.compare_item("sp")
-            
-            # cpsr
-            tmp1 = self.read_gdb_oneline()
-            
-            # general registers
-            self.compare_item("x0")
-            self.compare_item("x1")
-            self.compare_item("x2")
-            self.compare_item("x3")
-            self.compare_item("x19")
-            self.compare_item("x29")
-            self.compare_item("x30")
+            # compare registers
+            for name in self.registers:
+                self.compare_item(name)
             
             # disas
             tmp2 = self.loglist_emu[self.idx_emu]
