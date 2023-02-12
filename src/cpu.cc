@@ -315,8 +315,7 @@ void Cpu::decode_data_processing_reg(uint32_t inst) {
       unallocated();
       break;
     default:
-      printf("data processing 3 source\n");
-      unsupported();
+      decode_data_processing_3source(inst);
       break;
     }
     break;
@@ -1647,6 +1646,68 @@ void Cpu::decode_conditional_select(uint32_t inst) {
   default:
     assert(false);
   }
+}
+
+/*
+         Data Processing 3 source
+           31  30  29  28  24  23 21  20  16  15  14  10 9   5 4   0
+         +----+------+-------+------+-------+----+------+-----+-----+
+         | sf | op54 | 11011 | op31 |   Rm  | o0 |  Ra  |  Rn |  Rd |
+         +----+------+-------+------+-------+----+------+-----+-----+
+
+         @sf: 0->32bit, 1->64bit
+         @op: 00000*->M, 00001*->SM, 000100->SMULH, 00101*->UM, 001100->UMULH
+*/
+void Cpu::decode_data_processing_3source(uint32_t inst) {
+  uint64_t result, operand1, operand2, operand3;
+  uint8_t sf, op54, op31, o0, rm, ra, rn, rd, op;
+
+  sf = util::bit(inst, 31);
+  op54 = util::shift(inst, 29, 30);
+  op31 = util::shift(inst, 21, 23);
+  rm = util::shift(inst, 16, 20);
+  o0 = util::bit(inst, 15);
+  ra = util::shift(inst, 10, 14);
+  rn = util::shift(inst, 5, 9);
+  rd = util::shift(inst, 0, 4);
+  op = (op54 << 4) | (op31 << 1) | o0;
+
+  operand1 = xregs[rn];
+  operand2 = xregs[rm];
+  operand3 = xregs[ra];
+
+  switch (op){
+    case 0:
+      result = operand3 + operand1 * operand2;
+      LOG_CPU("madd x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, result, rn, operand1, rm, operand2, ra, operand3);
+      break;
+    case 1:
+      LOG_CPU("msub\n");
+      break;
+    case 0b000010:
+      LOG_CPU("smaddl\n");
+      break;
+    case 0b000011:
+      LOG_CPU("smsubl\n");
+      break;
+    case 0b000100:
+      LOG_CPU("smulh\n");
+      break;
+    case 0b001010:
+      LOG_CPU("umaddl\n");
+      break;
+    case 0b001011:
+      LOG_CPU("umsubl\n");
+      break;
+    case 0b001100:
+      LOG_CPU("umulh\n");
+      break;
+    default:
+      unallocated();
+      return;
+  }
+
+  xregs[rd] = sf ? result : result & util::mask(32);
 }
 
 /*
