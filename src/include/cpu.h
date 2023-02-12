@@ -31,6 +31,8 @@ public:
   const uint64_t mpidr_el1 = 0x80000000;
   uint64_t VBAR_EL1;
 
+
+  /* PSTATE */
   /*
   DAIF, Interrupt Mask Bits
   Allows access to the interrupt mask bits.
@@ -101,6 +103,7 @@ private:
   void decode_conditional_branch_imm(uint32_t inst);
   void decode_exception_generation(uint32_t inst);
   void decode_system_register_move(uint32_t inst);
+  void decode_pstate(uint32_t inst);
   void decode_barriers(uint32_t inst);
   void decode_unconditional_branch_reg(uint32_t inst);
   void decode_unconditional_branch_imm(uint32_t inst);

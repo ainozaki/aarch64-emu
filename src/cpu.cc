@@ -187,10 +187,13 @@ const char *shift_type_strtbl[] = {
 
 static void unsupported() {
   LOG_CPU("unsuported inst\n");
-  exit(0);
+  exit(1);
 }
 
-static void unallocated() { LOG_CPU("unallocated inst\n"); }
+static void unallocated() { 
+  LOG_CPU("unallocated inst\n");
+  exit(1);
+}
 
 static inline uint64_t bitmask64(uint8_t len) { return ~0ULL >> (64 - len); }
 
@@ -359,11 +362,19 @@ void Cpu::decode_branches(uint32_t inst) {
       } else if (util::bit(inst, 19)) {
         LOG_CPU("system instructions\n");
         unsupported();
+      } else if (util::shift(inst, 12, 17) == 0b110001) {
+        LOG_CPU("System instructions with register argument\n");
+        unsupported();
+      } else if (util::shift(inst, 12, 17) == 0b110010) {
+        LOG_CPU("Hints\n");
+        unsupported();
       } else if (util::shift(inst, 12, 17) == 0b110011) {
         decode_barriers(inst);
+      } else if (util::shift(inst, 12, 15) == 0b0100) {
+        decode_pstate(inst);
       } else {
-        LOG_CPU("Systems\n");
-        unsupported();
+        LOG_CPU("systems\n");
+        unallocated();
       }
       increment_pc();
       break;
@@ -1880,6 +1891,61 @@ void Cpu::decode_exception_generation(uint32_t inst) {
 }
 
 /*
+         PASTATE 
+
+          31           19 18 16   15 12  11 8  7  5  4   0
+         +---------------+------+------+------+-----+------+
+         | 1101010100000 | op1  | 0100 |  CRm | op2 |  Rt  |
+         +---------------+------+------+------+-----+------+
+
+         @op2: 000->CFINV, 001->XAFLAG, 010->AXFLAG, other->MSR
+*/
+void Cpu::decode_pstate(uint32_t inst) {
+  uint8_t CRm, op1, op2 ,rt;
+
+  op1 = util::shift(inst, 16, 18);
+  CRm = util::shift(inst, 8, 11);
+  op2 = util::shift(inst, 5, 7);
+  rt = util::shift(inst, 0, 4);
+
+  if (rt != 31){
+    unallocated();
+  }
+
+  switch (op2) {
+  case 0:
+    LOG_CPU("cfinv\n");
+    unsupported();
+    break;
+  case 1:
+    LOG_CPU("xaflag\n");
+    unsupported();
+    break;
+  case 2:
+    LOG_CPU("axflag\n");
+    unsupported();
+    break;
+  default:
+    LOG_CPU("msr immediate\n");
+    switch (op1){
+      case 3:
+        switch (op2){
+          case 6:
+            daif = daif | (CRm << 6);
+            LOG_CPU("msr daifset(=0x%lx), 0x%x\n", daif, CRm);
+            break;
+          default:
+            unsupported();
+        }
+        break;
+      default:
+        unsupported();
+    }
+    break;
+  }
+}
+
+/*
          Barriers
 
           31                  12 11  8   7  5  4    0
@@ -1938,7 +2004,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
       case 4:
         switch (op2) {
         case 6:
-          printf("DAIFSET \n");
+          LOG_CPU("daifset \n");
           return;
         case 7:
           printf("DAIRCLR \n");
@@ -2128,10 +2194,10 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           switch (op2) {
           case 1:
             if (if_get) {
-              printf("mrs x%d, DAIF=0x%lx\n", rt, daif);
+              printf("mrs x%d, daif=0x%lx\n", rt, daif);
               xregs[rt] = daif;
             } else {
-              printf("msr DAIF, x%d(=0x%lx)\n", rt, xregs[rt]);
+              printf("msr daif, x%d(=0x%lx)\n", rt, xregs[rt]);
               daif = xregs[rt];
             }
             return;
