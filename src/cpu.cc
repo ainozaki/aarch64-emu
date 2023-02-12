@@ -187,7 +187,7 @@ const char *shift_type_strtbl[] = {
 
 static void unsupported() {
   LOG_CPU("unsuported inst\n");
-  exit(1);
+  //exit(1);
 }
 
 static void unallocated() { 
@@ -216,32 +216,51 @@ void Cpu::decode_data_processing_imm(uint32_t inst) {
 }
 
 void Cpu::decode_loads_and_stores(uint32_t inst) {
-  uint8_t op;
-  op = util::shift(inst, 28, 29);
-  switch (op) {
+  uint8_t op0, op1, op2;
+  uint16_t op3, op4;
+
+  op0 = util::shift(inst, 28, 31);
+  op1 = util::bit(inst, 26);
+  op2 = util::shift(inst, 23, 24);
+  op3 = util::shift(inst, 16, 21);
+  op4 = util::shift(inst, 0, 11);
+
+  switch (op0 & 3) {
   case 0b00:
-    switch (util::shift(inst, 30, 31)) {
-    case 0b00:
-    case 0b01:
-      LOG_CPU("load/store op0 = 00xx or 01xx\n");
+    if (op1){
       unsupported();
-      break;
-    case 0b10:
-    case 0b11:
-      switch (util::shift(inst, 23, 24)) {
-      case 0:
-        decode_ldst_exclusive(inst);
+    }else {
+      if (op2 == 1){
+        if (op3 >> 5){
+          LOG_CPU("compare and swap\n");
+          unsupported();
+          break;
+        }else {
+          decode_ldst_ordered(inst);
+          break;
+        }
+      }else if (op2 == 0){
+        if (op3 >> 5){
+          if (op0 >> 4){
+            decode_ldst_exclusive(inst);
+            break;
+          }else {
+            LOG_CPU("compare and swap pair\n");
+            unsupported();
+            break;
+          }
+        }else {
+          decode_ldst_exclusive(inst);
+          break;
+        }
+      }else {
+        unallocated();
         break;
-      default:
-        LOG_CPU("load/store op0 = 10xx or 11xx\n");
       }
-      break;
-    default:
-      assert(false);
     }
     break;
   case 0b01:
-    switch (util::shift(inst, 30, 31)) {
+    switch (op0 >> 2) {
     case 3:
       LOG_CPU("load/store memory tags\n");
       unsupported();
@@ -1424,6 +1443,48 @@ void Cpu::decode_ldst_exclusive(uint32_t inst) {
                 xregs[rn]);
       }
     }
+  }
+}
+
+/*
+         Load/store ordered
+
+          31 30  29    23  22   21  20   16  15  14      10 9    5 4   0
+         +------+---------+---+----+-------+----+----------+------+-----+
+         | size | 0010001 | L | 0 |   Rs   | o0 |   Rt2    |  Rn  |  Rt |
+         +------+---------+---+----+-------+----+----------+------+-----+
+
+         @L: 0->store, 1->load
+         @o0: 0->FEAT_LOR
+*/
+
+void Cpu::decode_ldst_ordered(uint32_t inst) {
+  bool if_load, if_lor;
+  uint8_t size, rt, rn;
+  uint64_t data, address;
+
+  size = util::shift(inst, 30, 31);
+  if_load = util::bit(inst, 22);
+  if_lor = ! util::bit(inst, 15);
+  rn = util::shift(inst, 5, 9);
+  rt = util::shift(inst, 0, 4);
+
+  address = rn == 31 ? sp : xregs[rn];
+
+  if (if_lor){
+    LOG_CPU("decode_ldst_ordered lor\n");
+    unsupported();
+    return;
+  }
+
+  if (if_load){
+    data = load(address, memsz_tbl[size]);
+    xregs[rt] = (size == 11) ? util::zero_extend(data, 64)
+                                 : util::zero_extend(data, 32);
+    LOG_CPU("ldar x%d(=0x%lx), x%d, address=0x%lx\n", rt, xregs[rt], rn, address);
+  }else {
+    LOG_CPU("stlr x%d(=0x%lx), x%d, address=0x%lx\n", rt, xregs[rt], rn, address);
+    store(address, xregs[rt], memsz_tbl[size]);
   }
 }
 
