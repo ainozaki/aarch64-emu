@@ -61,7 +61,7 @@ void Cpu::decode_start(uint32_t inst) {
   printf("x29 0x%lx\n", xregs[29]);
   printf("x30 0x%lx\n", xregs[30]);
   */
-  if (mmu.if_mmu_enabled()){
+  if (mmu.if_mmu_enabled()) {
     bus.mem.debug_mem(mmu.mmu_translate(0xffffff8040016118));
   }
   /*
@@ -185,7 +185,7 @@ const char *shift_type_strtbl[] = {
     "ROR",
 };
 
-static void unsupported() { 
+static void unsupported() {
   LOG_CPU("unsuported inst\n");
   exit(0);
 }
@@ -217,24 +217,24 @@ void Cpu::decode_loads_and_stores(uint32_t inst) {
   op = util::shift(inst, 28, 29);
   switch (op) {
   case 0b00:
-    switch (util::shift(inst, 30, 31)){
-      case 0b00:
-      case 0b01:
-        LOG_CPU("load/store op0 = 00xx or 01xx\n");
-        unsupported();
-        break;
-      case 0b10:
-      case 0b11:
-        switch (util::shift(inst, 23, 24)){
-          case 0:
-            decode_ldst_exclusive(inst);
-            break;
-          default:
-            LOG_CPU("load/store op0 = 10xx or 11xx\n");
-        }
+    switch (util::shift(inst, 30, 31)) {
+    case 0b00:
+    case 0b01:
+      LOG_CPU("load/store op0 = 00xx or 01xx\n");
+      unsupported();
+      break;
+    case 0b10:
+    case 0b11:
+      switch (util::shift(inst, 23, 24)) {
+      case 0:
+        decode_ldst_exclusive(inst);
         break;
       default:
-        assert(false);
+        LOG_CPU("load/store op0 = 10xx or 11xx\n");
+      }
+      break;
+    default:
+      assert(false);
     }
     break;
   case 0b01:
@@ -356,12 +356,12 @@ void Cpu::decode_branches(uint32_t inst) {
     case 1:
       if (util::bit(inst, 20)) {
         decode_system_register_move(inst);
-      }else if (util::bit(inst, 19)){
+      } else if (util::bit(inst, 19)) {
         LOG_CPU("system instructions\n");
         unsupported();
-      }else if (util::shift(inst, 12, 17) == 0b110011){
+      } else if (util::shift(inst, 12, 17) == 0b110011) {
         decode_barriers(inst);
-      }else {
+      } else {
         LOG_CPU("Systems\n");
         unsupported();
       }
@@ -534,15 +534,15 @@ void Cpu::decode_add_sub_imm(uint32_t inst) {
     LOG_CPU("%s x%d, x%d(=0x%lx), #0x%lx, LSL %d\n", op, rd, rn, xregs[rn], imm,
             if_shift * 12);
   }
-  if (rd == 31){
+  if (rd == 31) {
     if (if_setflag) {
       // ADDS/SUBS xzr
       return;
-    }else {
+    } else {
       // ADD/SUB sp
       sp = if_64bit ? result : util::set_lower32(xregs[rd], result);
     }
-  }else {
+  } else {
     xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
   }
 }
@@ -905,9 +905,9 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
     if (postindex) {
       address += offset;
     }
-    if (rn == 31){
+    if (rn == 31) {
       sp = address;
-    }else{
+    } else {
       xregs[rn] = address;
     }
   }
@@ -1385,30 +1385,32 @@ void Cpu::decode_ldst_exclusive(uint32_t inst) {
 
   address = xregs[rn];
 
-  if (if_pair){
-    if (if_load){
+  if (if_pair) {
+    if (if_load) {
       LOG_CPU("LDXP\n");
-    }else {
+    } else {
       LOG_CPU("STXP\n");
     }
-  }else {
-    if (if_load){
-      if (if_acquire){
+  } else {
+    if (if_load) {
+      if (if_acquire) {
         LOG_CPU("ldaxr\n");
         unsupported();
-      }else {
+      } else {
         data = load(address, memsz_tbl[size]);
-        xregs[rt] = (size == 11) ? util::zero_extend(data, 64) : util::zero_extend(data, 32);
+        xregs[rt] = (size == 11) ? util::zero_extend(data, 64)
+                                 : util::zero_extend(data, 32);
         LOG_CPU("ldxr x%d(=0x%lx), x%d(=0x%lx)\n", rt, xregs[rt], rn, address);
       }
-    }else {
-      if (if_acquire){
+    } else {
+      if (if_acquire) {
         LOG_CPU("stlxr\n");
         unsupported();
-      }else {
+      } else {
         store(address, xregs[rt], memsz_tbl[size]);
         xregs[rs] = 0;
-        LOG_CPU("stxr x%d, x%d(=0x%lx), x%d(=0x%lx)\n", rs, rt, xregs[rt], rn, xregs[rn]);
+        LOG_CPU("stxr x%d, x%d(=0x%lx), x%d(=0x%lx)\n", rs, rt, xregs[rt], rn,
+                xregs[rn]);
       }
     }
   }
@@ -1676,35 +1678,36 @@ void Cpu::decode_data_processing_3source(uint32_t inst) {
   operand2 = xregs[rm];
   operand3 = xregs[ra];
 
-  switch (op){
-    case 0:
-      result = operand3 + operand1 * operand2;
-      LOG_CPU("madd x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, result, rn, operand1, rm, operand2, ra, operand3);
-      break;
-    case 1:
-      LOG_CPU("msub\n");
-      break;
-    case 0b000010:
-      LOG_CPU("smaddl\n");
-      break;
-    case 0b000011:
-      LOG_CPU("smsubl\n");
-      break;
-    case 0b000100:
-      LOG_CPU("smulh\n");
-      break;
-    case 0b001010:
-      LOG_CPU("umaddl\n");
-      break;
-    case 0b001011:
-      LOG_CPU("umsubl\n");
-      break;
-    case 0b001100:
-      LOG_CPU("umulh\n");
-      break;
-    default:
-      unallocated();
-      return;
+  switch (op) {
+  case 0:
+    result = operand3 + operand1 * operand2;
+    LOG_CPU("madd x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd,
+            result, rn, operand1, rm, operand2, ra, operand3);
+    break;
+  case 1:
+    LOG_CPU("msub\n");
+    break;
+  case 0b000010:
+    LOG_CPU("smaddl\n");
+    break;
+  case 0b000011:
+    LOG_CPU("smsubl\n");
+    break;
+  case 0b000100:
+    LOG_CPU("smulh\n");
+    break;
+  case 0b001010:
+    LOG_CPU("umaddl\n");
+    break;
+  case 0b001011:
+    LOG_CPU("umsubl\n");
+    break;
+  case 0b001100:
+    LOG_CPU("umulh\n");
+    break;
+  default:
+    unallocated();
+    return;
   }
 
   xregs[rd] = sf ? result : result & util::mask(32);
@@ -1888,20 +1891,20 @@ void Cpu::decode_exception_generation(uint32_t inst) {
 */
 void Cpu::decode_barriers(uint32_t inst) {
   uint8_t CRm, op2 /*,rt*/;
-  
+
   CRm = util::shift(inst, 8, 11);
   op2 = util::shift(inst, 5, 7);
-  //rt = util::shift(inst, 0, 4);
+  // rt = util::shift(inst, 0, 4);
 
-  switch(op2){
-    case 0b101:
-      LOG_CPU("dmb type = 0x%x\n", CRm);
-      break;
-    case 0b110:
-      LOG_CPU("isb\n");
-      break;
-    default:
-      unsupported();
+  switch (op2) {
+  case 0b101:
+    LOG_CPU("dmb type = 0x%x\n", CRm);
+    break;
+  case 0b110:
+    LOG_CPU("isb\n");
+    break;
+  default:
+    unsupported();
   }
 }
 
@@ -2346,14 +2349,14 @@ void Cpu::decode_test_and_branch_imm(uint32_t inst) {
   offset = imm14 << 2;
   bit = (b5 << 4) | b4;
 
-  if (!if_64bit){
+  if (!if_64bit) {
     assert(bit < 32);
   }
 
-  const char *name = op ? "tbnz" : "tbz";  
+  const char *name = op ? "tbnz" : "tbz";
   LOG_CPU("%s x%d, #%d, 0x%lx\n", name, rt, bit, pc + offset);
 
-  if (util::bit(xregs[rt], bit) != op){
+  if (util::bit(xregs[rt], bit) != op) {
     return;
   }
 

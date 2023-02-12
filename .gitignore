@@ -5,3 +5,5 @@ text
 emu-log.txt
 *.o
 emu-aarch64
+tests/xv6/kernel
+*.txt

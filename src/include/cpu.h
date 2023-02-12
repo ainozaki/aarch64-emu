@@ -66,6 +66,7 @@ private:
   void decode_data_processing_imm(uint32_t inst);
   void decode_data_processing_reg(uint32_t inst);
   void decode_data_processing_float(uint32_t inst);
+  void decode_data_processing_3source(uint32_t inst);
   void decode_branches(uint32_t inst);
 
   /* loads/stores */

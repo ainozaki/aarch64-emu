@@ -40,7 +40,7 @@ public:
   ~Bus() = default;
 
   Mem mem;
-  
+
   uint64_t load(uint64_t address, MemAccessSize size);
   void store(uint64_t address, uint64_t value, MemAccessSize size);
 

@@ -60,7 +60,7 @@ int Loader::load() {
   // allocate RAM for emulator
   void *ram_base;
   if ((ram_base = mmap(NULL, RAM_SIZE, PROT_READ | PROT_EXEC | PROT_WRITE,
-                   MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (void *)-1) {
+                       MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (void *)-1) {
     perror("mmap");
     return EFAILED;
   }
@@ -84,7 +84,8 @@ int Loader::load() {
 
     // memcpy LOAD segment
     printf("\tmemcpy:\n");
-    printf("\t\tload (emu): 0x%lx-0x%lx, size:0x%lx\n", ph->p_paddr, ph->p_paddr + ph->p_memsz, ph->p_memsz);
+    printf("\t\tload (emu): 0x%lx-0x%lx, size:0x%lx\n", ph->p_paddr,
+           ph->p_paddr + ph->p_memsz, ph->p_memsz);
     memcpy((void *)(map_base + ph->p_paddr - text_start_paddr),
            (void *)((uint64_t)file_map_start_ + ph->p_offset), ph->p_memsz);
 
@@ -93,10 +94,10 @@ int Loader::load() {
       printf("\t\tzeroclear .bss (host):from:0x%lx, size:0x%lx\n",
              map_base + ph->p_paddr + ph->p_filesz - text_start_paddr,
              ph->p_memsz - ph->p_filesz);
-      printf("\t\tzeroclear .bss (emu) :from:0x%lx, size:0x%lx\n", 
-            ph->p_paddr + ph->p_filesz, ph->p_memsz - ph->p_filesz);
-      memset((void *)(map_base + ph->p_paddr + ph->p_filesz - text_start_paddr), 0,
-             ph->p_memsz - ph->p_filesz);
+      printf("\t\tzeroclear .bss (emu) :from:0x%lx, size:0x%lx\n",
+             ph->p_paddr + ph->p_filesz, ph->p_memsz - ph->p_filesz);
+      memset((void *)(map_base + ph->p_paddr + ph->p_filesz - text_start_paddr),
+             0, ph->p_memsz - ph->p_filesz);
     }
     entry = eh_->e_entry - ph->p_vaddr + ph->p_paddr;
   }

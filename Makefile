@@ -62,7 +62,7 @@ run-test:
 	./$(TEST_TARGET)
 
 run:
-	./$(TARGET) ~/source/xv6-aarch64/kernel/kernel
+	./$(TARGET) ./tests/xv6/kernel
 
 format: $(SRC) $(HEADER) $(MAIN)
 	find ./ -type f -name "*.cc" -or -name "*.h" | xargs clang-format -i

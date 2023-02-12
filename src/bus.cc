@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "loader.h"
 #include "mem.h"
 #include "mmu.h"
-#include "loader.h"
 #include "utils.h"
 
 void Bus::init(uint64_t text_start, uint64_t text_size, uint64_t map_base) {
@@ -80,7 +80,7 @@ void Bus::store(uint64_t address, uint64_t value, MemAccessSize size) {
       assert(false);
     }
     return;
-  }else {
+  } else {
     printf("store unknown address: 0x%lx\n", address);
     exit(0);
   }

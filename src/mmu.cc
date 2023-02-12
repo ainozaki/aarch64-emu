@@ -56,8 +56,7 @@ uint64_t MMU::l0_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, next;
 
   LOG_EMU("L0\n");
-  index = util::shift(addr, g4kb_l0_start_bit,
-                      g4kb_l0_start_bit + 8);
+  index = util::shift(addr, g4kb_l0_start_bit, g4kb_l0_start_bit + 8);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
   LOG_EMU("\tbase  = 0x%lx\n", base);
@@ -78,8 +77,7 @@ uint64_t MMU::l0_translate(uint64_t addr, uint64_t base) {
 uint64_t MMU::l1_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, next, output, offset;
   LOG_EMU("L1\n");
-  index = util::shift(addr, g4kb_l1_start_bit,
-                      g4kb_l1_start_bit + 8);
+  index = util::shift(addr, g4kb_l1_start_bit, g4kb_l1_start_bit + 8);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
   LOG_EMU("\tbase  = 0x%lx\n", base);
@@ -108,8 +106,7 @@ uint64_t MMU::l1_translate(uint64_t addr, uint64_t base) {
 uint64_t MMU::l2_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, next, output, offset;
   LOG_EMU("L2\n");
-  index = util::shift(addr, g4kb_l2_start_bit,
-                      g4kb_l2_start_bit + 8);
+  index = util::shift(addr, g4kb_l2_start_bit, g4kb_l2_start_bit + 8);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
   LOG_EMU("\tbase  = 0x%lx\n", base);
@@ -138,8 +135,7 @@ uint64_t MMU::l2_translate(uint64_t addr, uint64_t base) {
 uint64_t MMU::l3_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, output, offset;
   LOG_EMU("L3\n");
-  index = util::shift(addr, g4kb_l3_start_bit,
-                      g4kb_l3_start_bit + 8);
+  index = util::shift(addr, g4kb_l3_start_bit, g4kb_l3_start_bit + 8);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
   LOG_EMU("\tbase  = 0x%lx\n", base);
@@ -178,7 +174,7 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
   addr_sz = std::min(addr_sz, tcr_el1.get_max_addrsz());
   msbs = util::shift(addr, addr_sz, 63);
 
-  //mmu_debug(addr);
+  // mmu_debug(addr);
   ttbrn = msbs ? ttbr1_el1 : ttbr0_el1;
 
   if (addr_sz >= g4kb_l0_start_bit) {

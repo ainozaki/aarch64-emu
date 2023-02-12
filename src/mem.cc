@@ -123,6 +123,7 @@ uint64_t Mem::load64(uint64_t addr) {
          uint64_t(p[6]) << 48 | uint64_t(p[7]) << 56;
 }
 
-void Mem::debug_mem(uint64_t paddr){
-  printf("0x%lx: %lx %lx %lx %lx\n", paddr, load64(paddr), load64(paddr + 8), load64(paddr + 16), load64(paddr + 24));
+void Mem::debug_mem(uint64_t paddr) {
+  printf("0x%lx: %lx %lx %lx %lx\n", paddr, load64(paddr), load64(paddr + 8),
+         load64(paddr + 16), load64(paddr + 24));
 }
