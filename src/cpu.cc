@@ -46,11 +46,12 @@ void Cpu::decode_start(uint32_t inst) {
   uint8_t op1;
   op1 = util::shift(inst, 25, 28);
 
+  printf("pc 0x%lx\n", pc);
+  /*
   // printf("sp=0x%lx:\n", sp);
   // printf("0x%lx: \t", pc);
-  printf("pc 0x%lx\n", pc);
   printf("sp 0x%lx\n", sp);
-  printf("cpsr 0x%x\n", cpsr);
+  //printf("cpsr 0x%x\n", cpsr);
   printf("x0 0x%lx\n", xregs[0]);
   printf("x1 0x%lx\n", xregs[1]);
   printf("x2 0x%lx\n", xregs[2]);
@@ -59,10 +60,11 @@ void Cpu::decode_start(uint32_t inst) {
   printf("x20 0x%lx\n", xregs[20]);
   printf("x29 0x%lx\n", xregs[29]);
   printf("x30 0x%lx\n", xregs[30]);
-  /*
+  */
   if (mmu.if_mmu_enabled()){
     bus.mem.debug_mem(mmu.mmu_translate(0xffffff8040016118));
   }
+  /*
   else {
     bus.mem.debug_mem(0x40016118);
   }
@@ -183,7 +185,10 @@ const char *shift_type_strtbl[] = {
     "ROR",
 };
 
-static void unsupported() { LOG_CPU("unsuported inst\n"); }
+static void unsupported() { 
+  LOG_CPU("unsuported inst\n");
+  exit(0);
+}
 
 static void unallocated() { LOG_CPU("unallocated inst\n"); }
 
@@ -1830,6 +1835,9 @@ void Cpu::decode_barriers(uint32_t inst) {
   switch(op2){
     case 0b101:
       LOG_CPU("dmb type = 0x%x\n", CRm);
+      break;
+    case 0b110:
+      LOG_CPU("isb\n");
       break;
     default:
       unsupported();
