@@ -51,9 +51,9 @@ void Emulator::execute_loop() {
 
   uint32_t inst;
   int i = 0;
-  // int num_insts = 68005;
+  int num_insts = 300000;
   // int num_insts = 67905;
-  int num_insts = 67670;
+  // int num_insts = 67670;
   while (i < num_insts) {
     inst = cpu.fetch();
     if (!inst) {

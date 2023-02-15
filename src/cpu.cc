@@ -187,7 +187,7 @@ const char *shift_type_strtbl[] = {
 
 static void unsupported() {
   LOG_CPU("unsuported inst\n");
-  //exit(1);
+  exit(1);
 }
 
 static void unallocated() { 
@@ -301,8 +301,9 @@ void Cpu::decode_loads_and_stores(uint32_t inst) {
 }
 
 void Cpu::decode_data_processing_reg(uint32_t inst) {
-  uint8_t op1, op2;
+  uint8_t op0, op1, op2;
 
+  op0 = util::bit(inst, 30);
   op1 = util::bit(inst, 28);
   op2 = util::shift(inst, 21, 24);
   switch (op1) {
@@ -327,8 +328,11 @@ void Cpu::decode_data_processing_reg(uint32_t inst) {
       decode_conditional_select(inst);
       break;
     case 6:
-      printf("data processing 1 or 2 source\n");
-      unsupported();
+      if (op0){
+        decode_data_processing_1source(inst);
+      }else {
+        decode_data_processing_2source(inst);
+      }
       break;
     case 1:
     case 3:
@@ -1719,6 +1723,71 @@ void Cpu::decode_conditional_select(uint32_t inst) {
     break;
   default:
     assert(false);
+  }
+}
+
+/*
+         Data Processing (1 source)
+           31   30  29   28   21  20   16 15    10  9   5 4  0
+         +----+---+---+----------+-------+---------+-----+-----+
+         | sf | 1 | S | 11010110 |  op2  |  opcode |  Rn |  Rd |
+         +----+---+---+----------+-------+---------+-----+-----+
+
+*/
+void Cpu::decode_data_processing_1source(uint32_t inst) {
+  uint64_t result;
+  uint8_t sf, s, op2, opcode, rn, rd;
+
+  sf = util::bit(inst, 31);
+  s = util::bit(inst, 29);
+  op2 = util::shift(inst, 16, 20);
+  opcode = util::shift(inst, 10, 15);
+  rn = util::shift(inst, 5, 9);
+  rd = util::shift(inst, 0, 4);
+  
+  if (op2 >= 2) {
+    unallocated();
+    return;
+  }
+  
+  LOG_CPU("data processing 1 source, opcode = 0x%x\n", opcode);
+  unsupported();
+}
+
+/*
+         Data Processing (2 source)
+           31   30  29   28   21  20   16 15    10  9   5 4  0
+         +----+---+---+----------+-------+---------+-----+-----+
+         | sf | 0 | S | 11010110 |  rm   |  opcode |  Rn |  Rd |
+         +----+---+---+----------+-------+---------+-----+-----+
+
+*/
+void Cpu::decode_data_processing_2source(uint32_t inst) {
+  uint8_t sf, s, rm, opcode, rn, rd, datasize;
+  uint64_t result;
+
+  sf = util::bit(inst, 31);
+  s = util::bit(inst, 29);
+  rm = util::shift(inst, 16, 20);
+  opcode = util::shift(inst, 10, 15);
+  rn = util::shift(inst, 5, 9);
+  rd = util::shift(inst, 0, 4);
+
+  datasize = sf ? 64 : 32;
+
+  switch (opcode){
+    case 0b001000:
+      LOG_CPU("lslv x%d, x%d, x%d\n", rd, rn, rm);
+      unsupported();
+      break;
+    case 0b001001:
+      result = xregs[rn] >> (xregs[rm] % datasize);
+      xregs[rd] = result;
+      LOG_CPU("lsrv x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, xregs[rd], rn, xregs[rn], rm, xregs[rm]);
+      break;
+    default:
+      LOG_CPU("data processing 2 source\n");
+      unsupported();
   }
 }
 

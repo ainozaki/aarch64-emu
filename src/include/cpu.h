@@ -90,6 +90,8 @@ private:
   void decode_addsub_extended_reg(uint32_t inst);
   void decode_logical_shifted_reg(uint32_t inst);
   void decode_conditional_select(uint32_t inst);
+  void decode_data_processing_1source(uint32_t inst);
+  void decode_data_processing_2source(uint32_t inst);
 
   /* Data Processing Immediate */
   void decode_pc_rel(uint32_t inst);
