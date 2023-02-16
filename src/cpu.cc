@@ -46,8 +46,8 @@ void Cpu::decode_start(uint32_t inst) {
   uint8_t op1;
   op1 = util::shift(inst, 25, 28);
 
-  printf("pc 0x%lx\n", pc);
   /*
+  printf("pc 0x%lx\n", pc);
   // printf("sp=0x%lx:\n", sp);
   // printf("0x%lx: \t", pc);
   printf("sp 0x%lx\n", sp);
@@ -319,7 +319,7 @@ void Cpu::decode_data_processing_reg(uint32_t inst) {
     case 0:
       break;
     case 2:
-      printf("conditional branch\n");
+      LOG_CPU("conditional branch\n");
       unsupported();
       break;
     case 4:
@@ -729,7 +729,7 @@ void Cpu::decode_move_wide_imm(uint32_t inst) {
     xregs[rd] = if_64bit ? imm : imm & util::mask(32);
     break;
   case 3: /* MOVK */
-    xregs[rd] = (xregs[rd] & ~util::mask(shift + 15)) | imm |
+    xregs[rd] = (xregs[rd] & ~util::mask(shift + 16)) | imm |
                 (xregs[rd] & util::mask(shift));
     break;
   default:
@@ -910,7 +910,7 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
   if (!postindex) {
     address += (int64_t)offset;
   }
-  printf(",address=0x%lx\n", address);
+  LOG_CPU(",address=0x%lx\n", address);
 
   uint64_t value1, value2;
   if (if_load) {
@@ -1009,7 +1009,7 @@ void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
   rt = util::shift(inst, 0, 4);
 
   if (vector) {
-    printf("ldst_reg_unsigned_imm\n");
+    LOG_CPU("ldst_reg_unsigned_imm\n");
     unsupported();
     return;
   }
@@ -1018,7 +1018,7 @@ void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
   switch (size) {
   case 0:
   case 1:
-    printf("ldr/str 8/16\n");
+    LOG_CPU("ldr/str 8/16\n");
     unsupported();
     return;
   case 2:
@@ -1053,7 +1053,7 @@ void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
       LOG_CPU("ldr x%d(=0x%lx), [x%d, #%ld]\n", rt, xregs[rt], rn, offset);
       break;
     case 2:
-      printf("prfm\n");
+      LOG_CPU("prfm\n");
       unsupported();
       return;
     }
@@ -1213,15 +1213,15 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
 }
 
 void Cpu::decode_ldst_reg_unpriviledged(uint32_t inst) {
-  printf("load_store: ldst_reg_unpriviledged 0x%x\n", inst);
+  LOG_CPU("load_store: ldst_reg_unpriviledged 0x%x\n", inst);
   unsupported();
 }
 void Cpu::decode_ldst_atomic_memory_op(uint32_t inst) {
-  printf("load_store: ldst_reg_atomic_memory_op 0x%x\n", inst);
+  LOG_CPU("load_store: ldst_reg_atomic_memory_op 0x%x\n", inst);
   unsupported();
 }
 void Cpu::decode_ldst_reg_pac(uint32_t inst) {
-  printf("load_store: ldst_reg_pca 0x%x\n", inst);
+  LOG_CPU("load_store: ldst_reg_pca 0x%x\n", inst);
   unsupported();
 }
 
@@ -1376,12 +1376,12 @@ void Cpu::decode_ldst_load_register_literal(uint32_t inst) {
     xregs[rt] = util::SIGN_EXTEND(data, 32);
     break;
   default:
-    printf("ldst_load_register_literal, opc=3\n");
+    LOG_CPU("ldst_load_register_literal, opc=3\n");
     unsupported();
     return;
   }
 
-  printf("ldr x%d(=0x%lx), 0x%lx\n", rt, xregs[rt], address);
+  LOG_CPU("ldr x%d(=0x%lx), 0x%lx\n", rt, xregs[rt], address);
 }
 
 /*
@@ -1655,7 +1655,7 @@ void Cpu::decode_logical_shifted_reg(uint32_t inst) {
     LOG_CPU("orr x%d, x%d(0x%lx) | x%d(0x%lx)\n", rd, rn, op1, rm, op2);
     break;
   default:
-    printf("decode_logical_shifted_reg\n");
+    LOG_CPU("decode_logical_shifted_reg\n");
     unsupported();
     break;
   }
@@ -1955,7 +1955,7 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst) {
     }
     break;
   case 1:
-    printf("BC.cond");
+    LOG_CPU("BC.cond");
     unsupported();
     increment_pc();
     break;
@@ -2009,7 +2009,7 @@ void Cpu::decode_exception_generation(uint32_t inst) {
     }
     break;
   default:
-    printf("exception_generation\n");
+    LOG_CPU("exception_generation\n");
     unsupported();
     break;
   }
@@ -2147,7 +2147,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           LOG_CPU("daifset \n");
           return;
         case 7:
-          printf("DAIRCLR \n");
+          LOG_CPU("DAIRCLR \n");
           return;
         default:
           unsupported();
@@ -2177,7 +2177,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
               assert(false);
             }
             xregs[rt] = mpidr_el1;
-            printf("mrs x%d, MPIDR_EL1(0x%lx)\n", rt, mpidr_el1);
+            LOG_CPU("mrs x%d, MPIDR_EL1(0x%lx)\n", rt, mpidr_el1);
             return;
           default:
             unsupported();
@@ -2196,11 +2196,11 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           case 0:
             if (if_get) {
               xregs[rt] = mmu.sctlr_el1;
-              printf("mrs x%d, SCTLR_EL1(0x%lx)\n", rt, xregs[rt]);
+              LOG_CPU("mrs x%d, SCTLR_EL1(0x%lx)\n", rt, xregs[rt]);
               return;
             } else {
               mmu.sctlr_el1 = xregs[rt];
-              printf("msr SCTLR_EL1, x%d(0x%lx)\n", rt, mmu.sctlr_el1);
+              LOG_CPU("msr SCTLR_EL1, x%d(0x%lx)\n", rt, mmu.sctlr_el1);
               return;
             }
             break;
@@ -2221,34 +2221,34 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           case 0:
             if (if_get) {
               xregs[rt] = mmu.ttbr0_el1;
-              printf("mrs x%d, TTBR0_EL1\n", rt);
+              LOG_CPU("mrs x%d, TTBR0_EL1\n", rt);
               return;
             } else {
               mmu.ttbr0_el1 = xregs[rt];
-              printf("msr TTBR0_EL1, x%d\n", rt);
+              LOG_CPU("msr TTBR0_EL1, x%d\n", rt);
               return;
             }
             break;
           case 1:
             if (if_get) {
               xregs[rt] = mmu.ttbr1_el1;
-              printf("mrs x%d, TTBR1_EL1(=0x%lx)\n", rt, xregs[rt]);
+              LOG_CPU("mrs x%d, TTBR1_EL1(=0x%lx)\n", rt, xregs[rt]);
               return;
             } else {
               mmu.ttbr1_el1 = xregs[rt];
-              printf("msr TTBR1_EL1, x%d(=0x%lx)\n", rt, xregs[rt]);
+              LOG_CPU("msr TTBR1_EL1, x%d(=0x%lx)\n", rt, xregs[rt]);
               return;
             }
             break;
           case 2:
-            printf("TCR_EL1 ");
+            LOG_CPU("TCR_EL1 ");
             if (if_get) {
               xregs[rt] = mmu.tcr_el1.value;
-              printf("mrs x%d, TCR_EL1(=0x%lx)\n", rt, xregs[rt]);
+              LOG_CPU("mrs x%d, TCR_EL1(=0x%lx)\n", rt, xregs[rt]);
               return;
             } else {
               mmu.tcr_el1.value = xregs[rt];
-              printf("msr TCR_EL1, x%d(=0x%lx)\n", rt, xregs[rt]);
+              LOG_CPU("msr TCR_EL1, x%d(=0x%lx)\n", rt, xregs[rt]);
               return;
             }
             break;
@@ -2270,7 +2270,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
               assert(false);
             }
             xregs[rt] = CurrentEL;
-            printf("mrs CurrentEL(=0x%lx)\n", xregs[rt]);
+            LOG_CPU("mrs CurrentEL(=0x%lx)\n", xregs[rt]);
             return;
           default:
             unsupported();
@@ -2292,7 +2292,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
               break;
             }
             VBAR_EL1 = xregs[rt];
-            printf("msr VBAR_EL1=0x%lx)\n", xregs[rt]);
+            LOG_CPU("msr VBAR_EL1=0x%lx)\n", xregs[rt]);
             return;
           default:
             unsupported();
@@ -2309,7 +2309,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         case 2:
           switch (op2) {
           case 0:
-            printf("MAIR_EL1 \n");
+            LOG_CPU("MAIR_EL1 \n");
             return;
           default:
             unsupported();
@@ -2334,10 +2334,10 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           switch (op2) {
           case 1:
             if (if_get) {
-              printf("mrs x%d, daif=0x%lx\n", rt, daif);
+              LOG_CPU("mrs x%d, daif=0x%lx\n", rt, daif);
               xregs[rt] = daif;
             } else {
-              printf("msr daif, x%d(=0x%lx)\n", rt, xregs[rt]);
+              LOG_CPU("msr daif, x%d(=0x%lx)\n", rt, xregs[rt]);
               daif = xregs[rt];
             }
             return;
@@ -2365,9 +2365,9 @@ void Cpu::decode_system_register_move(uint32_t inst) {
     break;
   }
   if (if_get) {
-    printf("mrs\n");
+    LOG_CPU("mrs\n");
   } else {
-    printf("msr\n");
+    LOG_CPU("msr\n");
   }
 }
 
@@ -2438,11 +2438,11 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
         unallocated();
         return;
       }
-      printf("br x%d(=0x%lx)\n", Rn, xregs[Rn]);
+      LOG_CPU("br x%d(=0x%lx)\n", Rn, xregs[Rn]);
       set_pc(xregs[Rn]);
       return;
     default:
-      printf("decode_unconditional_branch_reg\n");
+      LOG_CPU("decode_unconditional_branch_reg\n");
       unsupported();
       increment_pc();
       return;
@@ -2460,21 +2460,21 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
       assert(n <= 31);
       target = xregs[n];
       LOG_CPU("RET: target=xregs[%d](0x%lx)\n", n, target);
-      // printf("sp=0x%lx\n", sp);
+      // LOG_CPU("sp=0x%lx\n", sp);
       if (target == 0) {
         exit(0);
       }
       set_pc(target);
       break;
     default:
-      printf("decode_unconditional_branch_reg\n");
+      LOG_CPU("decode_unconditional_branch_reg\n");
       unsupported();
       increment_pc();
       return;
     }
     break;
   default:
-    printf("decode_unconditional_branch_reg\n");
+    LOG_CPU("decode_unconditional_branch_reg\n");
     unsupported();
     increment_pc();
     return;
