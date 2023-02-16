@@ -54,7 +54,7 @@ void Emulator::execute_loop() {
   int num_insts = 10000000;
   // int num_insts = 67905;
   // int num_insts = 67670;
-  while (i < num_insts) {
+  while (true) {
     inst = cpu.fetch();
     if (!inst) {
       break;

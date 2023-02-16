@@ -106,12 +106,14 @@ private:
   void decode_conditional_branch_imm(uint32_t inst);
   void decode_exception_generation(uint32_t inst);
   void decode_system_register_move(uint32_t inst);
+  void decode_system_instructions(uint32_t inst);
   void decode_pstate(uint32_t inst);
   void decode_barriers(uint32_t inst);
   void decode_unconditional_branch_reg(uint32_t inst);
   void decode_unconditional_branch_imm(uint32_t inst);
   void decode_compare_and_branch_imm(uint32_t inst);
   void decode_test_and_branch_imm(uint32_t inst);
+  void impl_sysop(uint8_t op);
 };
 
 typedef void (Cpu::*decode_func)(uint32_t inst);

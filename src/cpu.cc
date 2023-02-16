@@ -63,7 +63,6 @@ void Cpu::decode_start(uint32_t inst) {
   if (mmu.if_mmu_enabled()) {
     bus.mem.debug_mem(mmu.mmu_translate(0xffffff8040016118));
   }
-  /*
   else {
     bus.mem.debug_mem(0x40016118);
   }
@@ -216,13 +215,13 @@ void Cpu::decode_data_processing_imm(uint32_t inst) {
 
 void Cpu::decode_loads_and_stores(uint32_t inst) {
   uint8_t op0, op1, op2;
-  uint16_t op3, op4;
+  uint16_t op3/*, op4*/;
 
   op0 = util::shift(inst, 28, 31);
   op1 = util::bit(inst, 26);
   op2 = util::shift(inst, 23, 24);
   op3 = util::shift(inst, 16, 21);
-  op4 = util::shift(inst, 0, 11);
+  //op4 = util::shift(inst, 0, 11);
 
   switch (op0 & 3) {
   case 0b00:
@@ -382,8 +381,7 @@ void Cpu::decode_branches(uint32_t inst) {
       if (util::bit(inst, 20)) {
         decode_system_register_move(inst);
       } else if (util::bit(inst, 19)) {
-        LOG_CPU("system instructions\n");
-        unsupported();
+        decode_system_instructions(inst);
       } else if (util::shift(inst, 12, 17) == 0b110001) {
         LOG_CPU("System instructions with register argument\n");
         unsupported();
@@ -1737,6 +1735,7 @@ void Cpu::decode_conditional_select(uint32_t inst) {
 
 */
 void Cpu::decode_data_processing_1source(uint32_t inst) {
+ /*
   uint64_t result;
   uint8_t sf, s, op2, opcode, rn, rd;
 
@@ -1746,13 +1745,8 @@ void Cpu::decode_data_processing_1source(uint32_t inst) {
   opcode = util::shift(inst, 10, 15);
   rn = util::shift(inst, 5, 9);
   rd = util::shift(inst, 0, 4);
-  
-  if (op2 >= 2) {
-    unallocated();
-    return;
-  }
-  
-  LOG_CPU("data processing 1 source, opcode = 0x%x\n", opcode);
+*/  
+  LOG_CPU("data processing 1 source, opcode = 0x%x\n", util::shift(inst, 10, 15));
   unsupported();
 }
 
@@ -1765,11 +1759,11 @@ void Cpu::decode_data_processing_1source(uint32_t inst) {
 
 */
 void Cpu::decode_data_processing_2source(uint32_t inst) {
-  uint8_t sf, s, rm, opcode, rn, rd, datasize;
+  uint8_t sf, /*s, */rm, opcode, rn, rd, datasize;
   uint64_t result;
 
   sf = util::bit(inst, 31);
-  s = util::bit(inst, 29);
+  //s = util::bit(inst, 29);
   rm = util::shift(inst, 16, 20);
   opcode = util::shift(inst, 10, 15);
   rn = util::shift(inst, 5, 9);
@@ -2374,6 +2368,41 @@ void Cpu::decode_system_register_move(uint32_t inst) {
     printf("mrs\n");
   } else {
     printf("msr\n");
+  }
+}
+
+/*
+         System instructions
+
+          31       22  21  2019 18 16  15  12 11  8 7  5 4   0
+         +------------+---+----+------+-----+-----+-----+-----+
+         | 1101010100 | L | 01 | op1  | CRn | CRm | op2 |  Rt |
+         +------------+---+----+------+-----+-----+-----+-----+
+
+         @L:0->SYS, 1->SYSL
+*/
+
+void Cpu::decode_system_instructions(uint32_t inst) {
+  uint8_t l, op1, crn, crm, op2/*, rt*/;
+
+  l = util::bit(inst, 21);
+  op1 = util::shift(inst, 16, 18);
+  crn = util::shift(inst, 12, 15);
+  crm = util::shift(inst, 8, 11);
+  op2 = util::shift(inst, 5, 7);
+  //rt = util::shift(inst, 0, 4);
+  
+  /* SYSL */
+  if (l){
+    unsupported();
+    return;
+  }
+  
+  /* SYS */
+  if ((op1 == 0b000) && (crn == 0b1000) && (crm == 0b0011) && (op2 == 0b000)){
+    LOG_CPU("tlbi vmalle1is\n");
+  }else {
+    unsupported();
   }
 }
 

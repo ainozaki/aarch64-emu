@@ -38,7 +38,7 @@ void MMU::mmu_debug(uint64_t addr) {
   // translation table debug
   LOG_DEBUG("========VADDR========\n");
   LOG_DEBUG("addr   = 0x%lx\n", addr);
-  LOG_DEBUG("ttbrn   = 0x%x\n", util::bit64(addr, 63));
+  LOG_DEBUG("ttbrn   = 0x%lx\n", util::bit64(addr, 63));
   LOG_DEBUG("L0_index = 0x%x\n",
           util::shift(addr, g4kb_l0_start_bit, g4kb_l0_start_bit + 8));
   LOG_DEBUG("L1_index = 0x%x\n",
