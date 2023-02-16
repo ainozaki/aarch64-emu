@@ -2088,17 +2088,31 @@ void Cpu::decode_pstate(uint32_t inst) {
          @L:0->MSR, 1->MRS
 */
 void Cpu::decode_barriers(uint32_t inst) {
-  uint8_t CRm, op2 /*,rt*/;
+  uint8_t CRm, op2, rt;
 
   CRm = util::shift(inst, 8, 11);
   op2 = util::shift(inst, 5, 7);
-  // rt = util::shift(inst, 0, 4);
+  rt = util::shift(inst, 0, 4);
 
   switch (op2) {
+  case 0b001:
+    if (rt != 0b11111 || util::shift(inst, 8, 9) != 0b10){
+      unallocated();
+      return;
+    }
+    /* Data Synchronization Barrier */
+    LOG_CPU("dsb memory nXS barrier\n");
+    break;
   case 0b101:
+    /* Data Memory Barrier */
     LOG_CPU("dmb type = 0x%x\n", CRm);
     break;
+  case 0b100:
+    /* Data Synchronization Barrier */
+    LOG_CPU("dsb memory barrier type = 0x%x\n", CRm);
+    break;
   case 0b110:
+    /* Instruction Synchronization Barrier */
     LOG_CPU("isb\n");
     break;
   default:
