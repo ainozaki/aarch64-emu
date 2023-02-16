@@ -24,32 +24,33 @@ void MMU::init(Bus *bus, uint64_t *current_el) {
 
 void MMU::mmu_debug(uint64_t addr) {
   // TCR debug
-  LOG_EMU("========TCR========\n");
-  LOG_EMU("ipa: 000->32bits, 101->48bits\n");
-  LOG_EMU("\tipa = 0x%x\n", tcr_el1.get_ipa());
-  LOG_EMU("tg1: 01->16KB, 10->4KB, 11->64KB\n");
-  LOG_EMU("\ttg1 = 0x%x\n", tcr_el1.get_tg1());
-  LOG_EMU("tg0: 00->4KB, 01->64KB, 10->16KB\n");
-  LOG_EMU("\ttg0 = 0x%x\n", tcr_el1.get_tg0());
-  LOG_EMU("tnsz: memory region size 2**(64-T0SZ)\n");
-  LOG_EMU("\t64 - t1sz = %d\n", 64 - tcr_el1.get_t1sz());
-  LOG_EMU("\t64 - t0sz = %d\n", 64 - tcr_el1.get_t0sz());
+  LOG_DEBUG("========TCR========\n");
+  LOG_DEBUG("ipa: 000->32bits, 101->48bits\n");
+  LOG_DEBUG("\tipa = 0x%x\n", tcr_el1.get_ipa());
+  LOG_DEBUG("tg1: 01->16KB, 10->4KB, 11->64KB\n");
+  LOG_DEBUG("\ttg1 = 0x%x\n", tcr_el1.get_tg1());
+  LOG_DEBUG("tg0: 00->4KB, 01->64KB, 10->16KB\n");
+  LOG_DEBUG("\ttg0 = 0x%x\n", tcr_el1.get_tg0());
+  LOG_DEBUG("tnsz: memory region size 2**(64-T0SZ)\n");
+  LOG_DEBUG("\t64 - t1sz = %d\n", 64 - tcr_el1.get_t1sz());
+  LOG_DEBUG("\t64 - t0sz = %d\n", 64 - tcr_el1.get_t0sz());
 
   // translation table debug
-  LOG_EMU("========VADDR========\n");
-  LOG_EMU("addr   = 0x%lx\n", addr);
-  LOG_EMU("ttbrn   = 0x%x\n",
-          util::shift(addr, g4kb_l0_start_bit + g4kb_index_sz, 63));
-  LOG_EMU("L0_index = 0x%x\n",
+  LOG_DEBUG("========VADDR========\n");
+  LOG_DEBUG("addr   = 0x%lx\n", addr);
+  LOG_DEBUG("ttbrn   = 0x%x\n", util::bit64(addr, 63));
+  LOG_DEBUG("L0_index = 0x%x\n",
           util::shift(addr, g4kb_l0_start_bit, g4kb_l0_start_bit + 8));
-  LOG_EMU("L1_index = 0x%x\n",
+  LOG_DEBUG("L1_index = 0x%x\n",
           util::shift(addr, g4kb_l1_start_bit, g4kb_l1_start_bit + 8));
-  LOG_EMU("L2_index = 0x%x\n",
+  LOG_DEBUG("L2_index = 0x%x\n",
           util::shift(addr, g4kb_l2_start_bit, g4kb_l2_start_bit + 8));
-  LOG_EMU("L3_index = 0x%x\n",
+  LOG_DEBUG("L3_index = 0x%x\n",
           util::shift(addr, g4kb_l3_start_bit, g4kb_l3_start_bit + 8));
-  LOG_EMU("offset  = 0x%x\n", util::shift(addr, 0, 11));
-  LOG_EMU("======================\n");
+  LOG_DEBUG("offset  = 0x%x\n", util::shift(addr, 0, 11));
+  LOG_DEBUG("ttbr0  = 0x%lx\n", ttbr0_el1);
+  LOG_DEBUG("ttbr1  = 0x%lx\n", ttbr1_el1);
+  LOG_DEBUG("======================\n");
 }
 
 uint64_t MMU::l0_translate(uint64_t addr, uint64_t base) {
@@ -149,7 +150,7 @@ uint64_t MMU::l3_translate(uint64_t addr, uint64_t base) {
   assert(!(entry & 2));
   LOG_EMU("\tblock entry\n");
   output = util::shift(entry, 21, 47) << 21;
-  offset = util::shift(entry, 0, g4kb_l0_start_bit - 1);
+  offset = util::shift(addr, 0, g4kb_l0_start_bit - 1);
   output |= offset;
   LOG_EMU("\toutput = 0x%lx\n", output);
   return output;
@@ -170,11 +171,10 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
     return addr;
   }
 
-  addr_sz = current_el_ ? 64 - tcr_el1.get_t1sz() : 64 - tcr_el1.get_t0sz();
+  msbs = util::bit64(addr, 63);
+  addr_sz = msbs ? 64 - tcr_el1.get_t1sz() : 64 - tcr_el1.get_t0sz();
   addr_sz = std::min(addr_sz, tcr_el1.get_max_addrsz());
-  msbs = util::shift(addr, addr_sz, 63);
 
-  // mmu_debug(addr);
   ttbrn = msbs ? ttbr1_el1 : ttbr0_el1;
 
   if (addr_sz >= g4kb_l0_start_bit) {

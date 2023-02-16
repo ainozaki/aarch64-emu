@@ -60,7 +60,6 @@ void Cpu::decode_start(uint32_t inst) {
   printf("x20 0x%lx\n", xregs[20]);
   printf("x29 0x%lx\n", xregs[29]);
   printf("x30 0x%lx\n", xregs[30]);
-  */
   if (mmu.if_mmu_enabled()) {
     bus.mem.debug_mem(mmu.mmu_translate(0xffffff8040016118));
   }
@@ -417,12 +416,15 @@ void Cpu::decode_branches(uint32_t inst) {
 
 void Cpu::decode_sme_encodings(uint32_t inst) {
   LOG_CPU("sme_encodings 0x%x\n", inst);
+  mmu.mmu_debug(pc);
   increment_pc();
+  exit(1);
 }
 
 void Cpu::decode_unallocated(uint32_t inst) {
   LOG_CPU("unallocated %x\n", inst);
   increment_pc();
+  exit(1);
 }
 
 void Cpu::decode_sve_encodings(uint32_t inst) {
