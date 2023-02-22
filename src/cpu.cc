@@ -2579,27 +2579,25 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
 */
 void Cpu::decode_test_and_branch_imm(uint32_t inst) {
   uint64_t imm14, offset;
-  uint8_t op, if_64bit, rt, b5, b4, bit;
+  uint8_t op, if_64bit, rt, b5, b40, bit_pos;
+  bool if_jump;
 
   b5 = util::bit(inst, 31);
   op = util::bit(inst, 24);
-  b4 = util::shift(inst, 19, 23);
+  b40 = util::shift(inst, 19, 23);
   imm14 = util::shift(inst, 5, 18);
   rt = util::shift(inst, 0, 4);
 
-  offset = imm14 << 2;
-  bit = (b5 << 4) | b4;
-
+  bit_pos = (b5 << 5) | b40;
   if (!if_64bit) {
-    assert(bit < 32);
+    assert(bit_pos < 32);
   }
+
+  if_jump = (uint8_t)util::bit64(xregs[rt], bit_pos) == op;
+  offset = if_jump ? (imm14 << 2) : 4;
 
   const char *name = op ? "tbnz" : "tbz";
   LOG_CPU("%s x%d, #%d, 0x%lx\n", name, rt, bit, pc + offset);
-
-  if (util::bit(xregs[rt], bit) != op) {
-    return;
-  }
 
   set_pc(pc + offset);
 }
