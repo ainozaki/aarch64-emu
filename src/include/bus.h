@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "mem.h"
+#include "uart.h"
 
 // GIC v3
 const uint64_t gicv3_base = 0x08000000;
@@ -40,6 +41,7 @@ public:
   ~Bus() = default;
 
   Mem mem;
+  Uart uart;
 
   uint64_t load(uint64_t address, MemAccessSize size);
   void store(uint64_t address, uint64_t value, MemAccessSize size);

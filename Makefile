@@ -1,5 +1,7 @@
-CXXFLAGS=-g -Wall -Wextra -I./src/include -pthread -DNDEBUG -fsanitize=address
-LDFLAGS= -fsanitize=address -T ./linker_script.x
+#CXXFLAGS=-g -Wall -Wextra -I./src/include -pthread -DNDEBUG -fsanitize=address
+CXXFLAGS=-g -Wall -Wextra -I./src/include -pthread -DNDEBUG
+#LDFLAGS= -fsanitize=address -T ./linker_script.x
+LDFLAGS= -T ./linker_script.x
 LDFLAGS_TEST= $(LDFLAGS) -L/usr/local/lib -lgtest -lgtest_main -lpthread
 
 SRC = \
@@ -9,6 +11,7 @@ SRC = \
 	src/loader.cc \
 	src/mem.cc \
 	src/mmu.cc \
+	src/uart.cc \
 	src/utils.cc
 TEST_OBJ = \
 	tests/execute_unittest.o
