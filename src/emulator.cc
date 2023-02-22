@@ -37,7 +37,7 @@ int Emulator::init() {
   printf("loader.entry = 0x%lx\n", loader.entry);
   printf("loader.init_sp = 0x%lx\n", loader.init_sp);
   printf("loader.text_start = 0x%lx\n", loader.text_start_paddr);
-  printf("loader.text_size = 0x%lx\n", loader.text_size);
+  //printf("loader.text_size = 0x%lx\n", loader.text_size);
   printf("loader.map_base = 0x%lx\n", loader.map_base);
 
   cpu.init(loader.entry, loader.init_sp, loader.text_start_paddr,
@@ -63,7 +63,7 @@ void Emulator::execute_loop() {
     cpu.decode_start(inst);
     i++;
   }
-  cpu.show_regs();
+  //cpu.show_regs();
   munmap((void *)loader.map_base, RAM_SIZE);
 }
 
