@@ -183,22 +183,22 @@ const int size_tbl[] = {8, 16, 32, 64};
     "ROR",
 };
 
-static void unsupported() {
-  LOG_CPU("unsuported inst\n");
-  exit(1);
-}
-
-static void unallocated() {
-  LOG_CPU("unallocated inst\n");
-  exit(1);
-}
-
 static inline uint64_t bitmask64(uint8_t len) { return ~0ULL >> (64 - len); }
 
 static inline uint64_t signed_extend(uint64_t val, uint8_t topbit) {
   return util::bit(val, topbit) ? (val | ~util::mask(topbit)) : val;
 }
 } // namespace
+
+void Cpu::unsupported() {
+  printf("unsupported inst at pc 0x%lx\n", pc);
+  exit(1);
+}
+
+void Cpu::unallocated() {
+  printf("unallocated inst\n");
+  exit(1);
+}
 
 void Cpu::decode_data_processing_imm(uint32_t inst) {
   uint8_t op0;
@@ -2296,13 +2296,8 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         case 0:
           switch (op2) {
           case 0:
-            if (if_get) {
-              unsupported();
-              break;
-            }
-            VBAR_EL1 = xregs[rt];
-            LOG_CPU("msr VBAR_EL1=0x%lx)\n", xregs[rt]);
-            return;
+            unsupported();
+            break;
           default:
             unsupported();
             break;
@@ -2328,6 +2323,24 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         default:
           unsupported();
           break;
+        }
+        break;
+      case 12:
+        switch (CRm){
+          case 0:
+            switch (op2){
+              case 0:
+                VBAR_EL1 = xregs[rt];
+                LOG_CPU("msr VBAR_EL1=0x%lx\n", xregs[rt]);
+                return;
+              default:
+                unsupported();
+                break;
+            }
+            break;
+          default:
+            unsupported();
+            break;
         }
         break;
       default:
@@ -2588,7 +2601,7 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
 */
 void Cpu::decode_test_and_branch_imm(uint32_t inst) {
   uint64_t imm14, offset;
-  uint8_t op, if_64bit, rt, b5, b40, bit_pos;
+  uint8_t op, rt, b5, b40, bit_pos;
   bool if_jump;
 
   b5 = util::bit(inst, 31);
@@ -2598,7 +2611,7 @@ void Cpu::decode_test_and_branch_imm(uint32_t inst) {
   rt = util::shift(inst, 0, 4);
 
   bit_pos = (b5 << 5) | b40;
-  if (!if_64bit) {
+  if (!b5) {
     assert(bit_pos < 32);
   }
 

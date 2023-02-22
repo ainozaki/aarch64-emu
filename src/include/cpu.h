@@ -60,6 +60,9 @@ private:
   uint64_t load(uint64_t address, MemAccessSize size);
   void store(uint64_t address, uint64_t value, MemAccessSize size);
 
+  void unsupported();
+  void unallocated();
+
   void decode_sme_encodings(uint32_t inst);
   void decode_unallocated(uint32_t inst);
   void decode_sve_encodings(uint32_t inst);
