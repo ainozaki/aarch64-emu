@@ -174,9 +174,9 @@ uint64_t ExtendValue(uint64_t value, uint8_t type, uint8_t shift) {
 
 const int size_tbl[] = {8, 16, 32, 64};
 
-const char *size_strtbl[] = {"b", "h", "w", "x"};
+[[maybe_unused]] const char *size_strtbl[] = {"b", "h", "w", "x"};
 
-const char *shift_type_strtbl[] = {
+[[maybe_unused]] const char *shift_type_strtbl[] = {
     "LSL",
     "LSR",
     "ASR",
@@ -188,7 +188,7 @@ static void unsupported() {
   exit(1);
 }
 
-static void unallocated() { 
+static void unallocated() {
   LOG_CPU("unallocated inst\n");
   exit(1);
 }
@@ -215,43 +215,43 @@ void Cpu::decode_data_processing_imm(uint32_t inst) {
 
 void Cpu::decode_loads_and_stores(uint32_t inst) {
   uint8_t op0, op1, op2;
-  uint16_t op3/*, op4*/;
+  uint16_t op3 /*, op4*/;
 
   op0 = util::shift(inst, 28, 31);
   op1 = util::bit(inst, 26);
   op2 = util::shift(inst, 23, 24);
   op3 = util::shift(inst, 16, 21);
-  //op4 = util::shift(inst, 0, 11);
+  // op4 = util::shift(inst, 0, 11);
 
   switch (op0 & 3) {
   case 0b00:
-    if (op1){
+    if (op1) {
       unsupported();
-    }else {
-      if (op2 == 1){
-        if (op3 >> 5){
+    } else {
+      if (op2 == 1) {
+        if (op3 >> 5) {
           LOG_CPU("compare and swap\n");
           unsupported();
           break;
-        }else {
+        } else {
           decode_ldst_ordered(inst);
           break;
         }
-      }else if (op2 == 0){
-        if (op3 >> 5){
-          if (op0 >> 4){
+      } else if (op2 == 0) {
+        if (op3 >> 5) {
+          if (op0 >> 4) {
             decode_ldst_exclusive(inst);
             break;
-          }else {
+          } else {
             LOG_CPU("compare and swap pair\n");
             unsupported();
             break;
           }
-        }else {
+        } else {
           decode_ldst_exclusive(inst);
           break;
         }
-      }else {
+      } else {
         unallocated();
         break;
       }
@@ -326,9 +326,9 @@ void Cpu::decode_data_processing_reg(uint32_t inst) {
       decode_conditional_select(inst);
       break;
     case 6:
-      if (op0){
+      if (op0) {
         decode_data_processing_1source(inst);
-      }else {
+      } else {
         decode_data_processing_2source(inst);
       }
       break;
@@ -349,7 +349,7 @@ void Cpu::decode_data_processing_reg(uint32_t inst) {
   increment_pc();
 }
 
-void Cpu::decode_data_processing_float(uint32_t inst) {
+void Cpu::decode_data_processing_float([[maybe_unused]] uint32_t inst) {
   LOG_CPU("data_processing_float %d\n", inst);
   increment_pc();
 }
@@ -412,20 +412,20 @@ void Cpu::decode_branches(uint32_t inst) {
   }
 }
 
-void Cpu::decode_sme_encodings(uint32_t inst) {
+void Cpu::decode_sme_encodings([[maybe_unused]] uint32_t inst) {
   LOG_CPU("sme_encodings 0x%x\n", inst);
   mmu.mmu_debug(pc);
   increment_pc();
   exit(1);
 }
 
-void Cpu::decode_unallocated(uint32_t inst) {
+void Cpu::decode_unallocated([[maybe_unused]] uint32_t inst) {
   LOG_CPU("unallocated %x\n", inst);
   increment_pc();
   exit(1);
 }
 
-void Cpu::decode_sve_encodings(uint32_t inst) {
+void Cpu::decode_sve_encodings([[maybe_unused]] uint32_t inst) {
   LOG_CPU("sve_encodings %x\n", inst);
   increment_pc();
 }
@@ -544,7 +544,7 @@ void Cpu::decode_add_sub_imm(uint32_t inst) {
   uint64_t imm;
   bool if_shift, if_setflag, if_sub, if_64bit;
   uint64_t result, op1;
-  const char *op;
+  [[maybe_unused]] const char *op;
 
   rd = util::shift(inst, 0, 4);
   rn = util::shift(inst, 5, 9);
@@ -581,7 +581,9 @@ void Cpu::decode_add_sub_imm(uint32_t inst) {
   }
 }
 
-void Cpu::decode_add_sub_imm_with_tags(uint32_t inst) { LOG_CPU("%d\n", inst); }
+void Cpu::decode_add_sub_imm_with_tags([[maybe_unused]] uint32_t inst) {
+  LOG_CPU("%d\n", inst);
+}
 
 static uint64_t bitfield_replicate(uint64_t mask, uint8_t e) {
   while (e < 64) {
@@ -798,7 +800,9 @@ void Cpu::decode_bitfield(uint32_t inst) {
   }
 }
 
-void Cpu::decode_extract(uint32_t inst) { LOG_CPU("%d\n", inst); }
+void Cpu::decode_extract([[maybe_unused]] uint32_t inst) {
+  LOG_CPU("%d\n", inst);
+}
 
 /*
 ====================================================
@@ -824,7 +828,7 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
   uint8_t if_load, opc, opt, rn, rt, rt2;
   uint64_t data1, data2, imm7, offset;
   int64_t address;
-  const char *op;
+  [[maybe_unused]] const char *op;
 
   opc = util::shift(inst, 30, 31);
   // if_vector = util::bit(inst, 26);
@@ -972,7 +976,7 @@ void Cpu::decode_ldst_register(uint32_t inst) {
   return;
 }
 
-void Cpu::decode_ldst_reg_unscaled_immediate(uint32_t inst) {
+void Cpu::decode_ldst_reg_unscaled_immediate([[maybe_unused]] uint32_t inst) {
   LOG_CPU("ldst_reg_scucaled_imm %x\n", inst);
   unsupported();
 }
@@ -1212,15 +1216,15 @@ void Cpu::decode_ldst_reg_immediate(uint32_t inst) {
   }
 }
 
-void Cpu::decode_ldst_reg_unpriviledged(uint32_t inst) {
+void Cpu::decode_ldst_reg_unpriviledged([[maybe_unused]] uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_unpriviledged 0x%x\n", inst);
   unsupported();
 }
-void Cpu::decode_ldst_atomic_memory_op(uint32_t inst) {
+void Cpu::decode_ldst_atomic_memory_op([[maybe_unused]] uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_atomic_memory_op 0x%x\n", inst);
   unsupported();
 }
-void Cpu::decode_ldst_reg_pac(uint32_t inst) {
+void Cpu::decode_ldst_reg_pac([[maybe_unused]] uint32_t inst) {
   LOG_CPU("load_store: ldst_reg_pca 0x%x\n", inst);
   unsupported();
 }
@@ -1469,25 +1473,27 @@ void Cpu::decode_ldst_ordered(uint32_t inst) {
 
   size = util::shift(inst, 30, 31);
   if_load = util::bit(inst, 22);
-  if_lor = ! util::bit(inst, 15);
+  if_lor = !util::bit(inst, 15);
   rn = util::shift(inst, 5, 9);
   rt = util::shift(inst, 0, 4);
 
   address = rn == 31 ? sp : xregs[rn];
 
-  if (if_lor){
+  if (if_lor) {
     LOG_CPU("decode_ldst_ordered lor\n");
     unsupported();
     return;
   }
 
-  if (if_load){
+  if (if_load) {
     data = load(address, memsz_tbl[size]);
     xregs[rt] = (size == 11) ? util::zero_extend(data, 64)
-                                 : util::zero_extend(data, 32);
-    LOG_CPU("ldar x%d(=0x%lx), x%d, address=0x%lx\n", rt, xregs[rt], rn, address);
-  }else {
-    LOG_CPU("stlr x%d(=0x%lx), x%d, address=0x%lx\n", rt, xregs[rt], rn, address);
+                             : util::zero_extend(data, 32);
+    LOG_CPU("ldar x%d(=0x%lx), x%d, address=0x%lx\n", rt, xregs[rt], rn,
+            address);
+  } else {
+    LOG_CPU("stlr x%d(=0x%lx), x%d, address=0x%lx\n", rt, xregs[rt], rn,
+            address);
     store(address, xregs[rt], memsz_tbl[size]);
   }
 }
@@ -1516,7 +1522,7 @@ void Cpu::decode_addsub_shifted_reg(uint32_t inst) {
   uint8_t shift_type, rd, rn, rm, shift_amount;
   uint64_t op1, op2, result;
   bool if_sub, if_setflag, if_64bit;
-  const char *op;
+  [[maybe_unused]] const char *op;
 
   if_64bit = util::bit(inst, 31);
   if_sub = util::bit(inst, 30);
@@ -1571,7 +1577,7 @@ void Cpu::decode_addsub_extended_reg(uint32_t inst) {
   uint8_t opt, shift_amount, extend_type, rm, rn, rd;
   uint64_t op1, op2, result;
   bool if_64bit, if_op2_64bit, if_sub, if_setflag;
-  const char *op;
+  [[maybe_unused]] const char *op;
 
   if_64bit = util::bit(inst, 31);
   if_sub = util::bit(inst, 30);
@@ -1734,19 +1740,20 @@ void Cpu::decode_conditional_select(uint32_t inst) {
          +----+---+---+----------+-------+---------+-----+-----+
 
 */
-void Cpu::decode_data_processing_1source(uint32_t inst) {
- /*
-  uint64_t result;
-  uint8_t sf, s, op2, opcode, rn, rd;
+void Cpu::decode_data_processing_1source([[maybe_unused]] uint32_t inst) {
+  /*
+   uint64_t result;
+   uint8_t sf, s, op2, opcode, rn, rd;
 
-  sf = util::bit(inst, 31);
-  s = util::bit(inst, 29);
-  op2 = util::shift(inst, 16, 20);
-  opcode = util::shift(inst, 10, 15);
-  rn = util::shift(inst, 5, 9);
-  rd = util::shift(inst, 0, 4);
-*/  
-  LOG_CPU("data processing 1 source, opcode = 0x%x\n", util::shift(inst, 10, 15));
+   sf = util::bit(inst, 31);
+   s = util::bit(inst, 29);
+   op2 = util::shift(inst, 16, 20);
+   opcode = util::shift(inst, 10, 15);
+   rn = util::shift(inst, 5, 9);
+   rd = util::shift(inst, 0, 4);
+ */
+  LOG_CPU("data processing 1 source, opcode = 0x%x\n",
+          util::shift(inst, 10, 15));
   unsupported();
 }
 
@@ -1759,11 +1766,11 @@ void Cpu::decode_data_processing_1source(uint32_t inst) {
 
 */
 void Cpu::decode_data_processing_2source(uint32_t inst) {
-  uint8_t sf, /*s, */rm, opcode, rn, rd, datasize;
+  uint8_t sf, /*s, */ rm, opcode, rn, rd, datasize;
   uint64_t result;
 
   sf = util::bit(inst, 31);
-  //s = util::bit(inst, 29);
+  // s = util::bit(inst, 29);
   rm = util::shift(inst, 16, 20);
   opcode = util::shift(inst, 10, 15);
   rn = util::shift(inst, 5, 9);
@@ -1771,19 +1778,20 @@ void Cpu::decode_data_processing_2source(uint32_t inst) {
 
   datasize = sf ? 64 : 32;
 
-  switch (opcode){
-    case 0b001000:
-      LOG_CPU("lslv x%d, x%d, x%d\n", rd, rn, rm);
-      unsupported();
-      break;
-    case 0b001001:
-      result = xregs[rn] >> (xregs[rm] % datasize);
-      xregs[rd] = result;
-      LOG_CPU("lsrv x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, xregs[rd], rn, xregs[rn], rm, xregs[rm]);
-      break;
-    default:
-      LOG_CPU("data processing 2 source\n");
-      unsupported();
+  switch (opcode) {
+  case 0b001000:
+    LOG_CPU("lslv x%d, x%d, x%d\n", rd, rn, rm);
+    unsupported();
+    break;
+  case 0b001001:
+    result = xregs[rn] >> (xregs[rm] % datasize);
+    xregs[rd] = result;
+    LOG_CPU("lsrv x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, xregs[rd], rn,
+            xregs[rn], rm, xregs[rm]);
+    break;
+  default:
+    LOG_CPU("data processing 2 source\n");
+    unsupported();
   }
 }
 
@@ -1976,7 +1984,7 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst) {
 */
 void Cpu::decode_exception_generation(uint32_t inst) {
   uint8_t opc, op2, LL;
-  uint64_t imm16;
+  [[maybe_unused]] uint64_t imm16;
 
   opc = util::shift(inst, 21, 23);
   imm16 = util::shift(inst, 5, 20);
@@ -2017,7 +2025,7 @@ void Cpu::decode_exception_generation(uint32_t inst) {
 }
 
 /*
-         PASTATE 
+         PASTATE
 
           31           19 18 16   15 12  11 8  7  5  4   0
          +---------------+------+------+------+-----+------+
@@ -2027,14 +2035,14 @@ void Cpu::decode_exception_generation(uint32_t inst) {
          @op2: 000->CFINV, 001->XAFLAG, 010->AXFLAG, other->MSR
 */
 void Cpu::decode_pstate(uint32_t inst) {
-  uint8_t CRm, op1, op2 ,rt;
+  uint8_t CRm, op1, op2, rt;
 
   op1 = util::shift(inst, 16, 18);
   CRm = util::shift(inst, 8, 11);
   op2 = util::shift(inst, 5, 7);
   rt = util::shift(inst, 0, 4);
 
-  if (rt != 31){
+  if (rt != 31) {
     unallocated();
   }
 
@@ -2053,19 +2061,19 @@ void Cpu::decode_pstate(uint32_t inst) {
     break;
   default:
     LOG_CPU("msr immediate\n");
-    switch (op1){
-      case 3:
-        switch (op2){
-          case 6:
-            daif = daif | (CRm << 6);
-            LOG_CPU("msr daifset(=0x%lx), 0x%x\n", daif, CRm);
-            break;
-          default:
-            unsupported();
-        }
+    switch (op1) {
+    case 3:
+      switch (op2) {
+      case 6:
+        daif = daif | (CRm << 6);
+        LOG_CPU("msr daifset(=0x%lx), 0x%x\n", daif, CRm);
         break;
       default:
         unsupported();
+      }
+      break;
+    default:
+      unsupported();
     }
     break;
   }
@@ -2082,7 +2090,8 @@ void Cpu::decode_pstate(uint32_t inst) {
          @L:0->MSR, 1->MRS
 */
 void Cpu::decode_barriers(uint32_t inst) {
-  uint8_t CRm, op2, rt;
+  [[maybe_unused]] uint8_t CRm;
+  uint8_t op2, rt;
 
   CRm = util::shift(inst, 8, 11);
   op2 = util::shift(inst, 5, 7);
@@ -2090,7 +2099,7 @@ void Cpu::decode_barriers(uint32_t inst) {
 
   switch (op2) {
   case 0b001:
-    if (rt != 0b11111 || util::shift(inst, 8, 9) != 0b10){
+    if (rt != 0b11111 || util::shift(inst, 8, 9) != 0b10) {
       unallocated();
       return;
     }
@@ -2383,25 +2392,25 @@ void Cpu::decode_system_register_move(uint32_t inst) {
 */
 
 void Cpu::decode_system_instructions(uint32_t inst) {
-  uint8_t l, op1, crn, crm, op2/*, rt*/;
+  uint8_t l, op1, crn, crm, op2 /*, rt*/;
 
   l = util::bit(inst, 21);
   op1 = util::shift(inst, 16, 18);
   crn = util::shift(inst, 12, 15);
   crm = util::shift(inst, 8, 11);
   op2 = util::shift(inst, 5, 7);
-  //rt = util::shift(inst, 0, 4);
-  
+  // rt = util::shift(inst, 0, 4);
+
   /* SYSL */
-  if (l){
+  if (l) {
     unsupported();
     return;
   }
-  
+
   /* SYS */
-  if ((op1 == 0b000) && (crn == 0b1000) && (crm == 0b0011) && (op2 == 0b000)){
+  if ((op1 == 0b000) && (crn == 0b1000) && (crm == 0b0011) && (op2 == 0b000)) {
     LOG_CPU("tlbi vmalle1is\n");
-  }else {
+  } else {
     unsupported();
   }
 }
@@ -2596,8 +2605,8 @@ void Cpu::decode_test_and_branch_imm(uint32_t inst) {
   if_jump = (uint8_t)util::bit64(xregs[rt], bit_pos) == op;
   offset = if_jump ? (imm14 << 2) : 4;
 
-  const char *name = op ? "tbnz" : "tbz";
-  LOG_CPU("%s x%d, #%d, 0x%lx\n", name, rt, bit, pc + offset);
+  [[maybe_unused]] const char *name = op ? "tbnz" : "tbz";
+  LOG_CPU("%s x%d, #%d, 0x%lx\n", name, rt, bit_pos, pc + offset);
 
   set_pc(pc + offset);
 }

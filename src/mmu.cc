@@ -22,7 +22,7 @@ void MMU::init(Bus *bus, uint64_t *current_el) {
   current_el_ = current_el;
 }
 
-void MMU::mmu_debug(uint64_t addr) {
+void MMU::mmu_debug([[maybe_unused]] uint64_t addr) {
   // TCR debug
   LOG_DEBUG("========TCR========\n");
   LOG_DEBUG("ipa: 000->32bits, 101->48bits\n");
@@ -40,13 +40,13 @@ void MMU::mmu_debug(uint64_t addr) {
   LOG_DEBUG("addr   = 0x%lx\n", addr);
   LOG_DEBUG("ttbrn   = 0x%lx\n", util::bit64(addr, 63));
   LOG_DEBUG("L0_index = 0x%x\n",
-          util::shift(addr, g4kb_l0_start_bit, g4kb_l0_start_bit + 8));
+            util::shift(addr, g4kb_l0_start_bit, g4kb_l0_start_bit + 8));
   LOG_DEBUG("L1_index = 0x%x\n",
-          util::shift(addr, g4kb_l1_start_bit, g4kb_l1_start_bit + 8));
+            util::shift(addr, g4kb_l1_start_bit, g4kb_l1_start_bit + 8));
   LOG_DEBUG("L2_index = 0x%x\n",
-          util::shift(addr, g4kb_l2_start_bit, g4kb_l2_start_bit + 8));
+            util::shift(addr, g4kb_l2_start_bit, g4kb_l2_start_bit + 8));
   LOG_DEBUG("L3_index = 0x%x\n",
-          util::shift(addr, g4kb_l3_start_bit, g4kb_l3_start_bit + 8));
+            util::shift(addr, g4kb_l3_start_bit, g4kb_l3_start_bit + 8));
   LOG_DEBUG("offset  = 0x%x\n", util::shift(addr, 0, 11));
   LOG_DEBUG("ttbr0  = 0x%lx\n", ttbr0_el1);
   LOG_DEBUG("ttbr1  = 0x%lx\n", ttbr1_el1);
@@ -56,103 +56,103 @@ void MMU::mmu_debug(uint64_t addr) {
 uint64_t MMU::l0_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, next;
 
-  LOG_EMU("L0\n");
+  LOG_DEBUG("L0\n");
   index = util::shift(addr, g4kb_l0_start_bit, g4kb_l0_start_bit + 8);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
-  LOG_EMU("\tbase  = 0x%lx\n", base);
-  LOG_EMU("\tindex = 0x%ld\n", index);
-  LOG_EMU("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
+  LOG_DEBUG("\tbase  = 0x%lx\n", base);
+  LOG_DEBUG("\tindex = 0x%ld\n", index);
+  LOG_DEBUG("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
   if (!(entry & 1)) {
-    LOG_EMU("invalid entry\n");
+    LOG_DEBUG("invalid entry\n");
     return 1;
   }
 
   assert(entry & 2);
-  LOG_EMU("table entry\n");
+  LOG_DEBUG("table entry\n");
   next = util::shift(entry, 12, 27) << 12;
-  LOG_EMU("\tnext  = 0x%lx\n", next);
+  LOG_DEBUG("\tnext  = 0x%lx\n", next);
   return l1_translate(addr, next);
 }
 
 uint64_t MMU::l1_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, next, output, offset;
-  LOG_EMU("L1\n");
+  LOG_DEBUG("L1\n");
   index = util::shift(addr, g4kb_l1_start_bit, g4kb_l1_start_bit + 8);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
-  LOG_EMU("\tbase  = 0x%lx\n", base);
-  LOG_EMU("\tindex = 0x%ld\n", index);
-  LOG_EMU("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
+  LOG_DEBUG("\tbase  = 0x%lx\n", base);
+  LOG_DEBUG("\tindex = 0x%ld\n", index);
+  LOG_DEBUG("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
   if (!(entry & 1)) {
-    LOG_EMU("invalid entry\n");
+    LOG_DEBUG("invalid entry\n");
     return 1;
   }
 
   if (entry & 2) {
-    LOG_EMU("\ttable entry\n");
+    LOG_DEBUG("\ttable entry\n");
     next = util::shift(entry, 12, 47) << 12;
-    LOG_EMU("\tnext  = 0x%lx\n", next);
+    LOG_DEBUG("\tnext  = 0x%lx\n", next);
     return l2_translate(addr, next);
   } else {
-    LOG_EMU("block entry\n");
+    LOG_DEBUG("block entry\n");
     output = util::shift(entry, 30, 47) << 30;
     offset = util::shift(addr, 0, g4kb_l1_start_bit - 1);
     output |= offset;
-    LOG_EMU("\toutput = 0x%lx\n", output);
+    LOG_DEBUG("\toutput = 0x%lx\n", output);
     return output;
   }
 }
 
 uint64_t MMU::l2_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, next, output, offset;
-  LOG_EMU("L2\n");
+  LOG_DEBUG("L2\n");
   index = util::shift(addr, g4kb_l2_start_bit, g4kb_l2_start_bit + 8);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
-  LOG_EMU("\tbase  = 0x%lx\n", base);
-  LOG_EMU("\tindex = 0x%ld\n", index);
-  LOG_EMU("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
+  LOG_DEBUG("\tbase  = 0x%lx\n", base);
+  LOG_DEBUG("\tindex = 0x%ld\n", index);
+  LOG_DEBUG("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
   if (!(entry & 1)) {
-    LOG_EMU("invalid entry\n");
+    LOG_DEBUG("invalid entry\n");
     return 1;
   }
 
   if (entry & 2) {
-    LOG_EMU("\ttable entry\n");
+    LOG_DEBUG("\ttable entry\n");
     next = util::shift(entry, 12, 47) << 12;
-    LOG_EMU("\tnext  = 0x%lx\n", next);
+    LOG_DEBUG("\tnext  = 0x%lx\n", next);
     return l3_translate(addr, next);
   } else {
-    LOG_EMU("\tblock entry\n");
+    LOG_DEBUG("\tblock entry\n");
     output = util::shift(entry, 21, 47) << 21;
     offset = util::shift(addr, 0, g4kb_l2_start_bit - 1);
     output |= offset;
-    LOG_EMU("\toutput = 0x%lx\n", output);
+    LOG_DEBUG("\toutput = 0x%lx\n", output);
     return output;
   }
 }
 
 uint64_t MMU::l3_translate(uint64_t addr, uint64_t base) {
   uint64_t index, entry, output, offset;
-  LOG_EMU("L3\n");
+  LOG_DEBUG("L3\n");
   index = util::shift(addr, g4kb_l3_start_bit, g4kb_l3_start_bit + 8);
   entry = bus_->load((uint64_t)(base + index * 8), MemAccessSize::DWord);
 
-  LOG_EMU("\tbase  = 0x%lx\n", base);
-  LOG_EMU("\tindex = 0x%ld\n", index);
-  LOG_EMU("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
+  LOG_DEBUG("\tbase  = 0x%lx\n", base);
+  LOG_DEBUG("\tindex = 0x%ld\n", index);
+  LOG_DEBUG("\tentry(*0x%lx) = 0x%lx\n", base + index * 8, entry);
   if (!(entry & 1)) {
-    LOG_EMU("invalid entry\n");
+    LOG_DEBUG("invalid entry\n");
     return 1;
   }
 
   assert(!(entry & 2));
-  LOG_EMU("\tblock entry\n");
+  LOG_DEBUG("\tblock entry\n");
   output = util::shift(entry, 21, 47) << 21;
   offset = util::shift(addr, 0, g4kb_l0_start_bit - 1);
   output |= offset;
-  LOG_EMU("\toutput = 0x%lx\n", output);
+  LOG_DEBUG("\toutput = 0x%lx\n", output);
   return output;
 }
 
@@ -187,7 +187,7 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
     paddr = l3_translate(addr, ttbrn);
   }
 
-  LOG_EMU("vaddr = 0x%lx, paddr = 0x%lx\n", addr, paddr);
+  LOG_DEBUG("vaddr = 0x%lx, paddr = 0x%lx\n", addr, paddr);
 
   return paddr;
 }

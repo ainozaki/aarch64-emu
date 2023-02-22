@@ -27,7 +27,7 @@ void Mem::clean_mem() {
 }
 
 void Mem::show_stack(uint64_t sp) {
-  uint64_t addr;
+  [[maybe_unused]] uint64_t addr;
   LOG_DEBUG("\t\t===============\n");
   for (int i = -15; i < 16; i++) {
     addr = sp + i * 4;

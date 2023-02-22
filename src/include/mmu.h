@@ -84,7 +84,7 @@ public:
 
   uint64_t mmu_translate(uint64_t vaddr);
   bool if_mmu_enabled() { return sctlr_el1 & 1; }
-  
+
   void mmu_debug(uint64_t addr);
 
 private:

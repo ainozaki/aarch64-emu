@@ -31,12 +31,14 @@ int Loader::init() {
   fstat(fd_, &sb_);
 
   // make alias for ELF headers
-  if ((file_map_start_ = (char *)mmap(NULL, (sb_.st_size + 4095) & ~4095UL, PROT_READ | PROT_WRITE,
-                                      MAP_PRIVATE, fd_, 0)) == (char *)-1) {
+  if ((file_map_start_ = (char *)mmap(NULL, (sb_.st_size + 4095) & ~4095UL,
+                                      PROT_READ | PROT_WRITE, MAP_PRIVATE, fd_,
+                                      0)) == (char *)-1) {
     perror("mmap");
     return EFAILED;
   }
-  printf("\tfile_map_start: %p, size:%zx -> %zx\n", file_map_start_, sb_.st_size, (sb_.st_size + 4095) & ~4095UL);
+  printf("\tfile_map_start: %p, size:%zx -> %zx\n", file_map_start_,
+         sb_.st_size, (sb_.st_size + 4095) & ~4095UL);
   eh_ = (Elf64_Ehdr *)file_map_start_;
   ph_tbl_ = (Elf64_Phdr *)((uint64_t)file_map_start_ + eh_->e_phoff);
   sh_tbl_ = (Elf64_Shdr *)((uint64_t)file_map_start_ + eh_->e_shoff);
@@ -87,8 +89,11 @@ int Loader::load() {
     printf("map_base : 0x%lx\n", map_base);
     printf("\t\tload (emu): 0x%lx-0x%lx, size:0x%lx\n", ph->p_paddr,
            ph->p_paddr + ph->p_memsz, ph->p_memsz);
-    printf("\t\tmemcpy: dst:0x%lx, size:0x%lx\n", map_base + ph->p_paddr - text_start_paddr, ph->p_memsz);
-    printf("\t\tmemcpy: src: file_map_start:%p, ph->p_offset:0x%lx, size:0x%lx\n", file_map_start_, ph->p_offset, ph->p_memsz);
+    printf("\t\tmemcpy: dst:0x%lx, size:0x%lx\n",
+           map_base + ph->p_paddr - text_start_paddr, ph->p_memsz);
+    printf(
+        "\t\tmemcpy: src: file_map_start:%p, ph->p_offset:0x%lx, size:0x%lx\n",
+        file_map_start_, ph->p_offset, ph->p_memsz);
     memcpy((void *)(map_base + ph->p_paddr - text_start_paddr),
            (void *)((uint64_t)file_map_start_ + ph->p_offset), ph->p_filesz);
 

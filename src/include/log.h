@@ -2,25 +2,17 @@
 
 #include <stdio.h>
 
-//#define ENABLE_LOG_CPU
-//#define ENABLE_LOG_DEBUG
+#define ENABLE_LOG_CPU 0
+#define ENABLE_LOG_DEBUG 0
 
-#ifdef ENABLE_LOG_CPU
+#if ENABLE_LOG_CPU
 #define LOG_CPU(...) printf(__VA_ARGS__)
 #else
 #define LOG_CPU(...)
 #endif
 
-#ifdef ENABLE_LOG_DEBUG
+#if ENABLE_LOG_DEBUG
 #define LOG_DEBUG(...) printf(__VA_ARGS__)
 #else
 #define LOG_DEBUG(...)
-#endif
-
-//#define DEBUG_ON
-#ifdef DEBUG_ON
-#define LOG_EMU(...)                                                           \
-  printf("[%s][%d][%s] ", __FILE__, __LINE__, __func__), printf(__VA_ARGS__)
-#else
-#define LOG_EMU(...)
 #endif
