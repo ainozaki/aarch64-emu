@@ -44,14 +44,7 @@ inline uint64_t mask(uint8_t n) {
   return (uint64_t(1) << n) - 1;
 }
 
-inline uint64_t shift64(uint64_t inst, uint32_t bottom, uint32_t top) {
-  return (inst & mask(top + 1)) >> bottom;
-}
-
-inline uint32_t shift(uint32_t inst, uint32_t bottom, uint32_t top) {
-  if ((bottom >= 32) || (top >= 32)) {
-    return shift64(inst, bottom, top);
-  }
+inline uint64_t shift(uint64_t inst, uint32_t bottom, uint32_t top) {
   return (inst & mask(top + 1)) >> bottom;
 }
 

@@ -1,5 +1,7 @@
+#CXXFLAGS=-g -Wall -Wextra -I./src/include -pthread -DNDEBUG -fsanitize=undefined
 #CXXFLAGS=-g -Wall -Wextra -I./src/include -pthread -DNDEBUG -fsanitize=address
 CXXFLAGS=-g -Wall -Wextra -I./src/include -pthread -DNDEBUG
+#LDFLAGS= -fsanitize=undefined -T ./linker_script.x
 #LDFLAGS= -fsanitize=address -T ./linker_script.x
 LDFLAGS= -T ./linker_script.x
 LDFLAGS_TEST= $(LDFLAGS) -L/usr/local/lib -lgtest -lgtest_main -lpthread
@@ -8,6 +10,7 @@ SRC = \
 	src/bus.cc \
 	src/cpu.cc \
 	src/emulator.cc \
+	src/gic.cc \
 	src/loader.cc \
 	src/mem.cc \
 	src/mmu.cc \

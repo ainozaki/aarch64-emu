@@ -14,7 +14,7 @@ public:
 
 private:
   uint16_t uart_dr;
-  uint16_t uart_fr;
+  uint16_t uart_fr = 0;
   uint16_t uart_lcr_h;
   uint16_t uart_cr;
   uint16_t uart_imsc;
