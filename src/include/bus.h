@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "gic.h"
 #include "mem.h"
 #include "uart.h"
 
@@ -42,6 +43,7 @@ public:
 
   Mem mem;
   Uart uart;
+  Gic gic;
 
   uint64_t load(uint64_t address, MemAccessSize size);
   void store(uint64_t address, uint64_t value, MemAccessSize size);

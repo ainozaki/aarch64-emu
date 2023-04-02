@@ -14,10 +14,9 @@ void Bus::init(uint64_t text_start, uint64_t text_size, uint64_t map_base) {
 }
 
 uint64_t Bus::load(uint64_t address, MemAccessSize size) {
-  if ((address >= gicv3_base) && (address <= gicv3_base + gicv3_size)) {
-    printf("gicv3 address load: 0x%lx\n", address);
-    // TODO
-    return 0;
+  if ((address >= gicv3_base) && (address < gicv3_base + gicv3_size)) {
+    LOG_CPU("gicv3 address load: 0x%lx\n", address);
+    return gic.load(address);
   } else if ((address >= uart_base) && (address <= uart_base + uart_size)) {
     LOG_CPU("uart address load: 0x%lx\n", address);
     return uart.load(address);
@@ -49,9 +48,9 @@ uint64_t Bus::load(uint64_t address, MemAccessSize size) {
 }
 
 void Bus::store(uint64_t address, uint64_t value, MemAccessSize size) {
-  if ((address >= gicv3_base) && (address <= gicv3_base + gicv3_size)) {
-    printf("gicv3 address store: 0x%lx\n", address);
-    // TODO
+  if ((address >= gicv3_base) && (address < gicv3_base + gicv3_size)) {
+    LOG_CPU("gicv3 address store: 0x%lx\n", address);
+    gic.store(address, value);
     return;
   } else if ((address >= uart_base) && (address <= uart_base + uart_size)) {
     LOG_CPU("uart address store: 0x%lx\n", address);
