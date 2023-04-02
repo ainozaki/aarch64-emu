@@ -2398,6 +2398,35 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           unsupported();
         }
         break;
+      case 14:
+        switch (CRm){
+          case 0:
+            switch (op2){
+              case 0:
+                xregs[rt] = CNTFRQ_EL0;
+                LOG_CPU("mrs x%d, CNTFRQ_EL0(=0x%lx)\n", rt, CNTFRQ_EL0);
+                break;
+              default:
+                unsupported();
+                break;
+            }
+            break;
+          case 3:
+            switch (op2){
+              case 1:
+                xregs[rt]  = CNTV_CTL_EL0;
+                LOG_CPU("mrs x%d, CNTV_CTL_EL0(=0x%lx)\n", rt, CNTV_CTL_EL0);
+                return;
+              default:
+                unsupported();
+                break;
+            }
+            break;
+          default:
+            unsupported();
+            break;
+        }
+        break;
       default:
         unsupported();
         break;

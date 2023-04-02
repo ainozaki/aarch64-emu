@@ -48,6 +48,10 @@ public:
   uint64_t ICC_PMR_EL1; // Interrupt Controller Interrupt Priority Mask Register
   uint64_t ICC_SRE_EL1; // Interrupt Controller System Register Enable register (EL1)
 
+  // Timer
+  uint64_t CNTV_CTL_EL0; // Counter-timer Virtual Timer Control register
+  uint64_t CNTFRQ_EL0; // Counter-timer Frequency register
+
   Cpu() = default;
   ~Cpu() = default;
   void init(uint64_t pc, uint64_t sp, uint64_t text_start, uint64_t text_size,
