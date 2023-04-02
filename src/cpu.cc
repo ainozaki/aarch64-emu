@@ -414,7 +414,7 @@ void Cpu::decode_branches(uint32_t inst) {
 
 void Cpu::decode_sme_encodings([[maybe_unused]] uint32_t inst) {
   LOG_CPU("sme_encodings 0x%x\n", inst);
-  mmu.mmu_debug(pc);
+  //mmu.mmu_debug(pc);
   increment_pc();
   exit(1);
 }
@@ -1249,19 +1249,19 @@ static uint64_t shift_and_extend(uint64_t val, bool shift, uint8_t scale,
     break;
   case ExtendType::SXTB:
     if_unsigned = false;
-    len = 8;
+    len = 7;
     break;
   case ExtendType::SXTH:
     if_unsigned = false;
-    len = 16;
+    len = 15;
     break;
   case ExtendType::SXTW:
     if_unsigned = false;
-    len = 32;
+    len = 31;
     break;
   case ExtendType::SXTX:
     if_unsigned = false;
-    len = 64;
+    len = 63;
     break;
   }
   if (if_unsigned) {

@@ -48,7 +48,7 @@ inline uint64_t shift(uint64_t inst, uint32_t bottom, uint32_t top) {
   return (inst & mask(top + 1)) >> bottom;
 }
 
-inline uint32_t bit(uint32_t inst, uint8_t bit) { return (inst >> bit) & 1; }
+inline uint8_t bit(uint64_t inst, uint8_t bit) { return (inst >> bit) & 1; }
 inline uint64_t bit64(uint64_t inst, uint8_t bit) { return (inst >> bit) & 1; }
 
 inline uint64_t clear_upper32(uint64_t x) { return x & 0xffffffff; }
