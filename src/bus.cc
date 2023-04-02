@@ -19,7 +19,7 @@ uint64_t Bus::load(uint64_t address, MemAccessSize size) {
     // TODO
     return 0;
   } else if ((address >= uart_base) && (address <= uart_base + uart_size)) {
-    printf("uart address load: 0x%lx\n", address);
+    LOG_CPU("uart address load: 0x%lx\n", address);
     return uart.load(address);
   } else if ((address >= virtio_mmio_base) &&
              (address <= virtio_mmio_base + virtio_mmio_size)) {
@@ -54,7 +54,7 @@ void Bus::store(uint64_t address, uint64_t value, MemAccessSize size) {
     // TODO
     return;
   } else if ((address >= uart_base) && (address <= uart_base + uart_size)) {
-    printf("uart address store: 0x%lx\n", address);
+    LOG_CPU("uart address store: 0x%lx\n", address);
     uart.store(address, value);
     return;
   } else if ((address >= virtio_mmio_base) &&

@@ -7,7 +7,7 @@
 
 // GIC v3
 const uint64_t gicv3_base = 0x08000000;
-const uint64_t gicv3_size = 0x10000;
+const uint64_t gicv3_size = 0x1000000;
 
 // UART
 const uint64_t uart_base = 0x09000000;

@@ -2286,6 +2286,17 @@ void Cpu::decode_system_register_move(uint32_t inst) {
             break;
           }
           break;
+        case 6:
+          switch (op2){
+            case 0:
+              xregs[rt] = ICC_PMR_EL1;
+              LOG_CPU("msr ICC_PMR_EL1 = 0x%lx\n", xregs[rt]);
+              return;
+            default:
+              unsupported();
+              break;
+          }
+          break;
         default:
           unsupported();
           break;
@@ -2332,6 +2343,21 @@ void Cpu::decode_system_register_move(uint32_t inst) {
               case 0:
                 VBAR_EL1 = xregs[rt];
                 LOG_CPU("msr VBAR_EL1=0x%lx\n", xregs[rt]);
+                return;
+              default:
+                unsupported();
+                break;
+            }
+            break;
+          case 12:
+            switch (op2){
+              case 5:
+                xregs[rt] = ICC_SRE_EL1;
+                LOG_CPU("mrs x%d, ICC_SRE_EL1(=0x%lx)\n", rt, ICC_SRE_EL1);
+                return;
+              case 7:
+                ICC_IGRPEN1_EL1 = xregs[rt];
+                LOG_CPU("msr ICC_IGRPEN1_EL1 = 0x%lx\n", xregs[rt]);
                 return;
               default:
                 unsupported();
