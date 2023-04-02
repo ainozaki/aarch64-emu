@@ -1779,6 +1779,24 @@ void Cpu::decode_data_processing_2source(uint32_t inst) {
   datasize = sf ? 64 : 32;
 
   switch (opcode) {
+  case 0b000010:
+    if (rm == 0){
+      xregs[rd] = 0;
+    }else {
+      result = xregs[rn] / xregs[rm];
+      xregs[rd] = sf ? result: (result & util::mask(32));
+    }
+    LOG_CPU("udiv x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, xregs[rd], rn, xregs[rn], rm, xregs[rm]);
+    break;
+  case 0b000011:
+    if (rm == 0){
+      xregs[rd] = 0;
+    }else {
+      result = xregs[rn] / xregs[rm];
+      xregs[rd] = sf ? result: signed_extend((result & util::mask(32)), 31);
+    }
+    LOG_CPU("sdiv x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, xregs[rd], rn, xregs[rn], rm, xregs[rm]);
+    break;
   case 0b001000:
     LOG_CPU("lslv x%d, x%d, x%d\n", rd, rn, rm);
     unsupported();
