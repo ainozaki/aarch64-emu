@@ -2431,6 +2431,10 @@ void Cpu::decode_system_register_move(uint32_t inst) {
             break;
           case 3:
             switch (op2){
+              case 0:
+                CNTV_TVAL_EL0 = xregs[rt];
+                LOG_CPU("msr CNTV_TVAL_EL0, x%d(=0x%lx)\n", rt, xregs[rt]);
+                break;
               case 1:
                 xregs[rt]  = CNTV_CTL_EL0;
                 LOG_CPU("mrs x%d, CNTV_CTL_EL0(=0x%lx)\n", rt, CNTV_CTL_EL0);
