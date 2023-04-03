@@ -1333,8 +1333,7 @@ void Cpu::decode_ldst_reg_reg_offset(uint32_t inst) {
       address = (rn == 31) ? sp + offset : xregs[rn] + offset;
       LOG_CPU("ldr x%d, [x%d, x%d {#%d}] (=0x%lx)\n", rt, rn, rm, shift * 3,
               xregs[rn] + offset);
-      // TODO size
-      xregs[rt] = load(address, MemAccessSize::DWord);
+      xregs[rt] = load(address, MemAccessSize::DWord) & util::mask(8 * std::pow(2, size));
       break;
     }
   }
