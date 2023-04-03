@@ -32,7 +32,7 @@ public:
     uint64_t load(uint64_t addr);
 private:
     uint32_t d_ctlr;
-    uint32_t d_typer;
+    uint32_t d_typer = 0x3780007;
     uint32_t d_igroupr[32] = {0};
     uint32_t d_isenabler[32] = {0};
     uint32_t d_icpendr[32] = {0};
