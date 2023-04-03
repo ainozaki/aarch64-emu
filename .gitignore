@@ -7,3 +7,4 @@ emu-log.txt
 emu-aarch64
 tests/xv6/kernel
 *.txt
+log*

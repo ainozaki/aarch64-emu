@@ -51,16 +51,16 @@ void Emulator::execute_loop() {
 
   uint32_t inst;
   int i = 0;
-  // int num_insts = 10000000;
+  int num_insts = 13000000;
   // int num_insts = 67905;
   // int num_insts = 67670;
-  while (true) {
+  while (i < num_insts) {
     inst = cpu.fetch();
     if (!inst) {
       break;
     }
     LOG_CPU("=== %d 0x%lx\n", i, cpu.pc);
-    LOG_CPU("%d 0x%lx 0x%lx\n", i, cpu.pc, cpu.sp);
+    fprintf(stderr, "%d 0x%lx 0x%lx 0x%lx  0x%lx 0x%lx 0x%lx 0x%lx\n", i, cpu.pc, cpu.sp, cpu.xregs[0], cpu.xregs[1], cpu.xregs[19], cpu.xregs[29], cpu.xregs[30]);
     cpu.decode_start(inst);
     i++;
   }
