@@ -59,7 +59,8 @@ void Emulator::execute_loop() {
     if (!inst) {
       break;
     }
-    //printf("=== %d 0x%lx\n", i, cpu.pc);
+    LOG_CPU("=== %d 0x%lx\n", i, cpu.pc);
+    LOG_CPU("%d 0x%lx 0x%lx\n", i, cpu.pc, cpu.sp);
     cpu.decode_start(inst);
     i++;
   }

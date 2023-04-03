@@ -17,7 +17,7 @@ void Uart::store(uint64_t addr, uint64_t value) {
   switch (offset) {
   case 0x000:
     uart_dr = value;
-    printf("%c", (uint8_t)value);
+    putc((uint8_t)value, stdout);
     fflush(stdout);
     break;
   case 0x018:

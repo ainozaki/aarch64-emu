@@ -574,10 +574,10 @@ void Cpu::decode_add_sub_imm(uint32_t inst) {
       return;
     } else {
       // ADD/SUB sp
-      sp = if_64bit ? result : util::set_lower32(xregs[rd], result);
+      sp = if_64bit ? result : (result & util::mask(32));
     }
   } else {
-    xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
+    xregs[rd] = if_64bit ? result : (result & util::mask(32));
   }
 }
 
@@ -675,18 +675,16 @@ void Cpu::decode_logical_imm(uint32_t inst) {
     cpsr.Z = result == 0;
     cpsr.C = 0;
     cpsr.V = 0;
-    if (rd == 31) {
-      return;
-    }
+    if (rd == 31){return;}
     break;
   default:
     assert(false);
   }
 
-  if (if_64bit) {
-    xregs[rd] = result;
-  } else {
-    xregs[rd] = util::clear_upper32(result);
+  if (rd == 31){
+    sp = if_64bit ? result : (result & util::mask(32));
+  }else {
+    xregs[rd] = if_64bit ? result : (result & util::mask(32));
   }
 }
 
@@ -1003,7 +1001,7 @@ void Cpu::decode_ldst_reg_unscaled_immediate([[maybe_unused]] uint32_t inst) {
 void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
   bool vector;
   uint8_t size, opc, rn, rt;
-  uint64_t imm12, offset;
+  uint64_t imm12, offset, addr;
 
   size = util::shift(inst, 30, 31);
   vector = util::bit(inst, 26);
@@ -1027,13 +1025,14 @@ void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
     return;
   case 2:
     offset = imm12 << size;
+    addr = (rn == 31) ? sp + offset : xregs[rn] + offset;
     switch (opc) {
     case 0:
-      store(xregs[rn] + offset, xregs[rt], MemAccessSize::Word);
+      store(addr, xregs[rt], MemAccessSize::Word);
       LOG_CPU("str x%d(=0x%lx), [x%d, #%ld]\n", rt, xregs[rt], rn, offset);
       break;
     case 1:
-      value = load(xregs[rn] + offset, MemAccessSize::Word);
+      value = load(addr, MemAccessSize::Word);
       xregs[rt] = util::set_lower(xregs[rt], value, MemAccessSize::Word);
       LOG_CPU("ldr x%d(=0x%lx), [x%d, #%ld]\n", rt, xregs[rt], rn, offset);
       break;
@@ -1046,14 +1045,15 @@ void Cpu::decode_ldst_reg_unsigned_imm(uint32_t inst) {
     return;
   case 3:
     offset = imm12 << size;
+    addr = (rn == 31) ? sp + offset : xregs[rn] + offset;
     switch (opc) {
     case 0:
-      store(xregs[rn] + offset, xregs[rt], MemAccessSize::DWord);
+      store(addr, xregs[rt], MemAccessSize::DWord);
       LOG_CPU("str x%d(=0x%lx), [x%d(=0x%lx), #%ld]\n", rt, xregs[rt], rn,
               xregs[rn], offset);
       break;
     case 1:
-      xregs[rt] = load(xregs[rn] + offset, MemAccessSize::DWord);
+      xregs[rt] = load(addr, MemAccessSize::DWord);
       LOG_CPU("ldr x%d(=0x%lx), [x%d, #%ld]\n", rt, xregs[rt], rn, offset);
       break;
     case 2:
@@ -1295,7 +1295,7 @@ static uint64_t shift_and_extend(uint64_t val, bool shift, uint8_t scale,
 void Cpu::decode_ldst_reg_reg_offset(uint32_t inst) {
   bool vector, shift;
   uint8_t size, scale, opc, opt, rm, rn, rt;
-  uint64_t offset;
+  uint64_t offset, address;
 
   size = util::shift(inst, 30, 31);
   scale = size;
@@ -1316,7 +1316,8 @@ void Cpu::decode_ldst_reg_reg_offset(uint32_t inst) {
       // TODO: option = 0b011
       offset = shift_and_extend(xregs[rm], shift, scale, extendtype_tbl[opt]);
       // TODO size
-      store(xregs[rn] + offset, xregs[rt], memsz_tbl[size]);
+      address = (rn == 31) ? sp + offset : xregs[rn] + offset;
+      store(address, xregs[rt], memsz_tbl[size]);
       LOG_CPU("str x%d, [x%d, x%d {#%d}] (=0x%lx)\n", rt, rn, rm, shift * 3,
               xregs[rn] + offset);
       break;
@@ -1329,10 +1330,11 @@ void Cpu::decode_ldst_reg_reg_offset(uint32_t inst) {
     case 0b10: /* loads */
                // TODO: option = 0b011
       offset = shift_and_extend(xregs[rm], shift, scale, extendtype_tbl[opt]);
+      address = (rn == 31) ? sp + offset : xregs[rn] + offset;
       LOG_CPU("ldr x%d, [x%d, x%d {#%d}] (=0x%lx)\n", rt, rn, rm, shift * 3,
               xregs[rn] + offset);
       // TODO size
-      xregs[rt] = load(xregs[rn] + offset, MemAccessSize::DWord);
+      xregs[rt] = load(address, MemAccessSize::DWord);
       break;
     }
   }
@@ -1421,7 +1423,7 @@ void Cpu::decode_ldst_exclusive(uint32_t inst) {
   rn = util::shift(inst, 5, 9);
   rt = util::shift(inst, 0, 4);
 
-  address = xregs[rn];
+  address = (rn == 31) ? sp : xregs[rn];
 
   if (if_pair) {
     if (if_load) {
@@ -1752,7 +1754,7 @@ void Cpu::decode_data_processing_1source([[maybe_unused]] uint32_t inst) {
    rn = util::shift(inst, 5, 9);
    rd = util::shift(inst, 0, 4);
  */
-  LOG_CPU("data processing 1 source, opcode = 0x%x\n",
+  LOG_CPU("data processing 1 source, opcode = 0x%lx\n",
           util::shift(inst, 10, 15));
   unsupported();
 }
