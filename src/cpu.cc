@@ -1655,6 +1655,11 @@ void Cpu::decode_logical_shifted_reg(uint32_t inst) {
   uint64_t result;
   switch (opc) {
   case 1:
+    if ((shift == 0) && (imm6 == 0) && (rn == 31)){
+      xregs[rd] = op2;
+      LOG_CPU("mov x%d, x%d(0x%lx)\n", rd, rm, op2);
+      break;
+    }
     result = op1 | op2;
     xregs[rd] = if_64bit
                     ? result
@@ -1721,8 +1726,13 @@ void Cpu::decode_conditional_select(uint32_t inst) {
       unsupported();
       break;
     case 1:
-      LOG_CPU("csneg\n");
-      unsupported();
+      if (check_b_flag(cond)){
+        result = xregs[rn];
+      }else {
+        result = ~xregs[rm] + 1;
+      }
+      xregs[rd] = result;
+      LOG_CPU("csneg x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d\n", rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond);
       break;
     default:
       assert(false);
