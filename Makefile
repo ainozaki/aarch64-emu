@@ -15,7 +15,8 @@ SRC = \
 	src/mem.cc \
 	src/mmu.cc \
 	src/uart.cc \
-	src/utils.cc
+	src/utils.cc \
+	src/virtio.cc
 TEST_OBJ = \
 	tests/execute_unittest.o
 TEST_GENOBJ =\

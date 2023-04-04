@@ -8,6 +8,7 @@
 #include "mem.h"
 #include "mmu.h"
 #include "utils.h"
+#include "virtio.h"
 
 void Bus::init(uint64_t text_start, uint64_t text_size, uint64_t map_base) {
   mem.init(text_start, text_size, map_base);
@@ -22,9 +23,8 @@ uint64_t Bus::load(uint64_t address, MemAccessSize size) {
     return uart.load(address);
   } else if ((address >= virtio_mmio_base) &&
              (address <= virtio_mmio_base + virtio_mmio_size)) {
-    printf("virtio mmio address: 0x%lx\n", address);
-    // TODO
-    return 0;
+    LOG_CPU("virtio address load: 0x%lx\n", address);
+    return virtio.load(address);
   } else if ((address >= ram_base) && (address <= ram_base + ram_size)) {
     switch (size) {
     case MemAccessSize::Byte:
@@ -58,8 +58,8 @@ void Bus::store(uint64_t address, uint64_t value, MemAccessSize size) {
     return;
   } else if ((address >= virtio_mmio_base) &&
              (address <= virtio_mmio_base + virtio_mmio_size)) {
-    printf("virtio mmio address: 0x%lx\n", address);
-    // TODO
+    LOG_CPU("virtio mmio address store: 0x%lx\n", address);
+    virtio.store(address, value);
     return;
   } else if ((address >= ram_base) && (address <= ram_base + ram_size)) {
     switch (size) {

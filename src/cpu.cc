@@ -414,19 +414,17 @@ void Cpu::decode_branches(uint32_t inst) {
 
 void Cpu::decode_sme_encodings([[maybe_unused]] uint32_t inst) {
   LOG_CPU("sme_encodings 0x%x\n", inst);
-  //mmu.mmu_debug(pc);
-  increment_pc();
-  exit(1);
+  unsupported();
 }
 
 void Cpu::decode_unallocated([[maybe_unused]] uint32_t inst) {
-  LOG_CPU("unallocated %x\n", inst);
-  increment_pc();
+  printf("unallocated %x\n", inst);
   exit(1);
 }
 
 void Cpu::decode_sve_encodings([[maybe_unused]] uint32_t inst) {
   LOG_CPU("sve_encodings %x\n", inst);
+  unsupported();
   increment_pc();
 }
 
@@ -2579,6 +2577,7 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
       LOG_CPU("RET: target=xregs[%d](0x%lx)\n", n, target);
       // LOG_CPU("sp=0x%lx\n", sp);
       if (target == 0) {
+        printf("ret unknown target\n");
         exit(0);
       }
       set_pc(target);
