@@ -1859,25 +1859,32 @@ void Cpu::decode_data_processing_3source(uint32_t inst) {
             result, rn, operand1, rm, operand2, ra, operand3);
     break;
   case 1:
-    LOG_CPU("msub\n");
+    result = operand3 - operand1 * operand2;
+    LOG_CPU("msub x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, result, rn, xregs[rn] rm, xregs[rm], ra, xregs[ra]);
     break;
   case 0b000010:
     LOG_CPU("smaddl\n");
+    unsupported();
     break;
   case 0b000011:
     LOG_CPU("smsubl\n");
+    unsupported();
     break;
   case 0b000100:
     LOG_CPU("smulh\n");
+    unsupported();
     break;
   case 0b001010:
     LOG_CPU("umaddl\n");
+    unsupported();
     break;
   case 0b001011:
     LOG_CPU("umsubl\n");
+    unsupported();
     break;
   case 0b001100:
     LOG_CPU("umulh\n");
+    unsupported();
     break;
   default:
     unallocated();
