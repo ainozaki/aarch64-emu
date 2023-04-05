@@ -46,7 +46,7 @@ void Gic::store(uint64_t addr, uint64_t value){
     }else if (addr == GICR_IGRPMODR0){
         r_igrpmodr0 = value;
     }else {
-        printf("gic store 0x%lx\n", addr);
+        printf("gic unknown store 0x%lx\n", addr);
     }
 }
 
@@ -96,7 +96,7 @@ uint64_t Gic::load(uint64_t addr){
     }else if (addr == GICR_IGRPMODR0){
         return r_igrpmodr0;
     }else {
-        printf("gic load 0x%lx\n", addr);
+        printf("gic unknown load 0x%lx\n", addr);
         return 0;
     }
 }

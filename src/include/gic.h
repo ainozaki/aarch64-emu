@@ -38,10 +38,10 @@ private:
     uint32_t d_icpendr[32] = {0};
     uint8_t d_ipriorityr[1024] = {0};
     uint32_t r_ctlr;
-    uint32_t r_waker;
+    uint32_t r_waker = 0x2;
     uint32_t r_igroupr0;
-    uint32_t r_isenabler0;
-    uint32_t r_icpendr0;
+    uint32_t r_isenabler0 = 0;
+    uint32_t r_icpendr0 = 0;
     uint32_t r_ipriorityr[8] = {0};
     uint32_t r_igrpmodr0;
 };
