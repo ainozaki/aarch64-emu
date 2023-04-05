@@ -14,6 +14,8 @@ const uint64_t VIRTIO_MMIO_DRIVER_FEATURES = VIRTIO_MMIO + 0x20;
 const uint64_t VIRTIO_MMIO_GUEST_PAGE_SIZE = VIRTIO_MMIO + 0x28;
 const uint64_t VIRTIO_MMIO_QUEUE_SEL = VIRTIO_MMIO + 0x30;
 const uint32_t VIRTIO_MMIO_QUEUE_NUM_MAX = VIRTIO_MMIO + 0x34;
+const uint32_t VIRTIO_MMIO_QUEUE_NUM = VIRTIO_MMIO + 0x38;
+const uint32_t VIRTIO_MMIO_QUEUE_PFN = VIRTIO_MMIO + 0x40;
 const uint64_t VIRTIO_MMIO_STATUS = VIRTIO_MMIO + 0x70;
 
 class Virtio {
@@ -33,6 +35,8 @@ private:
   uint32_t driver_features;
   uint32_t guest_page_size;
   uint32_t queue_sel;
-  uint32_t queue_num_max;
+  uint32_t queue_num_max = 0x400;
+  uint32_t queue_num;
+  uint32_t queue_pfn;
   uint32_t status;
 };

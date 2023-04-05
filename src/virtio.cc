@@ -36,6 +36,14 @@ void Virtio::store(uint64_t addr, uint64_t value) {
     queue_sel = value;
     LOG_CPU("virtio store VIRTIO_MMIO_QUEUE_SEL = 0x%lx\n", status);
     break;
+  case VIRTIO_MMIO_QUEUE_NUM:
+    queue_num = value;
+    LOG_CPU("virtio store VIRTIO_MMIO_QUEUE_NUM = 0x%lx\n", status);
+    break;
+  case VIRTIO_MMIO_QUEUE_PFN:
+    queue_pfn = value;
+    LOG_CPU("virtio store VIRTIO_MMIO_QUEUE_PFN = 0x%lx\n", status);
+    break;
   case VIRTIO_MMIO_STATUS:
     status = value;
     LOG_CPU("virtio store VIRTIO_MMIO_STATUS = 0x%lx\n", status);
@@ -51,6 +59,7 @@ uint64_t Virtio::load(uint64_t addr) {
   case VIRTIO_MMIO_DRIVER_FEATURES:
   case VIRTIO_MMIO_GUEST_PAGE_SIZE:
   case VIRTIO_MMIO_QUEUE_SEL:
+  case VIRTIO_MMIO_QUEUE_NUM:
     // write only
     printf("err: virtio load to write-only register. 0x%lx\n", addr);
     assert(false);
@@ -73,6 +82,9 @@ uint64_t Virtio::load(uint64_t addr) {
   case VIRTIO_MMIO_QUEUE_NUM_MAX:
     LOG_CPU("virtio VIRTIO_MMIO_QUEUE_NUM_MAX = 0x%lx\n", queue_num_max);
     return queue_num_max;
+  case VIRTIO_MMIO_QUEUE_PFN:
+    LOG_CPU("virtio VIRTIO_MMIO_QUEUE_PFN = 0x%lx\n", queue_pfn);
+    return queue_pfn;
   case VIRTIO_MMIO_STATUS:
     LOG_CPU("virtio VIRTIO_MMIO_STATUS = 0x%lx\n", status);
     return status;
