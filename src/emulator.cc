@@ -51,12 +51,13 @@ void Emulator::execute_loop() {
 
   uint32_t inst;
   int i = 0;
-  int num_insts = 13000000;
+  // int num_insts = 13000000;
   // int num_insts = 67905;
   // int num_insts = 67670;
-  while (i < num_insts) {
+  while (true) {
     inst = cpu.fetch();
     if (!inst) {
+      printf("no instructions 0x%lx\n", cpu.pc);
       break;
     }
     LOG_CPU("=== %d 0x%lx\n", i, cpu.pc);

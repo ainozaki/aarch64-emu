@@ -2323,7 +2323,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         case 6:
           switch (op2){
             case 0:
-              xregs[rt] = ICC_PMR_EL1;
+              ICC_PMR_EL1 = xregs[rt];
               LOG_CPU("msr ICC_PMR_EL1 = 0x%lx\n", xregs[rt]);
               return;
             default:
@@ -2710,7 +2710,7 @@ void Cpu::decode_test_and_branch_imm(uint32_t inst) {
   }
 
   if_jump = (uint8_t)util::bit64(xregs[rt], bit_pos) == op;
-  offset = if_jump ? (imm14 << 2) : 4;
+  offset = if_jump ? signed_extend((imm14 << 2), 15) : 4;
 
   [[maybe_unused]] const char *name = op ? "tbnz" : "tbz";
   LOG_CPU("%s x%d, #%d, 0x%lx\n", name, rt, bit_pos, pc + offset);
