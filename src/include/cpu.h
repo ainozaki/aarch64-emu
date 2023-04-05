@@ -50,7 +50,7 @@ public:
 
   // Timer
   uint64_t CNTV_CTL_EL0 = 0; // Counter-timer Virtual Timer Control register
-  uint64_t CNTFRQ_EL0 = 0; // Counter-timer Frequency register
+  uint64_t CNTFRQ_EL0 = 0x3b9aca0; // Counter-timer Frequency register
   uint64_t CNTV_TVAL_EL0 = 0; // Counter-timer Virtual Timer TimerValue register
 
   Cpu() = default;
