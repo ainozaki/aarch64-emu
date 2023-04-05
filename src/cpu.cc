@@ -1652,6 +1652,11 @@ void Cpu::decode_logical_shifted_reg(uint32_t inst) {
 
   uint64_t result;
   switch (opc) {
+  case 0:
+    result = op1 & op2;
+    xregs[rd] = result;
+    LOG_CPU("and x%d, x%d(0x%lx)\n", rd, rm, op2);
+    break;
   case 1:
     if ((shift == 0) && (imm6 == 0) && (rn == 31)){
       xregs[rd] = op2;
@@ -2452,8 +2457,13 @@ void Cpu::decode_system_register_move(uint32_t inst) {
                 LOG_CPU("msr CNTV_TVAL_EL0, x%d(=0x%lx)\n", rt, xregs[rt]);
                 break;
               case 1:
-                xregs[rt]  = CNTV_CTL_EL0;
-                LOG_CPU("mrs x%d, CNTV_CTL_EL0(=0x%lx)\n", rt, CNTV_CTL_EL0);
+                if (if_get){
+                  xregs[rt] = CNTV_CTL_EL0;
+                  LOG_CPU("mrs x%d, CNTV_CTL_EL0(=0x%lx)\n", rt, CNTV_CTL_EL0);
+                }else {
+                  CNTV_CTL_EL0 = xregs[rt];
+                  LOG_CPU("msr CNTV_CTL_EL0(=0x%lx), x%d, \n", CNTV_CTL_EL0, rt);
+                }
                 return;
               default:
                 unsupported();
