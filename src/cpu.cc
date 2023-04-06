@@ -1729,8 +1729,12 @@ void Cpu::decode_conditional_select(uint32_t inst) {
   case 0:
     switch (op2) {
     case 0:
-      LOG_CPU("csel\n");
-      unsupported();
+      if (check_b_flag(cond)){
+        xregs[rd] = xregs[rn];
+      }else {
+        xregs[rd] = xregs[rm];
+      }
+      LOG_CPU("csel x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d, check_cond=%d\n", rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond, check_b_flag(cond));
       break;
     case 1:
       result = check_b_flag(cond) ? xregs[rn] : xregs[rm] + 1;
