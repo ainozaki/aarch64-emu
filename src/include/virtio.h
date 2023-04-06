@@ -16,6 +16,7 @@ const uint64_t VIRTIO_MMIO_QUEUE_SEL = VIRTIO_MMIO + 0x30;
 const uint32_t VIRTIO_MMIO_QUEUE_NUM_MAX = VIRTIO_MMIO + 0x34;
 const uint32_t VIRTIO_MMIO_QUEUE_NUM = VIRTIO_MMIO + 0x38;
 const uint32_t VIRTIO_MMIO_QUEUE_PFN = VIRTIO_MMIO + 0x40;
+const uint32_t VIRTIO_MMIO_QUEUE_NOTIFY = VIRTIO_MMIO + 0x50;
 const uint64_t VIRTIO_MMIO_STATUS = VIRTIO_MMIO + 0x70;
 
 class Virtio {
@@ -38,5 +39,6 @@ private:
   uint32_t queue_num_max = 0x400;
   uint32_t queue_num;
   uint32_t queue_pfn;
+  uint32_t queue_notify;
   uint32_t status;
 };
