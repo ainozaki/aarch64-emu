@@ -854,13 +854,11 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
   case 0:
     if_32bit = 1;
     if (if_load) {
-      op = "ldp";
+      op = "ldpw";
       unsupported();
       return;
     } else {
-      op = "stp";
-      unsupported();
-      return;
+      op = "stpw";
     }
     break;
   case 1:
@@ -2131,6 +2129,10 @@ void Cpu::decode_pstate(uint32_t inst) {
         daif = daif | (CRm << 6);
         LOG_CPU("msr daifset(=0x%lx), 0x%x\n", daif, CRm);
         break;
+      case 7:
+        daif = daif & (!(CRm << 6));
+        LOG_CPU("msr daifctr(=0x%lx), 0x%x\n", daif, CRm);
+        break;
       default:
         unsupported();
       }
@@ -2219,7 +2221,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           LOG_CPU("daifset \n");
           return;
         case 7:
-          LOG_CPU("DAIRCLR \n");
+          LOG_CPU("msr daifctr\n");
           return;
         default:
           unsupported();
