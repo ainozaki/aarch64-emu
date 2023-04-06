@@ -149,8 +149,8 @@ uint64_t MMU::l3_translate(uint64_t addr, uint64_t base) {
 
   assert(!(entry & 2));
   LOG_DEBUG("\tblock entry\n");
-  output = util::shift(entry, 21, 47) << 21;
-  offset = util::shift(addr, 0, g4kb_l0_start_bit - 1);
+  output = util::shift(entry, 12, 47) << 12;
+  offset = util::shift(addr, 0, g4kb_l3_start_bit - 1);
   output |= offset;
   LOG_DEBUG("\toutput = 0x%lx\n", output);
   return output;
