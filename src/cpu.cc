@@ -502,6 +502,7 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
   if (!if_64bit) {
     return add_imm_s32(x, y, carry_in, cpsr);
   }
+  /*
   if (carry_in) {
     y = ~y;
   }
@@ -518,6 +519,18 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
     cpsr.C = (int64_t)x > (int64_t)y;
   }
   cpsr.V = signed_sum != (int64_t)result;
+  return result;
+  */
+
+  y = carry_in ? ~y : y;
+  uint64_t result = x + y + carry_in;
+  bool top_x = util::bit(x, 63);
+  bool top_y = util::bit(y, 63);
+  bool top_r = util::bit(result, 63);
+  cpsr.Z = (result == 0);
+  cpsr.N = top_y;
+  cpsr.C = (top_x | top_y) & !top_r;
+  cpsr.V = (!(top_x ^ top_y)) & (top_r ^ top_x); 
   return result;
 }
 
@@ -1542,6 +1555,9 @@ void Cpu::decode_addsub_shifted_reg(uint32_t inst) {
 
   if (if_setflag) {
     result = add_imm_s(op1, op2, if_sub, cpsr, if_64bit);
+    if (pc == 0xffffff8040000fac){
+      //printf("subs op1=0x%lx, op2=0x%lx, if_sub=%d, cspr.c=%d\n", op1, op2, if_sub, cpsr.C);
+    }
     LOG_CPU("%ss x%d, x%d(=0x%lx), x%d(=0x%lx), %s #%d\n", op, rd, rn,
             xregs[rn], rm, xregs[rm], shift_type_strtbl[shift_type],
             shift_amount);
@@ -1600,6 +1616,9 @@ void Cpu::decode_addsub_extended_reg(uint32_t inst) {
   op2 = ExtendValue(op2, extend_type, shift_amount);
   result = if_setflag ? add_imm_s(op1, op2, if_sub, cpsr, if_64bit)
                       : add_imm(op1, op2, if_sub);
+  if (pc == 0xffffff8040000fac){
+    printf("subs 2\n");
+  }
   if (rd != 31) {
     xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
   }
@@ -1947,6 +1966,7 @@ bool Cpu::check_b_flag(uint8_t cond) {
     return cpsr.V == 0;
     break;
   case 8:
+    //printf("C = %d, Z = %d\n", cpsr.C, cpsr.Z);
     return (cpsr.C == 1) & (cpsr.Z == 0);
     break;
   case 9:

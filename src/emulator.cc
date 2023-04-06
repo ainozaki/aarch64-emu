@@ -60,8 +60,8 @@ void Emulator::execute_loop() {
       printf("no instructions 0x%lx\n", cpu.pc);
       break;
     }
-    LOG_CPU("=== %d 0x%lx\n", i, cpu.pc);
-    //fprintf(stderr, "%d 0x%lx 0x%lx 0x%lx  0x%lx 0x%lx 0x%lx 0x%lx\n", i, cpu.pc, cpu.sp, cpu.xregs[0], cpu.xregs[1], cpu.xregs[19], cpu.xregs[29], cpu.xregs[30]);
+    //printf("=== %d 0x%lx\n", i, cpu.pc);
+    fprintf(stderr, "%d 0x%lx 0x%lx 0x%lx  0x%lx 0x%lx 0x%lx 0x%lx\n", i, cpu.pc, cpu.sp, cpu.xregs[0], cpu.xregs[1], cpu.xregs[19], cpu.xregs[29], cpu.xregs[30]);
     cpu.decode_start(inst);
     i++;
   }
