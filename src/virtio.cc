@@ -12,6 +12,15 @@
 #include "log.h"
 #include "utils.h"
 
+
+Virtqueue::Virtqueue(uint32_t pfn, uint32_t page_size, uint32_t queue_num){
+  uint64_t base = pfn * page_size;
+  desc = base;
+  avail = base + queue_num * 16;
+  used = avail + 4 + queue_num * 2;
+  printf("Init virtqueue: desc=0x%lx, avail=0x%lx, used=0x%lx\n", desc, avail, used);
+}
+
 void Virtio::store(uint64_t addr, uint64_t value) {
   switch (addr) {
   case VIRTIO_MMIO_MAGIC_VALUE:
@@ -42,7 +51,7 @@ void Virtio::store(uint64_t addr, uint64_t value) {
     break;
   case VIRTIO_MMIO_QUEUE_PFN:
     queue_pfn = value;
-    LOG_CPU("virtio store VIRTIO_MMIO_QUEUE_PFN = 0x%lx\n", status);
+    printf("virtio store VIRTIO_MMIO_QUEUE_PFN = 0x%lx\n", status);
     break;
   case VIRTIO_MMIO_QUEUE_NOTIFY:
     queue_notify = value;
@@ -50,6 +59,9 @@ void Virtio::store(uint64_t addr, uint64_t value) {
     break;
   case VIRTIO_MMIO_STATUS:
     status = value;
+    if (status & 0x4){
+      virtqueue = Virtqueue(queue_pfn, guest_page_size, queue_num);
+    }
     LOG_CPU("virtio store VIRTIO_MMIO_STATUS = 0x%lx\n", status);
     break;
   default:

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <optional>
 #include <cstdint>
+#include <vector>
 
 #include "const.h"
 
@@ -19,6 +21,16 @@ const uint32_t VIRTIO_MMIO_QUEUE_PFN = VIRTIO_MMIO + 0x40;
 const uint32_t VIRTIO_MMIO_QUEUE_NOTIFY = VIRTIO_MMIO + 0x50;
 const uint64_t VIRTIO_MMIO_STATUS = VIRTIO_MMIO + 0x70;
 
+class Virtqueue {
+public:
+  Virtqueue(uint32_t pfn, uint32_t page_size, uint32_t queue_num);
+  ~Virtqueue() = default;
+private:
+  uint64_t desc;
+  uint64_t avail;
+  uint64_t used;
+};
+
 class Virtio {
 public:
   Virtio() = default;
@@ -26,6 +38,8 @@ public:
 
   void store(uint64_t addr, uint64_t value);
   uint64_t load(uint64_t addr);
+
+  uint32_t get_queue_notify() {return queue_notify;}
 
 private:
   uint32_t magic_value = 0x74726976;
@@ -38,7 +52,10 @@ private:
   uint32_t queue_sel;
   uint32_t queue_num_max = 0x400;
   uint32_t queue_num;
-  uint32_t queue_pfn;
+  uint32_t queue_pfn = 0;
   uint32_t queue_notify;
   uint32_t status;
+  std::vector<uint8_t> disk;
+  std::optional<Virtqueue> virtqueue;
+
 };

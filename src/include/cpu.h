@@ -57,6 +57,7 @@ public:
   ~Cpu() = default;
   void init(uint64_t pc, uint64_t sp, uint64_t text_start, uint64_t text_size,
             uint64_t map_base);
+  void check_interrupt();
   uint32_t fetch();
   void decode_start(uint32_t inst);
   void show_regs();

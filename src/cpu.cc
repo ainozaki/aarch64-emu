@@ -25,6 +25,10 @@ void Cpu::init(uint64_t entry, uint64_t sp_base, uint64_t text_start,
   mmu.init(&bus, &CurrentEL);
 }
 
+void Cpu::check_interrupt(){
+  //printf("virtio_blk queue_notify: 0x%x\n", bus.virtio.get_queue_notify());
+}
+
 uint32_t Cpu::fetch() {
   // show_regs();
   // show_stack();
