@@ -25,8 +25,8 @@ void Cpu::init(uint64_t entry, uint64_t sp_base, uint64_t text_start,
   mmu.init(&bus, &CurrentEL);
 }
 
-void Cpu::check_interrupt(){
-  if (bus.virtio.is_interrupting()){
+void Cpu::check_interrupt() {
+  if (bus.virtio.is_interrupting()) {
     bus.virtio.disk_access();
   }
 }
@@ -536,7 +536,7 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
   cpsr.Z = (result == 0);
   cpsr.N = top_y;
   cpsr.C = (top_x | top_y) & !top_r;
-  cpsr.V = (!(top_x ^ top_y)) & (top_r ^ top_x); 
+  cpsr.V = (!(top_x ^ top_y)) & (top_r ^ top_x);
   return result;
 }
 
@@ -692,15 +692,17 @@ void Cpu::decode_logical_imm(uint32_t inst) {
     cpsr.Z = result == 0;
     cpsr.C = 0;
     cpsr.V = 0;
-    if (rd == 31){return;}
+    if (rd == 31) {
+      return;
+    }
     break;
   default:
     assert(false);
   }
 
-  if (rd == 31){
+  if (rd == 31) {
     sp = if_64bit ? result : (result & util::mask(32));
-  }else {
+  } else {
     xregs[rd] = if_64bit ? result : (result & util::mask(32));
   }
 }
@@ -1348,7 +1350,8 @@ void Cpu::decode_ldst_reg_reg_offset(uint32_t inst) {
       address = (rn == 31) ? sp + offset : xregs[rn] + offset;
       LOG_CPU("ldr x%d, [x%d, x%d {#%d}] (=0x%lx)\n", rt, rn, rm, shift * 3,
               xregs[rn] + offset);
-      xregs[rt] = load(address, MemAccessSize::DWord) & util::mask(8 * std::pow(2, size));
+      xregs[rt] = load(address, MemAccessSize::DWord) &
+                  util::mask(8 * std::pow(2, size));
       break;
     }
   }
@@ -1559,8 +1562,9 @@ void Cpu::decode_addsub_shifted_reg(uint32_t inst) {
 
   if (if_setflag) {
     result = add_imm_s(op1, op2, if_sub, cpsr, if_64bit);
-    if (pc == 0xffffff8040000fac){
-      //printf("subs op1=0x%lx, op2=0x%lx, if_sub=%d, cspr.c=%d\n", op1, op2, if_sub, cpsr.C);
+    if (pc == 0xffffff8040000fac) {
+      // printf("subs op1=0x%lx, op2=0x%lx, if_sub=%d, cspr.c=%d\n", op1, op2,
+      // if_sub, cpsr.C);
     }
     LOG_CPU("%ss x%d, x%d(=0x%lx), x%d(=0x%lx), %s #%d\n", op, rd, rn,
             xregs[rn], rm, xregs[rm], shift_type_strtbl[shift_type],
@@ -1620,7 +1624,7 @@ void Cpu::decode_addsub_extended_reg(uint32_t inst) {
   op2 = ExtendValue(op2, extend_type, shift_amount);
   result = if_setflag ? add_imm_s(op1, op2, if_sub, cpsr, if_64bit)
                       : add_imm(op1, op2, if_sub);
-  if (pc == 0xffffff8040000fac){
+  if (pc == 0xffffff8040000fac) {
     printf("subs 2\n");
   }
   if (rd != 31) {
@@ -1681,7 +1685,7 @@ void Cpu::decode_logical_shifted_reg(uint32_t inst) {
     LOG_CPU("and x%d, x%d(0x%lx)\n", rd, rm, op2);
     break;
   case 1:
-    if ((shift == 0) && (imm6 == 0) && (rn == 31)){
+    if ((shift == 0) && (imm6 == 0) && (rn == 31)) {
       xregs[rd] = op2;
       LOG_CPU("mov x%d, x%d(0x%lx)\n", rd, rm, op2);
       break;
@@ -1733,12 +1737,15 @@ void Cpu::decode_conditional_select(uint32_t inst) {
   case 0:
     switch (op2) {
     case 0:
-      if (check_b_flag(cond)){
+      if (check_b_flag(cond)) {
         xregs[rd] = xregs[rn];
-      }else {
+      } else {
         xregs[rd] = xregs[rm];
       }
-      LOG_CPU("csel x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d, check_cond=%d\n", rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond, check_b_flag(cond));
+      LOG_CPU("csel x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d, "
+              "check_cond=%d\n",
+              rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond,
+              check_b_flag(cond));
       break;
     case 1:
       result = check_b_flag(cond) ? xregs[rn] : xregs[rm] + 1;
@@ -1756,13 +1763,14 @@ void Cpu::decode_conditional_select(uint32_t inst) {
       unsupported();
       break;
     case 1:
-      if (check_b_flag(cond)){
+      if (check_b_flag(cond)) {
         result = xregs[rn];
-      }else {
+      } else {
         result = ~xregs[rm] + 1;
       }
       xregs[rd] = result;
-      LOG_CPU("csneg x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d\n", rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond);
+      LOG_CPU("csneg x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d\n", rd,
+              xregs[rd], rn, xregs[rn], rm, xregs[rm], cond);
       break;
     default:
       assert(false);
@@ -1821,22 +1829,24 @@ void Cpu::decode_data_processing_2source(uint32_t inst) {
 
   switch (opcode) {
   case 0b000010:
-    if (rm == 0){
+    if (rm == 0) {
       xregs[rd] = 0;
-    }else {
+    } else {
       result = xregs[rn] / xregs[rm];
-      xregs[rd] = sf ? result: (result & util::mask(32));
+      xregs[rd] = sf ? result : (result & util::mask(32));
     }
-    LOG_CPU("udiv x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, xregs[rd], rn, xregs[rn], rm, xregs[rm]);
+    LOG_CPU("udiv x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, xregs[rd], rn,
+            xregs[rn], rm, xregs[rm]);
     break;
   case 0b000011:
-    if (rm == 0){
+    if (rm == 0) {
       xregs[rd] = 0;
-    }else {
+    } else {
       result = xregs[rn] / xregs[rm];
-      xregs[rd] = sf ? result: signed_extend((result & util::mask(32)), 31);
+      xregs[rd] = sf ? result : signed_extend((result & util::mask(32)), 31);
     }
-    LOG_CPU("sdiv x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, xregs[rd], rn, xregs[rn], rm, xregs[rm]);
+    LOG_CPU("sdiv x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, xregs[rd], rn,
+            xregs[rn], rm, xregs[rm]);
     break;
   case 0b001000:
     LOG_CPU("lslv x%d, x%d, x%d\n", rd, rn, rm);
@@ -1890,7 +1900,8 @@ void Cpu::decode_data_processing_3source(uint32_t inst) {
     break;
   case 1:
     result = operand3 - operand1 * operand2;
-    LOG_CPU("msub x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd, result, rn, xregs[rn], rm, xregs[rm], ra, xregs[ra]);
+    LOG_CPU("msub x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx)\n", rd,
+            result, rn, xregs[rn], rm, xregs[rm], ra, xregs[ra]);
     break;
   case 0b000010:
     LOG_CPU("smaddl\n");
@@ -1974,7 +1985,7 @@ bool Cpu::check_b_flag(uint8_t cond) {
     return cpsr.V == 0;
     break;
   case 8:
-    //printf("C = %d, Z = %d\n", cpsr.C, cpsr.Z);
+    // printf("C = %d, Z = %d\n", cpsr.C, cpsr.Z);
     return (cpsr.C == 1) & (cpsr.Z == 0);
     break;
   case 9:
@@ -2358,14 +2369,14 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           }
           break;
         case 6:
-          switch (op2){
-            case 0:
-              ICC_PMR_EL1 = xregs[rt];
-              LOG_CPU("msr ICC_PMR_EL1 = 0x%lx\n", xregs[rt]);
-              return;
-            default:
-              unsupported();
-              break;
+          switch (op2) {
+          case 0:
+            ICC_PMR_EL1 = xregs[rt];
+            LOG_CPU("msr ICC_PMR_EL1 = 0x%lx\n", xregs[rt]);
+            return;
+          default:
+            unsupported();
+            break;
           }
           break;
         default:
@@ -2408,36 +2419,36 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         }
         break;
       case 12:
-        switch (CRm){
+        switch (CRm) {
+        case 0:
+          switch (op2) {
           case 0:
-            switch (op2){
-              case 0:
-                VBAR_EL1 = xregs[rt];
-                LOG_CPU("msr VBAR_EL1=0x%lx\n", xregs[rt]);
-                return;
-              default:
-                unsupported();
-                break;
-            }
-            break;
-          case 12:
-            switch (op2){
-              case 5:
-                xregs[rt] = ICC_SRE_EL1;
-                LOG_CPU("mrs x%d, ICC_SRE_EL1(=0x%lx)\n", rt, ICC_SRE_EL1);
-                return;
-              case 7:
-                ICC_IGRPEN1_EL1 = xregs[rt];
-                LOG_CPU("msr ICC_IGRPEN1_EL1 = 0x%lx\n", xregs[rt]);
-                return;
-              default:
-                unsupported();
-                break;
-            }
-            break;
+            VBAR_EL1 = xregs[rt];
+            LOG_CPU("msr VBAR_EL1=0x%lx\n", xregs[rt]);
+            return;
           default:
             unsupported();
             break;
+          }
+          break;
+        case 12:
+          switch (op2) {
+          case 5:
+            xregs[rt] = ICC_SRE_EL1;
+            LOG_CPU("mrs x%d, ICC_SRE_EL1(=0x%lx)\n", rt, ICC_SRE_EL1);
+            return;
+          case 7:
+            ICC_IGRPEN1_EL1 = xregs[rt];
+            LOG_CPU("msr ICC_IGRPEN1_EL1 = 0x%lx\n", xregs[rt]);
+            return;
+          default:
+            unsupported();
+            break;
+          }
+          break;
+        default:
+          unsupported();
+          break;
         }
         break;
       default:
@@ -2470,41 +2481,41 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         }
         break;
       case 14:
-        switch (CRm){
+        switch (CRm) {
+        case 0:
+          switch (op2) {
           case 0:
-            switch (op2){
-              case 0:
-                xregs[rt] = CNTFRQ_EL0;
-                LOG_CPU("mrs x%d, CNTFRQ_EL0(=0x%lx)\n", rt, CNTFRQ_EL0);
-                break;
-              default:
-                unsupported();
-                break;
-            }
-            break;
-          case 3:
-            switch (op2){
-              case 0:
-                CNTV_TVAL_EL0 = xregs[rt];
-                LOG_CPU("msr CNTV_TVAL_EL0, x%d(=0x%lx)\n", rt, xregs[rt]);
-                break;
-              case 1:
-                if (if_get){
-                  xregs[rt] = CNTV_CTL_EL0;
-                  LOG_CPU("mrs x%d, CNTV_CTL_EL0(=0x%lx)\n", rt, CNTV_CTL_EL0);
-                }else {
-                  CNTV_CTL_EL0 = xregs[rt];
-                  LOG_CPU("msr CNTV_CTL_EL0(=0x%lx), x%d, \n", CNTV_CTL_EL0, rt);
-                }
-                return;
-              default:
-                unsupported();
-                break;
-            }
+            xregs[rt] = CNTFRQ_EL0;
+            LOG_CPU("mrs x%d, CNTFRQ_EL0(=0x%lx)\n", rt, CNTFRQ_EL0);
             break;
           default:
             unsupported();
             break;
+          }
+          break;
+        case 3:
+          switch (op2) {
+          case 0:
+            CNTV_TVAL_EL0 = xregs[rt];
+            LOG_CPU("msr CNTV_TVAL_EL0, x%d(=0x%lx)\n", rt, xregs[rt]);
+            break;
+          case 1:
+            if (if_get) {
+              xregs[rt] = CNTV_CTL_EL0;
+              LOG_CPU("mrs x%d, CNTV_CTL_EL0(=0x%lx)\n", rt, CNTV_CTL_EL0);
+            } else {
+              CNTV_CTL_EL0 = xregs[rt];
+              LOG_CPU("msr CNTV_CTL_EL0(=0x%lx), x%d, \n", CNTV_CTL_EL0, rt);
+            }
+            return;
+          default:
+            unsupported();
+            break;
+          }
+          break;
+        default:
+          unsupported();
+          break;
         }
         break;
       default:

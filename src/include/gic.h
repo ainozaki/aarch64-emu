@@ -2,7 +2,6 @@
 
 #include <cstdint>
 
-
 const uint64_t GIC_DIST = 0x08000000;
 const uint64_t GICD_CTLR = GIC_DIST + 0x0;
 const uint64_t GICD_TYPER = GIC_DIST + 0x4;
@@ -23,25 +22,26 @@ const uint64_t GICR_ICPENDR0 = GIC_SGI_BASE + 0x280;
 const uint64_t GICR_IPRIORITYR0 = GIC_SGI_BASE + 0x400;
 const uint64_t GICR_IGRPMODR0 = GIC_SGI_BASE + 0xd00;
 
-class Gic{
+class Gic {
 public:
-    Gic() = default;
-    ~Gic() = default;
+  Gic() = default;
+  ~Gic() = default;
 
-    void store(uint64_t addr, uint64_t value);
-    uint64_t load(uint64_t addr);
+  void store(uint64_t addr, uint64_t value);
+  uint64_t load(uint64_t addr);
+
 private:
-    uint32_t d_ctlr;
-    uint32_t d_typer = 0x3780007;
-    uint32_t d_igroupr[32] = {0};
-    uint32_t d_isenabler[32] = {0};
-    uint32_t d_icpendr[32] = {0};
-    uint8_t d_ipriorityr[1024] = {0};
-    uint32_t r_ctlr;
-    uint32_t r_waker = 0x2;
-    uint32_t r_igroupr0;
-    uint32_t r_isenabler0 = 0;
-    uint32_t r_icpendr0 = 0;
-    uint32_t r_ipriorityr[8] = {0};
-    uint32_t r_igrpmodr0;
+  uint32_t d_ctlr;
+  uint32_t d_typer = 0x3780007;
+  uint32_t d_igroupr[32] = {0};
+  uint32_t d_isenabler[32] = {0};
+  uint32_t d_icpendr[32] = {0};
+  uint8_t d_ipriorityr[1024] = {0};
+  uint32_t r_ctlr;
+  uint32_t r_waker = 0x2;
+  uint32_t r_igroupr0;
+  uint32_t r_isenabler0 = 0;
+  uint32_t r_icpendr0 = 0;
+  uint32_t r_ipriorityr[8] = {0};
+  uint32_t r_igrpmodr0;
 };

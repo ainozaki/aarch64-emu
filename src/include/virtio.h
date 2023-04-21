@@ -1,7 +1,7 @@
 #pragma once
 
-#include <optional>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include <stdint.h>
@@ -29,18 +29,19 @@ const uint32_t VIRTIO_MMIO_INTERRUPT_ACK = VIRTIO_MMIO + 0x64;
 const uint64_t VIRTIO_MMIO_STATUS = VIRTIO_MMIO + 0x70;
 const uint64_t VIRTIO_MMIO_CONFIG = VIRTIO_MMIO + 0x100;
 
-// See https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1560004
+// See
+// https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1560004
 struct virtio_mmio_control_registers {
   uint32_t magic_value = 0x74726976;
-  
+
   // Version ID
   // 1 for legacy device.
   uint32_t version = 1;
-  
+
   // Device ID
   // 2 for block device.
   uint32_t device_id = 2;
-  
+
   uint32_t vender_id = 0x554d4551;
 
   // Flags representing features the device supports
@@ -57,19 +58,22 @@ struct virtio_mmio_control_registers {
 
   // Activated gurest features word selection
   uint32_t guest_features_sel;
-  
+
   // Guest page size
-  // This value is writtewn by the driver during initialization, 
-  // and used by the device to calculate the Guest address of the first queue page.
+  // This value is writtewn by the driver during initialization,
+  // and used by the device to calculate the Guest address of the first queue
+  // page.
   uint64_t guest_page_size = 0;
 
   // Virtual queue index
-  // Selects the virtual queue that QueueNumMax, QueueNum, QueueAlign and QueuePFN registers apply to. 
+  // Selects the virtual queue that QueueNumMax, QueueNum, QueueAlign and
+  // QueuePFN registers apply to.
   uint32_t queue_sel;
-  
+
   // Maximum virtual queue size
   // Maximum size of the queue the device is ready to process.
-  // This value applies to the "QUEUE_SEL"-selected queue, and only when QueuePFN == 0.
+  // This value applies to the "QUEUE_SEL"-selected queue, and only when
+  // QueuePFN == 0.
   uint32_t queue_num_max = 0x10;
 
   // Virtual queue size
@@ -78,18 +82,19 @@ struct virtio_mmio_control_registers {
   uint32_t queue_num = 0;
 
   // Used Ring alignment in the virtual queue
-  // Writing to this register notifies the device about alignment boundary of the Used ring.
-  // Should be power of 2/
+  // Writing to this register notifies the device about alignment boundary of
+  // the Used ring. Should be power of 2/
   uint32_t queue_align;
 
   // Guest physical page number of the virtual queue
   // The location of the virtual queue in the Guest's physical address space.
-  // This value is the index number of a page starting with the queue Desctiptor Table.
-  // Zero means that the driver stops using the queue.
+  // This value is the index number of a page starting with the queue Desctiptor
+  // Table. Zero means that the driver stops using the queue.
   uint32_t queue_pfn = 0;
 
   // Queue notifier
-  // Writin to this register notifies the device that there are new buffers to process in a queue.
+  // Writin to this register notifies the device that there are new buffers to
+  // process in a queue.
   uint32_t queue_notify = UINT32_MAX;
 
   // Interrupt status
@@ -110,6 +115,7 @@ public:
   ~Virtqueue() = default;
 
   void update(uint32_t pfn, uint32_t page_size, uint32_t queue_num);
+
 private:
   uint64_t desc;
   uint64_t avail;
@@ -132,5 +138,4 @@ private:
   struct virtio_mmio_control_registers control_regs;
   std::vector<uint8_t> disk;
   std::optional<Virtqueue> virtqueue;
-
 };

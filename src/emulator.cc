@@ -51,19 +51,21 @@ void Emulator::execute_loop() {
 
   uint32_t inst;
   int i = 0;
-  //int num_insts = 20000000;
-  // int num_insts = 67905;
-  // int num_insts = 67670;
+  // int num_insts = 20000000;
+  //  int num_insts = 67905;
+  //  int num_insts = 67670;
   while (true) {
     cpu.check_interrupt();
-    
+
     inst = cpu.fetch();
     if (!inst) {
       printf("no instructions 0x%lx\n", cpu.pc);
       break;
     }
-    //printf("=== %d 0x%lx ", i, cpu.pc);
-    //fprintf(stderr, "%d 0x%lx 0x%lx 0x%lx  0x%lx 0x%lx 0x%lx 0x%lx\n", i, cpu.pc, cpu.sp, cpu.xregs[0], cpu.xregs[1], cpu.xregs[19], cpu.xregs[29], cpu.xregs[30]);
+    // printf("=== %d 0x%lx ", i, cpu.pc);
+    // fprintf(stderr, "%d 0x%lx 0x%lx 0x%lx  0x%lx 0x%lx 0x%lx 0x%lx\n", i,
+    // cpu.pc, cpu.sp, cpu.xregs[0], cpu.xregs[1], cpu.xregs[19], cpu.xregs[29],
+    // cpu.xregs[30]);
     cpu.decode_start(inst);
     i++;
   }

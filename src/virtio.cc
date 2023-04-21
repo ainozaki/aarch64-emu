@@ -12,33 +12,31 @@
 #include "log.h"
 #include "utils.h"
 
-
-Virtqueue::Virtqueue(uint32_t pfn, uint32_t page_size, uint32_t queue_num){
+Virtqueue::Virtqueue(uint32_t pfn, uint32_t page_size, uint32_t queue_num) {
   update(pfn, page_size, queue_num);
 }
 
-void Virtqueue::update(uint32_t pfn, uint32_t page_size, uint32_t queue_num){
+void Virtqueue::update(uint32_t pfn, uint32_t page_size, uint32_t queue_num) {
   uint64_t base = pfn * page_size;
   desc = base;
   avail = base + queue_num * 16;
   used = avail + 4 + queue_num * 2;
-  printf("\tvirtqueue: desc=0x%lx, avail=0x%lx, used=0x%lx\n", desc, avail, used);
+  printf("\tvirtqueue: desc=0x%lx, avail=0x%lx, used=0x%lx\n", desc, avail,
+         used);
   printf("\tvirtio.pfn = 0x%x\n", pfn);
   printf("\tvirtio.page_size = 0x%x\n", page_size);
   printf("\tvirtio.queue_num = 0x%x\n", queue_num);
 }
 
-bool Virtio::is_interrupting(){
-  if (control_regs.queue_notify != UINT32_MAX){
+bool Virtio::is_interrupting() {
+  if (control_regs.queue_notify != UINT32_MAX) {
     control_regs.queue_notify = UINT32_MAX;
     return true;
   }
   return false;
 }
 
-void Virtio::disk_access(){
-    printf("disk_access\n");
-}
+void Virtio::disk_access() { printf("disk_access\n"); }
 
 void Virtio::store(uint64_t addr, uint64_t value) {
   switch (addr) {
@@ -54,35 +52,46 @@ void Virtio::store(uint64_t addr, uint64_t value) {
     exit(1);
   case VIRTIO_MMIO_GUEST_FEATURES:
     control_regs.guest_features = value;
-    printf("virtio store VIRTIO_MMIO_DRIVER = 0x%x\n", control_regs.guest_features);
+    printf("virtio store VIRTIO_MMIO_DRIVER = 0x%x\n",
+           control_regs.guest_features);
     break;
   case VIRTIO_MMIO_GUEST_PAGE_SIZE:
     control_regs.guest_page_size = value;
-    printf("virtio store VIRTIO_MMIO_GUEST_PAGE_SIZE = 0x%lx\n", control_regs.guest_page_size);
-    virtqueue->update(control_regs.queue_pfn, control_regs.guest_page_size, control_regs.queue_num);
+    printf("virtio store VIRTIO_MMIO_GUEST_PAGE_SIZE = 0x%lx\n",
+           control_regs.guest_page_size);
+    virtqueue->update(control_regs.queue_pfn, control_regs.guest_page_size,
+                      control_regs.queue_num);
     break;
   case VIRTIO_MMIO_QUEUE_SEL:
     control_regs.queue_sel = value;
-    printf("virtio store VIRTIO_MMIO_QUEUE_SEL = 0x%x\n", control_regs.queue_sel);
+    printf("virtio store VIRTIO_MMIO_QUEUE_SEL = 0x%x\n",
+           control_regs.queue_sel);
     break;
   case VIRTIO_MMIO_QUEUE_NUM:
     control_regs.queue_num = value;
-    printf("virtio store VIRTIO_MMIO_QUEUE_NUM = 0x%x\n", control_regs.queue_num);
-    virtqueue->update(control_regs.queue_pfn, control_regs.guest_page_size, control_regs.queue_num);
+    printf("virtio store VIRTIO_MMIO_QUEUE_NUM = 0x%x\n",
+           control_regs.queue_num);
+    virtqueue->update(control_regs.queue_pfn, control_regs.guest_page_size,
+                      control_regs.queue_num);
     break;
   case VIRTIO_MMIO_QUEUE_PFN:
     control_regs.queue_pfn = value;
-    printf("virtio store VIRTIO_MMIO_QUEUE_PFN = 0x%x\n", control_regs.queue_pfn);
-    virtqueue->update(control_regs.queue_pfn, control_regs.guest_page_size, control_regs.queue_num);
+    printf("virtio store VIRTIO_MMIO_QUEUE_PFN = 0x%x\n",
+           control_regs.queue_pfn);
+    virtqueue->update(control_regs.queue_pfn, control_regs.guest_page_size,
+                      control_regs.queue_num);
     break;
   case VIRTIO_MMIO_QUEUE_NOTIFY:
     control_regs.queue_notify = value;
-    printf("virtio store VIRTIO_MMIO_QUEUE_NOTIFY = 0x%x\n", control_regs.queue_notify);
+    printf("virtio store VIRTIO_MMIO_QUEUE_NOTIFY = 0x%x\n",
+           control_regs.queue_notify);
     break;
   case VIRTIO_MMIO_STATUS:
     control_regs.status = value;
-    if (control_regs.status & 0x4){
-      virtqueue = Virtqueue(control_regs.queue_pfn, control_regs.guest_page_size, control_regs.queue_num);
+    if (control_regs.status & 0x4) {
+      virtqueue =
+          Virtqueue(control_regs.queue_pfn, control_regs.guest_page_size,
+                    control_regs.queue_num);
     }
     printf("virtio store VIRTIO_MMIO_STATUS = 0x%x\n", control_regs.status);
     break;
@@ -116,10 +125,12 @@ uint64_t Virtio::load(uint64_t addr) {
     printf("virtio VIRTIO_MMIO_VENDER_ID = 0x%x\n", control_regs.vender_id);
     return control_regs.vender_id;
   case VIRTIO_MMIO_HOST_FEATURES:
-    printf("virtio VIRTIO_MMIO_DEVICE_FEATURES = 0x%x\n", control_regs.host_features);
+    printf("virtio VIRTIO_MMIO_DEVICE_FEATURES = 0x%x\n",
+           control_regs.host_features);
     return control_regs.host_features;
   case VIRTIO_MMIO_QUEUE_NUM_MAX:
-    printf("virtio VIRTIO_MMIO_QUEUE_NUM_MAX = 0x%x\n", control_regs.queue_num_max);
+    printf("virtio VIRTIO_MMIO_QUEUE_NUM_MAX = 0x%x\n",
+           control_regs.queue_num_max);
     return control_regs.queue_num_max;
   case VIRTIO_MMIO_QUEUE_PFN:
     printf("virtio VIRTIO_MMIO_QUEUE_PFN = 0x%x\n", control_regs.queue_pfn);

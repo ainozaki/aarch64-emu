@@ -44,9 +44,11 @@ public:
   uint64_t daif = 0x3c0;
 
   // Interrupt
-  uint64_t ICC_IGRPEN1_EL1; // Interrupt Controller Interrupt Group 1 Enable register
+  uint64_t
+      ICC_IGRPEN1_EL1; // Interrupt Controller Interrupt Group 1 Enable register
   uint64_t ICC_PMR_EL1; // Interrupt Controller Interrupt Priority Mask Register
-  uint64_t ICC_SRE_EL1 = 0x7; // Interrupt Controller System Register Enable register (EL1)
+  uint64_t ICC_SRE_EL1 =
+      0x7; // Interrupt Controller System Register Enable register (EL1)
 
   // Timer
   uint64_t CNTV_CTL_EL0 = 0; // Counter-timer Virtual Timer Control register
