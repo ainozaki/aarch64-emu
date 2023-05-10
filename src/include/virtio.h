@@ -8,6 +8,8 @@
 
 #include "const.h"
 
+class Cpu;
+
 const uint64_t VIRTIO_MMIO = 0xa000000;
 const uint64_t VIRTIO_MMIO_MAGIC_VALUE = VIRTIO_MMIO;
 const uint64_t VIRTIO_MMIO_VERSION = VIRTIO_MMIO + 0x4;
@@ -28,6 +30,9 @@ const uint32_t VIRTIO_MMIO_INTERRUPT_STATUS = VIRTIO_MMIO + 0x60;
 const uint32_t VIRTIO_MMIO_INTERRUPT_ACK = VIRTIO_MMIO + 0x64;
 const uint64_t VIRTIO_MMIO_STATUS = VIRTIO_MMIO + 0x70;
 const uint64_t VIRTIO_MMIO_CONFIG = VIRTIO_MMIO + 0x100;
+
+const uint64_t VRING_DESC_F_NEXT = 0x1;
+const uint64_t VRING_DESC_SIZE = 0x10;
 
 // See
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1560004
@@ -109,6 +114,21 @@ struct virtio_mmio_control_registers {
   uint32_t status = 0;
 };
 
+struct avairable_ring {
+  uint16_t flags;
+  uint16_t idx;
+  uint16_t *rings;
+};
+
+class Desc {
+  public:
+    Desc(uint64_t base_addr, Cpu *cpu);
+    uint64_t addr;
+    uint32_t len;
+    uint16_t flags;
+    uint16_t next;
+};
+
 class Virtqueue {
 public:
   Virtqueue(uint32_t pfn, uint32_t page_size, uint32_t queue_num);
@@ -116,10 +136,32 @@ public:
 
   void update(uint32_t pfn, uint32_t page_size, uint32_t queue_num);
 
-private:
-  uint64_t desc;
-  uint64_t avail;
-  uint64_t used;
+  // Descriptor Table
+  // size is 16 * queue_num
+  // u64 addr
+  // u32 len
+  // u16 flags
+  // u16 next
+  uint64_t desc_table;
+
+  // Guest -> Host 
+  // size is 6 + 2 * queue_num
+  // u16 flags
+  // u16 idx
+  // u16[QUEUE_NUM] rings
+  // u16 	used_event
+  uint64_t avail_ring;
+  uint16_t avail_idx = 0;
+
+  // Host -> Guest
+  // size is 6 + 8 * queue_num
+  // u16 flags
+  // u16 idx
+  // UsedRingEntry[QUEUE_NUM] rings
+  //    u32 id
+  //    u32 len
+  // u16 avail_event
+  uint64_t used_ring;
 };
 
 class Virtio {
@@ -130,7 +172,7 @@ public:
   void store(uint64_t addr, uint64_t value);
   uint64_t load(uint64_t addr);
 
-  void disk_access();
+  void disk_access(Cpu *cpu);
 
   bool is_interrupting();
 

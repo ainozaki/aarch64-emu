@@ -27,7 +27,7 @@ void Cpu::init(uint64_t entry, uint64_t sp_base, uint64_t text_start,
 
 void Cpu::check_interrupt() {
   if (bus.virtio.is_interrupting()) {
-    bus.virtio.disk_access();
+    bus.virtio.disk_access(this);
   }
 }
 
@@ -2123,6 +2123,7 @@ void Cpu::decode_pstate(uint32_t inst) {
   if (rt != 31) {
     unallocated();
   }
+  uint64_t mask;
 
   switch (op2) {
   case 0:
@@ -2147,8 +2148,9 @@ void Cpu::decode_pstate(uint32_t inst) {
         LOG_CPU("msr daifset(=0x%lx), 0x%x\n", daif, CRm);
         break;
       case 7:
-        daif = daif & (!(CRm << 6));
-        LOG_CPU("msr daifctr(=0x%lx), 0x%x\n", daif, CRm);
+        mask = ~uint64_t(0) & (util::mask((CRm << 6) + 1) - 1);
+        daif = daif & mask;
+        LOG_CPU("msr daifclr(=0x%lx), 0x%x\n", daif, CRm);
         break;
       default:
         unsupported();
