@@ -18,6 +18,8 @@ struct CPSR {
 
 class Cpu {
 public:
+  Cpu(uint64_t pc, uint64_t sp, uint64_t text_start, uint64_t text_size,
+            uint64_t map_base, const std::string &diskname);
   Bus bus;
   MMU mmu;
   uint64_t pc;
@@ -55,10 +57,6 @@ public:
   uint64_t CNTFRQ_EL0 = 0x3b9aca0; // Counter-timer Frequency register
   uint64_t CNTV_TVAL_EL0 = 0; // Counter-timer Virtual Timer TimerValue register
 
-  Cpu() = default;
-  ~Cpu() = default;
-  void init(uint64_t pc, uint64_t sp, uint64_t text_start, uint64_t text_size,
-            uint64_t map_base);
   void check_interrupt();
   uint32_t fetch();
   void decode_start(uint32_t inst);

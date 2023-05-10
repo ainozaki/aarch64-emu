@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <fstream>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "const.h"
@@ -11,15 +12,13 @@
 
 class Emulator {
 public:
-  Cpu cpu;
+  std::unique_ptr<Cpu> cpu;
   Loader loader;
 
-  Emulator(int argc, char **argv, char **envp);
-  ~Emulator();
-  int init();
+  Emulator(int argc, char **argv, char **envp, const std::string &disk);
   void execute_loop();
+  bool init_done_;
 
 private:
   char *filename_;
-  bool init_done_;
 };

@@ -15,13 +15,13 @@
 typedef __attribute__((mode(TI))) unsigned int uint128_t;
 typedef __attribute__((mode(TI))) int int128_t;
 
-void Cpu::init(uint64_t entry, uint64_t sp_base, uint64_t text_start,
-               uint64_t text_size, uint64_t map_base) {
+Cpu::Cpu(uint64_t entry, uint64_t sp_base, uint64_t text_start,
+               uint64_t text_size, uint64_t map_base, const std::string &diskname) 
+  :bus(Bus(text_start, text_size, map_base, diskname)){
   pc = entry;
   sp = sp_base;
   printf("Init pc=0x%lx, sp=0x%lx\n", pc, sp);
 
-  bus.init(text_start, text_size, map_base);
   mmu.init(&bus, &CurrentEL);
 }
 

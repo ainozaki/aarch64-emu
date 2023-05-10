@@ -7,12 +7,32 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <fstream>
 #include <iostream>
+#include <iterator>
+#include <sstream>
 
 #include "cpu.h"
 #include "log.h"
 #include "utils.h"
 
+
+Virtio::Virtio(const std::string &diskname){
+  std::ifstream fin(diskname, std::ios::binary);
+  if (!fin){
+    std::cerr << "Cannot open file " << diskname << std::endl;
+    return;
+  }
+
+  fin.seekg(0, std::ios::end);
+  std::streamsize fsize = fin.tellg();
+  fin.seekg(0, std::ios::beg);
+  disk.reserve(fsize);
+
+  disk.insert(disk.begin(), std::istream_iterator<uint8_t>(fin), std::istream_iterator<uint8_t>());
+  fin.close();
+  printf("disk size: 0x%lx, loaded: 0x%lx\n",fsize, disk.size());
+}
 
 Desc::Desc(uint64_t base_addr, Cpu *cpu){
   addr = cpu->bus.mem.load64(base_addr);
@@ -55,16 +75,43 @@ void Virtio::disk_access(Cpu *cpu) {
   printf("first index = %ld\n", first_index);
 
   Desc desc0 = Desc(virtqueue->desc_table + first_index * VRING_DESC_SIZE, cpu);
-  assert(desc0.flags & VRING_DESC_F_NEXT == 1);
-  printf("desc0: addr=0x%lx, len=0x%x, flags=%x, next=0x%x\n", desc0.addr, desc0.len, desc0.flags, desc0.next);
-  
   Desc desc1 = Desc(virtqueue->desc_table + desc0.next * VRING_DESC_SIZE, cpu);
-  assert(desc1.flags & VRING_DESC_F_NEXT == 1);
-  printf("desc1: addr=0x%lx, len=0x%x, flags=%x, next=0x%x\n", desc1.addr, desc1.len, desc1.flags,desc1.next);
-
   Desc desc2 = Desc(virtqueue->desc_table + desc1.next * VRING_DESC_SIZE, cpu);
-  assert(desc2.flags & VRING_DESC_F_NEXT == 0);
+  printf("desc0: addr=0x%lx, len=0x%x, flags=%x, next=0x%x\n", desc0.addr, desc0.len, desc0.flags, desc0.next);  
+  printf("desc1: addr=0x%lx, len=0x%x, flags=%x, next=0x%x\n", desc1.addr, desc1.len, desc1.flags,desc1.next);
   printf("desc2: addr=0x%lx, len=0x%x, flags=%x, next=0x%x\n", desc2.addr, desc2.len, desc2.flags, desc2.next);
+
+  assert(desc0.flags & VRING_DESC_F_NEXT == 1);
+  assert(desc1.flags & VRING_DESC_F_NEXT == 1);
+  assert(desc2.flags & VRING_DESC_F_NEXT == 0);
+
+  // struct virtio_blk_req {
+  //   le32 type;
+  //   le32 reserved;
+  //   le64 sector;
+  //   u8 data[][512];
+  //   u8 status;
+  // };
+  uint64_t sector = cpu->bus.mem.load64(desc0.addr + 8);
+  if (desc1.flags & VRING_DESC_F_WRITE){
+    // driver read, device write
+    for (uint16_t i = 0; i < desc1.len; i++){
+      uint8_t data = disk[sector * SECTOR_SIZE + i];
+      cpu->bus.mem.store8(desc1.addr + i, data);
+    }
+  }else {
+    // driver write, device read
+    for (uint16_t i = 0; i < desc1.len; i++){
+      uint8_t data = cpu->bus.mem.load8(desc1.addr + i);
+      disk[sector * SECTOR_SIZE + i] = data;
+    }
+  }
+  // Notification
+  cpu->bus.mem.store8(desc2.addr, 0);
+  cpu->bus.mem.store32(virtqueue->used_ring + 4 + (id % control_regs.queue_num) * 8, first_index);
+  id += 1;
+  cpu->bus.mem.store16(virtqueue->used_ring + 2, id);
+  printf("used.idx = 0x%x\n", cpu->bus.mem.load16(virtqueue->used_ring + 2));
 }
 
 void Virtio::store(uint64_t addr, uint64_t value) {

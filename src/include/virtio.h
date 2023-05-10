@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include <stdint.h>
@@ -32,7 +33,9 @@ const uint64_t VIRTIO_MMIO_STATUS = VIRTIO_MMIO + 0x70;
 const uint64_t VIRTIO_MMIO_CONFIG = VIRTIO_MMIO + 0x100;
 
 const uint64_t VRING_DESC_F_NEXT = 0x1;
+const uint64_t VRING_DESC_F_WRITE = 0x2;
 const uint64_t VRING_DESC_SIZE = 0x10;
+const uint64_t SECTOR_SIZE = 512;
 
 // See
 // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1560004
@@ -166,8 +169,7 @@ public:
 
 class Virtio {
 public:
-  Virtio() = default;
-  ~Virtio() = default;
+  Virtio(const std::string &diskname);
 
   void store(uint64_t addr, uint64_t value);
   uint64_t load(uint64_t addr);
@@ -180,4 +182,5 @@ private:
   struct virtio_mmio_control_registers control_regs;
   std::vector<uint8_t> disk;
   std::optional<Virtqueue> virtqueue;
+  uint64_t id = 0;
 };

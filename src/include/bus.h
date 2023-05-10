@@ -39,8 +39,7 @@ const MemAccessSize memsz_tbl[] = {
 
 class Bus {
 public:
-  Bus() = default;
-  ~Bus() = default;
+  Bus(uint64_t text_start, uint64_t text_size, uint64_t map_base, const std::string &diskname);
 
   Mem mem;
   Uart uart;
@@ -50,5 +49,4 @@ public:
   uint64_t load(uint64_t address, MemAccessSize size);
   void store(uint64_t address, uint64_t value, MemAccessSize size);
 
-  void init(uint64_t text_start, uint64_t text_size, uint64_t map_base);
 };

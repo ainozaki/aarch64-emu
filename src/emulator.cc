@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <memory>
+#include <string>
 
 #include <stdio.h>
 #include <string.h>
@@ -15,23 +16,19 @@
 #include "mem.h"
 #include "utils.h"
 
-Emulator::Emulator(int argc, char **argv, char **envp)
-    : loader(argc, argv, envp), filename_(argv[1]) {}
-
-Emulator::~Emulator() {}
-
-int Emulator::init() {
-  int err;
+Emulator::Emulator(int argc, char **argv, char **envp, const std::string &disk)
+    : loader(argc, argv, envp), filename_(argv[1]) {
+  
   printf("emu: start emulating\n");
 
-  if ((err = loader.init()) != ESUCCESS) {
+  if (loader.init() != ESUCCESS) {
     printf("failed to loader initialization.\n");
-    return err;
+    return;
   }
 
-  if ((err = loader.load()) != ESUCCESS) {
+  if (loader.load() != ESUCCESS) {
     printf("failed to load.\n");
-    return err;
+    return;
   }
 
   printf("loader.entry = 0x%lx\n", loader.entry);
@@ -40,11 +37,11 @@ int Emulator::init() {
   // printf("loader.text_size = 0x%lx\n", loader.text_size);
   printf("loader.map_base = 0x%lx\n", loader.map_base);
 
-  cpu.init(loader.entry, loader.init_sp, loader.text_start_paddr,
-           loader.text_size, loader.map_base);
-
+  cpu = std::make_unique<Cpu>(loader.entry, loader.init_sp, loader.text_start_paddr,
+           loader.text_size, loader.map_base, disk);
+  
   init_done_ = true;
-  return ESUCCESS;
+  return;
 }
 
 void Emulator::execute_loop() {
@@ -54,19 +51,20 @@ void Emulator::execute_loop() {
   // int num_insts = 20000000;
   //  int num_insts = 67905;
   //  int num_insts = 67670;
-  while (true) {
-    cpu.check_interrupt();
 
-    inst = cpu.fetch();
+  while (true) {
+    cpu->check_interrupt();
+
+    inst = cpu->fetch();
     if (!inst) {
-      printf("no instructions 0x%lx\n", cpu.pc);
+      printf("no instructions 0x%lx\n", cpu->pc);
       break;
     }
     // printf("=== %d 0x%lx ", i, cpu.pc);
     // fprintf(stderr, "%d 0x%lx 0x%lx 0x%lx  0x%lx 0x%lx 0x%lx 0x%lx\n", i,
     // cpu.pc, cpu.sp, cpu.xregs[0], cpu.xregs[1], cpu.xregs[19], cpu.xregs[29],
     // cpu.xregs[30]);
-    cpu.decode_start(inst);
+    cpu->decode_start(inst);
     i++;
   }
   // cpu.show_regs();
@@ -74,19 +72,15 @@ void Emulator::execute_loop() {
 }
 
 int main(int argc, char **argv, char **envp) {
-  int err;
-
   if (argc < 2) {
     printf("usage: %s <filename>\n", argv[0]);
     return 0;
   }
 
-  Emulator emu(argc, argv, envp);
-  if ((err = emu.init()) != ESUCCESS) {
-    printf("Emulator initialization failed.\n");
-    return err;
+  const std::string diskname = "fs.img";
+  Emulator emu(argc, argv, envp, diskname);
+  if (emu.init_done_){
+    emu.execute_loop();
   }
-
-  emu.execute_loop();
   return 0;
 }

@@ -8,3 +8,4 @@ emu-aarch64
 tests/xv6/kernel
 *.txt
 log*
+fs.img
