@@ -18,7 +18,7 @@
 
 Emulator::Emulator(int argc, char **argv, char **envp, const std::string &disk)
     : loader(argc, argv, envp), filename_(argv[1]) {
-  
+
   printf("emu: start emulating\n");
 
   if (loader.init() != ESUCCESS) {
@@ -37,9 +37,10 @@ Emulator::Emulator(int argc, char **argv, char **envp, const std::string &disk)
   // printf("loader.text_size = 0x%lx\n", loader.text_size);
   printf("loader.map_base = 0x%lx\n", loader.map_base);
 
-  cpu = std::make_unique<Cpu>(loader.entry, loader.init_sp, loader.text_start_paddr,
-           loader.text_size, loader.map_base, disk);
-  
+  cpu = std::make_unique<Cpu>(loader.entry, loader.init_sp,
+                              loader.text_start_paddr, loader.text_size,
+                              loader.map_base, disk);
+
   init_done_ = true;
   return;
 }
@@ -79,7 +80,7 @@ int main(int argc, char **argv, char **envp) {
 
   const std::string diskname = "fs.img";
   Emulator emu(argc, argv, envp, diskname);
-  if (emu.init_done_){
+  if (emu.init_done_) {
     emu.execute_loop();
   }
   return 0;

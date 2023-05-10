@@ -12,7 +12,9 @@
 #include "utils.h"
 #include "virtio.h"
 
-Bus::Bus(uint64_t text_start, uint64_t text_size, uint64_t map_base, const std::string &diskname): virtio(Virtio(diskname)) {
+Bus::Bus(uint64_t text_start, uint64_t text_size, uint64_t map_base,
+         const std::string &diskname)
+    : virtio(Virtio(diskname)) {
   mem.init(text_start, text_size, map_base);
 }
 

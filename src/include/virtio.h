@@ -124,12 +124,12 @@ struct avairable_ring {
 };
 
 class Desc {
-  public:
-    Desc(uint64_t base_addr, Cpu *cpu);
-    uint64_t addr;
-    uint32_t len;
-    uint16_t flags;
-    uint16_t next;
+public:
+  Desc(uint64_t base_addr, Cpu *cpu);
+  uint64_t addr;
+  uint32_t len;
+  uint16_t flags;
+  uint16_t next;
 };
 
 class Virtqueue {
@@ -147,7 +147,7 @@ public:
   // u16 next
   uint64_t desc_table;
 
-  // Guest -> Host 
+  // Guest -> Host
   // size is 6 + 2 * queue_num
   // u16 flags
   // u16 idx

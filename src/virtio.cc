@@ -16,10 +16,9 @@
 #include "log.h"
 #include "utils.h"
 
-
-Virtio::Virtio(const std::string &diskname){
+Virtio::Virtio(const std::string &diskname) {
   std::ifstream fin(diskname, std::ios::binary);
-  if (!fin){
+  if (!fin) {
     std::cerr << "Cannot open file " << diskname << std::endl;
     return;
   }
@@ -29,12 +28,13 @@ Virtio::Virtio(const std::string &diskname){
   fin.seekg(0, std::ios::beg);
   disk.reserve(fsize);
 
-  disk.insert(disk.begin(), std::istream_iterator<uint8_t>(fin), std::istream_iterator<uint8_t>());
+  disk.insert(disk.begin(), std::istream_iterator<uint8_t>(fin),
+              std::istream_iterator<uint8_t>());
   fin.close();
-  printf("disk size: 0x%lx, loaded: 0x%lx\n",fsize, disk.size());
+  printf("disk size: 0x%lx, loaded: 0x%lx\n", fsize, disk.size());
 }
 
-Desc::Desc(uint64_t base_addr, Cpu *cpu){
+Desc::Desc(uint64_t base_addr, Cpu *cpu) {
   addr = cpu->bus.mem.load64(base_addr);
   len = cpu->bus.mem.load32(base_addr + 8);
   flags = cpu->bus.mem.load16(base_addr + 12);
@@ -54,8 +54,8 @@ void Virtqueue::update(uint32_t pfn, uint32_t page_size, uint32_t queue_num) {
   desc_table = base;
   avail_ring = base + queue_num * 16;
   used_ring = avail_ring + 6 + queue_num * 2;
-  printf("\tvirtqueue: desc=0x%lx, avail=0x%lx, used=0x%lx\n", desc_table, avail_ring,
-         used_ring);
+  printf("\tvirtqueue: desc=0x%lx, avail=0x%lx, used=0x%lx\n", desc_table,
+         avail_ring, used_ring);
   printf("\tvirtio.pfn = 0x%x\n", pfn);
   printf("\tvirtio.page_size = 0x%x\n", page_size);
   printf("\tvirtio.queue_num = 0x%x\n", queue_num);
@@ -71,15 +71,20 @@ bool Virtio::is_interrupting() {
 
 void Virtio::disk_access(Cpu *cpu) {
 
-  uint64_t first_index = cpu->bus.mem.load64(virtqueue->avail_ring + 32 + virtqueue->avail_idx % control_regs.queue_num);
+  uint64_t first_index =
+      cpu->bus.mem.load64(virtqueue->avail_ring + 32 +
+                          virtqueue->avail_idx % control_regs.queue_num);
   printf("first index = %ld\n", first_index);
 
   Desc desc0 = Desc(virtqueue->desc_table + first_index * VRING_DESC_SIZE, cpu);
   Desc desc1 = Desc(virtqueue->desc_table + desc0.next * VRING_DESC_SIZE, cpu);
   Desc desc2 = Desc(virtqueue->desc_table + desc1.next * VRING_DESC_SIZE, cpu);
-  printf("desc0: addr=0x%lx, len=0x%x, flags=%x, next=0x%x\n", desc0.addr, desc0.len, desc0.flags, desc0.next);  
-  printf("desc1: addr=0x%lx, len=0x%x, flags=%x, next=0x%x\n", desc1.addr, desc1.len, desc1.flags,desc1.next);
-  printf("desc2: addr=0x%lx, len=0x%x, flags=%x, next=0x%x\n", desc2.addr, desc2.len, desc2.flags, desc2.next);
+  printf("desc0: addr=0x%lx, len=0x%x, flags=%x, next=0x%x\n", desc0.addr,
+         desc0.len, desc0.flags, desc0.next);
+  printf("desc1: addr=0x%lx, len=0x%x, flags=%x, next=0x%x\n", desc1.addr,
+         desc1.len, desc1.flags, desc1.next);
+  printf("desc2: addr=0x%lx, len=0x%x, flags=%x, next=0x%x\n", desc2.addr,
+         desc2.len, desc2.flags, desc2.next);
 
   assert(desc0.flags & VRING_DESC_F_NEXT == 1);
   assert(desc1.flags & VRING_DESC_F_NEXT == 1);
@@ -93,22 +98,24 @@ void Virtio::disk_access(Cpu *cpu) {
   //   u8 status;
   // };
   uint64_t sector = cpu->bus.mem.load64(desc0.addr + 8);
-  if (desc1.flags & VRING_DESC_F_WRITE){
+  if (desc1.flags & VRING_DESC_F_WRITE) {
     // driver read, device write
-    for (uint16_t i = 0; i < desc1.len; i++){
+    for (uint16_t i = 0; i < desc1.len; i++) {
       uint8_t data = disk[sector * SECTOR_SIZE + i];
       cpu->bus.mem.store8(desc1.addr + i, data);
     }
-  }else {
+  } else {
     // driver write, device read
-    for (uint16_t i = 0; i < desc1.len; i++){
+    for (uint16_t i = 0; i < desc1.len; i++) {
       uint8_t data = cpu->bus.mem.load8(desc1.addr + i);
       disk[sector * SECTOR_SIZE + i] = data;
     }
   }
   // Notification
   cpu->bus.mem.store8(desc2.addr, 0);
-  cpu->bus.mem.store32(virtqueue->used_ring + 4 + (id % control_regs.queue_num) * 8, first_index);
+  cpu->bus.mem.store32(virtqueue->used_ring + 4 +
+                           (id % control_regs.queue_num) * 8,
+                       first_index);
   id += 1;
   cpu->bus.mem.store16(virtqueue->used_ring + 2, id);
   printf("used.idx = 0x%x\n", cpu->bus.mem.load16(virtqueue->used_ring + 2));

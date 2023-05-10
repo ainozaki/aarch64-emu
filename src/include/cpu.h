@@ -19,7 +19,7 @@ struct CPSR {
 class Cpu {
 public:
   Cpu(uint64_t pc, uint64_t sp, uint64_t text_start, uint64_t text_size,
-            uint64_t map_base, const std::string &diskname);
+      uint64_t map_base, const std::string &diskname);
   Bus bus;
   MMU mmu;
   uint64_t pc;
