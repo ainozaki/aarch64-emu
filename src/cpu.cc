@@ -26,8 +26,17 @@ Cpu::Cpu(uint64_t entry, uint64_t sp_base, uint64_t text_start,
 }
 
 void Cpu::check_interrupt() {
+  if ((daif >> 9)& 0x1) {
+    // Interrupt masked
+    return;
+  }
   if (bus.virtio.is_interrupting()) {
     bus.virtio.disk_access(this);
+    printf("Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx\n", VBAR_EL1, VBAR_EL1 + 0x280);
+    ELR_EL1 = pc;
+    ICC_IAR1_EL1 = 0x30;
+    // Interrupt to OS
+    set_pc(VBAR_EL1 + 0x280);
   }
 }
 
@@ -53,6 +62,7 @@ void Cpu::decode_start(uint32_t inst) {
   op1 = util::shift(inst, 25, 28);
 
   /*
+  printf("0x%lx ", pc);
   printf("pc 0x%lx\n", pc);
   // printf("sp=0x%lx:\n", sp);
   // printf("0x%lx: \t", pc);
@@ -2238,9 +2248,11 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         switch (op2) {
         case 6:
           LOG_CPU("daifset \n");
+          unsupported();
           return;
         case 7:
           LOG_CPU("msr daifctr\n");
+          unsupported();
           return;
         default:
           unsupported();
@@ -2318,7 +2330,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
               return;
             } else {
               mmu.ttbr0_el1 = xregs[rt];
-              LOG_CPU("msr TTBR0_EL1, x%d\n", rt);
+              LOG_CPU("msr TTBR0_EL1(=0x%lx), x%d\n", mmu.ttbr0_el1, rt);
               return;
             }
             break;
@@ -2356,6 +2368,28 @@ void Cpu::decode_system_register_move(uint32_t inst) {
         break;
       case 4:
         switch (CRm) {
+        case 0:
+          switch (op2){
+            case 0:
+              xregs[rt] = SPSR_EL1;
+              LOG_CPU("mrs x%d, spsr_el1(=0x%lx)\n", rt, SPSR_EL1);
+              break;
+            case 1:
+              if (if_get){
+                xregs[rt] = ELR_EL1;
+                LOG_CPU("mrs x%d, elr_el1, 0x%lx\n", rt, ELR_EL1);
+              }else {
+                ELR_EL1 = xregs[rt];
+                LOG_CPU("msr elr_el1, x%d(0x%lx)\n", rt, ELR_EL1);
+
+              }
+              xregs[rt] = ELR_EL1;
+              LOG_CPU("mrs x%d, elr_el1, 0x%lx\n", rt, ELR_EL1);
+              break;
+            default:
+              unsupported();
+          }
+          break;
         case 2:
           switch (op2) {
           case 2:
@@ -2435,6 +2469,14 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           break;
         case 12:
           switch (op2) {
+          case 0:
+            xregs[rt] = ICC_IAR1_EL1;
+            LOG_CPU("mrs x%d, icc_iar1_el1(=0x%lx)\n", rt, ICC_IAR1_EL1);
+            return; 
+          case 1:
+            ICC_EOIR1_EL1 = xregs[rt];
+            LOG_CPU("msr icc_eoir1_el1, x%d(=0x%lx)\n", rt, ICC_EOIR1_EL1);
+            return;
           case 5:
             xregs[rt] = ICC_SRE_EL1;
             LOG_CPU("mrs x%d, ICC_SRE_EL1(=0x%lx)\n", rt, ICC_SRE_EL1);
@@ -2466,11 +2508,11 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           switch (op2) {
           case 1:
             if (if_get) {
-              LOG_CPU("mrs x%d, daif=0x%lx\n", rt, daif);
               xregs[rt] = daif;
+              LOG_CPU("mrs x%d, daif=0x%lx\n", rt, daif);
             } else {
-              LOG_CPU("msr daif, x%d(=0x%lx)\n", rt, xregs[rt]);
               daif = xregs[rt];
+              LOG_CPU("msr daif, x%d(=0x%lx)\n", rt, xregs[rt]);
             }
             return;
           default:
@@ -2642,6 +2684,12 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
       unsupported();
       increment_pc();
       return;
+    }
+    break;
+  case 4:
+    if ((op3 == 0) & (Rn == 31) & (op4 == 0)){
+      printf("eret to 0x%lx\n", ELR_EL1);
+      set_pc(ELR_EL1);
     }
     break;
   default:

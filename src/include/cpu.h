@@ -27,7 +27,6 @@ public:
 
   uint64_t xregs[32] = {0};
   uint64_t sp;
-  uint64_t elr_el[4]; /* Exception Linked Registers */
   const uint64_t xzr = 0;
   uint64_t CurrentEL;
   const uint64_t mpidr_el1 = 0x80000000;
@@ -51,6 +50,10 @@ public:
   uint64_t ICC_PMR_EL1; // Interrupt Controller Interrupt Priority Mask Register
   uint64_t ICC_SRE_EL1 =
       0x7; // Interrupt Controller System Register Enable register (EL1)
+  uint64_t ICC_IAR1_EL1;
+  uint64_t ICC_EOIR1_EL1;
+  uint64_t SPSR_EL1;
+  uint64_t ELR_EL1;
 
   // Timer
   uint64_t CNTV_CTL_EL0 = 0; // Counter-timer Virtual Timer Control register
