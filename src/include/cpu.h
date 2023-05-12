@@ -31,6 +31,7 @@ public:
   uint64_t CurrentEL;
   const uint64_t mpidr_el1 = 0x80000000;
   uint64_t VBAR_EL1;
+  uint64_t SP_EL0;
 
   /* PSTATE */
   /*

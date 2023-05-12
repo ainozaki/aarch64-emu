@@ -2385,6 +2385,21 @@ void Cpu::decode_system_register_move(uint32_t inst) {
               unsupported();
           }
           break;
+        case 1:
+          switch (op2){
+            case 0:
+              if (if_get){
+                xregs[rt] = SP_EL0;
+                LOG_CPU("mrs x%d, SP_EL0(=0x%lx)\n", rt, SP_EL0);
+              }else {
+                SP_EL0 = xregs[rt];
+                LOG_CPU("msr SP_EL0, x%d(=0x%lx)\n", rt, SP_EL0);
+              }
+              break;
+            default:
+              unsupported();
+          }
+          break;
         case 2:
           switch (op2) {
           case 2:
