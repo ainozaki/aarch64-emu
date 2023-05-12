@@ -169,6 +169,11 @@ void Virtio::store(uint64_t addr, uint64_t value) {
     printf("virtio store VIRTIO_MMIO_QUEUE_NOTIFY = 0x%x\n",
            control_regs.queue_notify);
     break;
+  case VIRTIO_MMIO_INTERRUPT_ACK:
+    control_regs.interrupt_ack = value;
+    printf("virtio store VIRTIO_MMIO_INTERRUPT_ACK = 0x%x\n",
+           control_regs.interrupt_ack);
+    break;
   case VIRTIO_MMIO_STATUS:
     control_regs.status = value;
     if (control_regs.status & 0x4) {
@@ -218,6 +223,12 @@ uint64_t Virtio::load(uint64_t addr) {
   case VIRTIO_MMIO_QUEUE_PFN:
     printf("virtio VIRTIO_MMIO_QUEUE_PFN = 0x%x\n", control_regs.queue_pfn);
     return control_regs.queue_pfn;
+  case VIRTIO_MMIO_INTERRUPT_ACK:
+    printf("virtio VIRTIO_MMIO_INTERRUPT_ACK = 0x%x\n", control_regs.interrupt_ack);
+    return control_regs.interrupt_ack;
+  case VIRTIO_MMIO_INTERRUPT_STATUS:
+    printf("virtio VIRTIO_MMIO_INTERRUPT_STATUS = 0x%x\n", control_regs.interrupt_status);
+    return control_regs.interrupt_status;
   case VIRTIO_MMIO_STATUS:
     printf("virtio VIRTIO_MMIO_STATUS = 0x%x\n", control_regs.status);
     return control_regs.status;
