@@ -26,10 +26,10 @@ Virtio::Virtio(const std::string &diskname) {
   fin.seekg(0, std::ios::end);
   std::streamsize fsize = fin.tellg();
   fin.seekg(0, std::ios::beg);
-  disk.reserve(fsize);
-
+  fin.unsetf(std::ios::skipws);
   disk.insert(disk.begin(), std::istream_iterator<uint8_t>(fin),
               std::istream_iterator<uint8_t>());
+  
   fin.close();
   printf("disk size: 0x%lx, loaded: 0x%lx\n", fsize, disk.size());
 }
@@ -53,7 +53,8 @@ void Virtqueue::update(uint32_t pfn, uint32_t page_size, uint32_t queue_num) {
   // Used Ring, 4, 6 + 8*(Queue Size)
   desc_table = base;
   avail_ring = base + queue_num * 16;
-  used_ring = avail_ring + 6 + queue_num * 2;
+  //used_ring = avail_ring + 6 + queue_num * 2;
+  used_ring = base + page_size;
   printf("\tvirtqueue: desc=0x%lx, avail=0x%lx, used=0x%lx\n", desc_table,
          avail_ring, used_ring);
   printf("\tvirtio.pfn = 0x%x\n", pfn);
