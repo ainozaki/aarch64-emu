@@ -32,7 +32,7 @@ void Cpu::check_interrupt() {
   }
   if (bus.virtio.is_interrupting()) {
     bus.virtio.disk_access(this);
-    printf("Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx\n", VBAR_EL1, VBAR_EL1 + 0x280);
+    printf("Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx, pc=0x%lx\n", VBAR_EL1, VBAR_EL1 + 0x280, pc);
     ELR_EL1 = pc;
     ICC_IAR1_EL1 = 0x30;
     // Interrupt to OS
@@ -873,8 +873,6 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
     if_32bit = 1;
     if (if_load) {
       op = "ldpw";
-      unsupported();
-      return;
     } else {
       op = "stpw";
     }
@@ -941,13 +939,10 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
   }
   LOG_CPU(",address=0x%lx\n", address);
 
-  uint64_t value1, value2;
   if (if_load) {
     if (if_32bit) {
-      value1 = load(address, MemAccessSize::Word);
-      value2 = load(address + 4, MemAccessSize::Word);
-      xregs[rt] = util::set_lower(xregs[rt], value1, MemAccessSize::Word);
-      xregs[rt2] = util::set_lower(xregs[rt2], value2, MemAccessSize::Word);
+      xregs[rt] = load(address, MemAccessSize::Word);
+      xregs[rt2] = load(address + 4, MemAccessSize::Word);
     } else {
       xregs[rt] = load(address, MemAccessSize::DWord);
       xregs[rt2] = load(address + 8, MemAccessSize::DWord);
