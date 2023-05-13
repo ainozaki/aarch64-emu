@@ -22,7 +22,7 @@ void Uart::store(uint64_t addr, uint64_t value) {
     break;
   case 0x018:
     uart_fr = value;
-    printf("uart_fr = 0x%lx\n", value);
+    LOG_CPU("uart_fr = 0x%lx\n", value);
     break;
   case 0x02c:
     uart_lcr_h = value;
@@ -37,7 +37,7 @@ void Uart::store(uint64_t addr, uint64_t value) {
     LOG_CPU("uart_imsc = 0x%lx\n", value);
     break;
   default:
-    LOG_CPU("uart unsupported\n");
+    printf("uart unsupported\n");
   }
 }
 
@@ -60,7 +60,7 @@ uint64_t Uart::load(uint64_t addr) {
     LOG_CPU("uart_imsc load 0x%x\n", uart_imsc);
     return uart_imsc;
   default:
-    LOG_CPU("uart load unsupported\n");
+    printf("uart load unsupported\n");
     return 1;
   }
 }

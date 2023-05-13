@@ -66,6 +66,7 @@ int Loader::load() {
     perror("mmap");
     return EFAILED;
   }
+  memset(ram_base, 0, RAM_SIZE);
   map_base = (uint64_t)ram_base;
   printf("\tmap_base(host):0x%lx, RAM_SIZE:0x%x\n", map_base, RAM_SIZE);
 
