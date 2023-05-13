@@ -60,6 +60,7 @@ void Cpu::store(uint64_t address, uint64_t value, MemAccessSize size) {
 void Cpu::decode_start(uint32_t inst) {
   uint8_t op1;
   op1 = util::shift(inst, 25, 28);
+  inst_ = inst;
 
   /*
   printf("0x%lx ", pc);
@@ -83,6 +84,9 @@ void Cpu::decode_start(uint32_t inst) {
     bus.mem.debug_mem(0x40016118);
   }
   */
+  if (pc == 0xffffff80400054d0){
+    printf("inst=0x%x\n", inst);
+  }
   const decode_func decode_inst_tbl[] = {
       &Cpu::decode_sme_encodings,
       &Cpu::decode_unallocated,
@@ -207,8 +211,8 @@ static inline uint64_t signed_extend(uint64_t val, uint8_t topbit) {
 } // namespace
 
 void Cpu::unsupported() {
-  printf("unsupported inst at pc 0x%lx\n", pc);
-  exit(1);
+  printf("unsupported inst: pc=0x%lx, inst=0x%x ", pc, inst_);
+  exit(0);
 }
 
 void Cpu::unallocated() {
@@ -394,7 +398,9 @@ void Cpu::decode_branches(uint32_t inst) {
       decode_exception_generation(inst);
       break;
     case 1:
-      if (util::bit(inst, 20)) {
+      if (inst == 0xd503201f){
+        LOG_CPU("nop\n");
+      }else if (util::bit(inst, 20)) {
         decode_system_register_move(inst);
       } else if (util::bit(inst, 19)) {
         decode_system_instructions(inst);
@@ -471,8 +477,8 @@ void Cpu::decode_pc_rel(uint32_t inst) {
 
   switch (op) {
   case 0:
-    imm = (immhi << 21) | immlo;
-    xregs[rd] = (pc & ~util::mask(12)) + imm;
+    imm = (immhi << 2) | immlo;
+    xregs[rd] = pc + imm;
     LOG_CPU("adr x%d(=0x%lx), 0x%lx\n", rd, xregs[rd], imm);
     break;
   case 1:
@@ -1738,6 +1744,7 @@ void Cpu::decode_conditional_select(uint32_t inst) {
     unallocated();
     return;
   }
+  add_imm_s(xregs[rn], xregs[rm], 0, cpsr, 1);
   switch (op1) {
   case 0:
     switch (op2) {
@@ -1764,8 +1771,15 @@ void Cpu::decode_conditional_select(uint32_t inst) {
   case 1:
     switch (op2) {
     case 0:
-      LOG_CPU("csinv\n");
-      unsupported();
+      if (check_b_flag(cond)){
+        xregs[rd] = xregs[rn];
+      }else {
+        xregs[rd] = ~xregs[rm];
+      }
+      LOG_CPU("csinv x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d, "
+              "check_cond=%d\n",
+              rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond,
+              check_b_flag(cond));
       break;
     case 1:
       if (check_b_flag(cond)) {
@@ -2081,12 +2095,12 @@ void Cpu::decode_exception_generation(uint32_t inst) {
     }
     switch (LL) {
     case 1:
-      LOG_CPU("SVC: w8=%ld, w0=%ld, w1=0x%lx, w2=%ld\n", xregs[8], xregs[0],
-              xregs[1], xregs[2]);
-      write(xregs[0],
-            (void *)(bus.mem.map_base_ + xregs[1] - bus.mem.text_start_),
-            xregs[2]);
-      break;
+      LOG_CPU("SVC: w7=%ld, w0=%ld, w1=0x%lx, w2=%ld, jump to 0x%lx\n", xregs[7], xregs[0],
+              xregs[1], xregs[2], VBAR_EL1 + 0x80 * 8);
+      ELR_EL1 = pc + 4;
+      ESR_EL1 |= (21 << 26);
+      set_pc(VBAR_EL1 + 0x80 * 8);
+      return;
     case 2:
       LOG_CPU("HVC 0x%lx\n", imm16);
       xregs[0] = (uint64_t)-2;
@@ -2430,6 +2444,29 @@ void Cpu::decode_system_register_move(uint32_t inst) {
           break;
         }
         break;
+      case 5:
+        switch (CRm){
+          case 2:
+            switch (op2){
+              case 0:
+                if (if_get){
+                  xregs[rt] = ESR_EL1;
+                  LOG_CPU("mrs x%d, esr_el1(=0x%lx)\n", rt, ESR_EL1);
+                }else {
+                  ESR_EL1 = xregs[rt];
+                  LOG_CPU("msr esr_el1(=0x%lx), x%d\n", ESR_EL1, rt);
+                }
+                break;
+              default:
+                unsupported();
+                break;
+            }
+            break;
+          default:
+            unsupported();
+            break;
+        }
+        break;
       case 6:
         switch (CRm) {
         case 0:
@@ -2670,6 +2707,15 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
       return;
     }
     break;
+  case 1:
+    if ((op2 == 31) && (op3 == 0) && (op4 == 0)){
+      xregs[30] = pc + 4;
+      set_pc(xregs[Rn]);
+      LOG_CPU("blr x%d(=0x%lx)\n", Rn, xregs[Rn]);
+      break;
+    }
+    unsupported();
+    break;
   case 2:
     switch (op3) {
     case 0:
@@ -2698,7 +2744,7 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
     break;
   case 4:
     if ((op3 == 0) & (Rn == 31) & (op4 == 0)){
-      printf("eret to 0x%lx\n", ELR_EL1);
+      LOG_CPU("eret to 0x%lx\n", ELR_EL1);
       set_pc(ELR_EL1);
     }
     break;
