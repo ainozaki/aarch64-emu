@@ -72,7 +72,7 @@ private:
   uint32_t inst_;
   void increment_pc() { pc += 4; }
   void set_pc(uint64_t new_pc) { pc = new_pc; }
-  bool check_b_flag(uint8_t cond);
+  bool check_b_flag(uint8_t cond, CPSR &cpsr);
 
   uint64_t load(uint64_t address, MemAccessSize size);
   void store(uint64_t address, uint64_t value, MemAccessSize size);
@@ -109,6 +109,7 @@ private:
   void decode_addsub_extended_reg(uint32_t inst);
   void decode_logical_shifted_reg(uint32_t inst);
   void decode_conditional_select(uint32_t inst);
+  void decode_conditional_compare_imm(uint32_t inst);
   void decode_data_processing_1source(uint32_t inst);
   void decode_data_processing_2source(uint32_t inst);
 

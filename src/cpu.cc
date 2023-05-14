@@ -84,9 +84,6 @@ void Cpu::decode_start(uint32_t inst) {
     bus.mem.debug_mem(0x40016118);
   }
   */
-  if (pc == 0xffffff80400054d0){
-    printf("inst=0x%x\n", inst);
-  }
   const decode_func decode_inst_tbl[] = {
       &Cpu::decode_sme_encodings,
       &Cpu::decode_unallocated,
@@ -319,11 +316,12 @@ void Cpu::decode_loads_and_stores(uint32_t inst) {
 }
 
 void Cpu::decode_data_processing_reg(uint32_t inst) {
-  uint8_t op0, op1, op2;
+  uint8_t op0, op1, op2, op3;
 
   op0 = util::bit(inst, 30);
   op1 = util::bit(inst, 28);
   op2 = util::shift(inst, 21, 24);
+  op3 = util::shift(inst, 10, 15);
   switch (op1) {
   case 0:
     if (op2 < 8) {
@@ -339,8 +337,11 @@ void Cpu::decode_data_processing_reg(uint32_t inst) {
     case 0:
       break;
     case 2:
-      LOG_CPU("conditional branch\n");
-      unsupported();
+      if (op3 & 0x2){
+        decode_conditional_compare_imm(inst);
+      }else {
+        unsupported();
+      }
       break;
     case 4:
       decode_conditional_select(inst);
@@ -595,10 +596,10 @@ void Cpu::decode_add_sub_imm(uint32_t inst) {
 
   if (if_setflag) {
     result = add_imm_s(op1, imm, if_sub, cpsr, if_64bit);
-    LOG_CPU("%ss x%d, x%d, #0x%lx, LSL %d\n", op, rd, rn, imm, if_shift * 12);
+    LOG_CPU("%ss x%d(=0x%lx), x%d(=0x%lx), #0x%lx, LSL %d\n", op, rd, xregs[rd],rn, xregs[rn], imm, if_shift * 12);
   } else {
     result = add_imm(op1, imm, if_sub);
-    LOG_CPU("%s x%d, x%d(=0x%lx), #0x%lx, LSL %d\n", op, rd, rn, xregs[rn], imm,
+    LOG_CPU("%s x%d(=0x%lx), x%d(=0x%lx), #0x%lx, LSL %d\n", op, rd, xregs[rd], rn, xregs[rn], imm,
             if_shift * 12);
   }
   if (rd == 31) {
@@ -1744,23 +1745,30 @@ void Cpu::decode_conditional_select(uint32_t inst) {
     unallocated();
     return;
   }
-  add_imm_s(xregs[rn], xregs[rm], 0, cpsr, 1);
+
   switch (op1) {
   case 0:
     switch (op2) {
     case 0:
-      if (check_b_flag(cond)) {
+      if (check_b_flag(cond, cpsr)) {
         xregs[rd] = xregs[rn];
       } else {
         xregs[rd] = xregs[rm];
       }
+      if (pc == 0xffffff80400018cc){
+        printf("csel x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d, "
+              "check_cond=%d, pc=0x%lx\n",
+              rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond,
+              check_b_flag(cond, cpsr), pc);
+
+      }
       LOG_CPU("csel x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d, "
               "check_cond=%d\n",
               rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond,
-              check_b_flag(cond));
+              check_b_flag(cond, cpsr));
       break;
     case 1:
-      result = check_b_flag(cond) ? xregs[rn] : xregs[rm] + 1;
+      result = check_b_flag(cond, cpsr) ? xregs[rn] : xregs[rm] + 1;
       xregs[rd] = result;
       LOG_CPU("csinc x%d, x%d, x%d\n", rd, rn, rm);
       break;
@@ -1771,7 +1779,7 @@ void Cpu::decode_conditional_select(uint32_t inst) {
   case 1:
     switch (op2) {
     case 0:
-      if (check_b_flag(cond)){
+      if (check_b_flag(cond, cpsr)){
         xregs[rd] = xregs[rn];
       }else {
         xregs[rd] = ~xregs[rm];
@@ -1779,10 +1787,10 @@ void Cpu::decode_conditional_select(uint32_t inst) {
       LOG_CPU("csinv x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d, "
               "check_cond=%d\n",
               rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond,
-              check_b_flag(cond));
+              check_b_flag(cond, cpsr));
       break;
     case 1:
-      if (check_b_flag(cond)) {
+      if (check_b_flag(cond, cpsr)) {
         result = xregs[rn];
       } else {
         result = ~xregs[rm] + 1;
@@ -1977,50 +1985,50 @@ void Cpu::decode_data_processing_3source(uint32_t inst) {
    consistently and is very unlikely to change direction."
                                  - same as B.cond in this emulator.
 */
-bool Cpu::check_b_flag(uint8_t cond) {
+bool Cpu::check_b_flag(uint8_t cond, CPSR &cpsr_) {
   switch (cond) {
   case 0:
-    return cpsr.Z == 1;
+    return cpsr_.Z == 1;
     break;
   case 1:
-    return cpsr.Z == 0;
+    return cpsr_.Z == 0;
     break;
   case 2:
-    return cpsr.C == 1;
+    return cpsr_.C == 1;
     break;
   case 3:
-    return cpsr.C == 0;
+    return cpsr_.C == 0;
     break;
   case 4:
-    return cpsr.N == 1;
+    return cpsr_.N == 1;
     break;
   case 5:
-    return cpsr.N == 0;
+    return cpsr_.N == 0;
     break;
   case 6:
-    return cpsr.V == 1;
+    return cpsr_.V == 1;
     break;
   case 7:
-    return cpsr.V == 0;
+    return cpsr_.V == 0;
     break;
   case 8:
-    // printf("C = %d, Z = %d\n", cpsr.C, cpsr.Z);
-    return (cpsr.C == 1) & (cpsr.Z == 0);
+    // printf("C = %d, Z = %d\n", cpsr_.C, cpsr_.Z);
+    return (cpsr_.C == 1) & (cpsr_.Z == 0);
     break;
   case 9:
-    return (cpsr.C == 0) | (cpsr.Z == 1);
+    return (cpsr_.C == 0) | (cpsr_.Z == 1);
     break;
   case 10:
-    return cpsr.N == cpsr.V;
+    return cpsr_.N == cpsr_.V;
     break;
   case 11:
-    return cpsr.N != cpsr.V;
+    return cpsr_.N != cpsr_.V;
     break;
   case 12:
-    return (cpsr.Z == 0) & (cpsr.N == cpsr.V);
+    return (cpsr_.Z == 0) & (cpsr_.N == cpsr_.V);
     break;
   case 13:
-    return (cpsr.Z == 1) | (cpsr.N != cpsr.V);
+    return (cpsr_.Z == 1) | (cpsr_.N != cpsr_.V);
     break;
   case 14:
     return true;
@@ -2047,7 +2055,7 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst) {
   }
   switch (o0) {
   case 0:
-    if (check_b_flag(cond)) {
+    if (check_b_flag(cond, cpsr)) {
       offset = signed_extend(imm19 << 2, 20);
       set_pc(pc + offset);
       LOG_CPU("B.cond: pc=0x%lx offset=0x%lx, cond=0x%x\n", pc + offset, offset,
@@ -2066,6 +2074,57 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst) {
     break;
   default:
     assert(false);
+  }
+}
+
+/*
+         Conditional compare (immediate)
+
+           31   30   29 28     21  20   16  15 12   11  10   9  5  4    3   0
+         +----+----+---+----------+---------+------+---+----+------+----+------+
+         | sf | op | S | 11010010 |   imm5  | cond | 1 | o2 |  Rn  | o3 | nzcv |
+         +----+----+---+----------+---------+------+---+----+------+----+------+
+         @op: 0->CCMN, 1->CCMP
+
+*/
+void Cpu::decode_conditional_compare_imm(uint32_t inst) {
+  uint8_t if_64bit, op, s, cond, o2, rn, o3, nzcv;
+  uint64_t imm;
+
+  if_64bit = util::bit(inst, 31);
+  op = util::bit(inst, 30);
+  s = util::bit(inst, 29);
+  imm = util::shift(inst, 16, 20);
+  cond = util::shift(inst, 12, 15);
+  o2 = util::bit(inst, 10);
+  rn = util::shift(inst, 5, 9);
+  o3 = util::bit(inst, 4);
+  nzcv = util::shift(inst, 0, 3);
+
+  switch (op){
+    case 0:
+      LOG_CPU("CCMN");
+      unsupported();
+      break;
+    case 1:
+      if (check_b_flag(cond, cpsr)){
+        CPSR cpsr_local;
+        add_imm_s(xregs[rn], imm, 1, cpsr_local, 1);
+        cpsr.N = cpsr_local.N;
+        cpsr.Z = cpsr_local.Z;
+        cpsr.C = cpsr_local.C;
+        cpsr.V = cpsr_local.V;
+      }else {
+        cpsr.N = (nzcv & 0b1000) >> 3;
+        cpsr.Z = (nzcv & 0b0100) >> 2;
+        cpsr.C = (nzcv & 0b0010) >> 1;
+        cpsr.V = nzcv & 0b0001;
+      }
+      LOG_CPU("CCMP x%d(=0x%lx), #0x%lx, #nzcv(=0x%lx), cond%d\n", rn, xregs[rn], imm, nzcv, cond);
+      break;
+    default:
+      unallocated();
+      break;
   }
 }
 
@@ -2815,6 +2874,9 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
   switch (op) {
   case 0: // CBZ
     LOG_CPU("cbz ");
+    if (pc == 0xffffff8040001098){
+      printf("cbz x%d(=0x%lx)\n", rt, xregs[rt]);
+    }
     if (if_64bit) {
       if_jump = xregs[rt] == 0;
     } else {
@@ -2822,6 +2884,9 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
     }
     break;
   case 1: // CBNZ
+    if (pc == 0xffffff80400018d0){
+      printf("cbnz x%d(=0x%lx)\n", rt, xregs[rt]);
+    }
     LOG_CPU("cbnz ");
     if (if_64bit) {
       if_jump = xregs[rt] != 0;
@@ -2872,6 +2937,9 @@ void Cpu::decode_test_and_branch_imm(uint32_t inst) {
   offset = if_jump ? signed_extend((imm14 << 2), 15) : 4;
 
   [[maybe_unused]] const char *name = op ? "tbnz" : "tbz";
+  if (pc == 0xffffff80400054f0){
+    printf("%s x%d(=0x%lx), #%d, 0x%lx\n", name, rt, xregs[rt],bit_pos, pc + offset);
+  }
   LOG_CPU("%s x%d, #%d, 0x%lx\n", name, rt, bit_pos, pc + offset);
 
   set_pc(pc + offset);
