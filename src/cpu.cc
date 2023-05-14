@@ -208,7 +208,7 @@ static inline uint64_t signed_extend(uint64_t val, uint8_t topbit) {
 } // namespace
 
 void Cpu::unsupported() {
-  printf("unsupported inst: pc=0x%lx, inst=0x%x ", pc, inst_);
+  printf("unsupported inst: pc=0x%lx, inst=0x%x \n", pc, inst_);
   exit(0);
 }
 
@@ -1003,9 +1003,53 @@ void Cpu::decode_ldst_register(uint32_t inst) {
   return;
 }
 
+/*
+         Load/store register (unscaled immediate)
+
+         31   30 29 27  26 25 24 23 22 21  20     12 1110 9    5 4   0
+         +------+-----+---+----+-----+---+---------+-----+------+-----+
+         | size | 111 | V | 00 | opc | 0 |    imm9 |  00 |  Rn  |  Rt |
+         +------+-----+---+----+-----+---+---------+-----+------+-----+
+
+         @opc: 00->stur, 01->ldur, 10->ldurs(64bit), 11->ldurs(32bit)
+
+*/
 void Cpu::decode_ldst_reg_unscaled_immediate([[maybe_unused]] uint32_t inst) {
-  LOG_CPU("ldst_reg_scucaled_imm %x\n", inst);
-  unsupported();
+  uint8_t size, opc, rn, rt;
+  uint64_t imm, offset, address, data;
+  size = util::shift(inst, 30, 31);
+  opc = util::shift(inst, 22, 23);
+  imm = util::shift(inst, 12, 20);
+  rn = util::shift(inst, 5, 9);
+  rt = util::shift(inst, 0, 4);
+
+  offset = signed_extend(imm, 8);
+  address = (rn == 31) ? sp : xregs[rn];
+  address += offset;
+
+  switch (size){
+    case 1:
+      data = load(address, MemAccessSize::Hex);
+      break;
+    case 2:
+      data = load(address, MemAccessSize::Word);
+      break;
+    case 3:
+      data = load(address, MemAccessSize::DWord);
+      break;
+    default:
+      unsupported();
+      break;
+  }
+
+  switch (opc){
+    case 1:
+      xregs[rt] = data;
+      LOG_CPU("LDUR(size=%d) x%d, x%d, #0x%lx, address=0x%lx\n", size, rt, rn, imm, address);
+      break;
+    default:
+      unsupported();
+  }
 }
 
 /*
@@ -2088,17 +2132,17 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst) {
 
 */
 void Cpu::decode_conditional_compare_imm(uint32_t inst) {
-  uint8_t if_64bit, op, s, cond, o2, rn, o3, nzcv;
+  uint8_t /*if_64bit, s, o2, o3 */op, cond, rn, nzcv;
   uint64_t imm;
 
-  if_64bit = util::bit(inst, 31);
+  //if_64bit = util::bit(inst, 31);
   op = util::bit(inst, 30);
-  s = util::bit(inst, 29);
+  //s = util::bit(inst, 29);
   imm = util::shift(inst, 16, 20);
   cond = util::shift(inst, 12, 15);
-  o2 = util::bit(inst, 10);
+  //o2 = util::bit(inst, 10);
   rn = util::shift(inst, 5, 9);
-  o3 = util::bit(inst, 4);
+  //o3 = util::bit(inst, 4);
   nzcv = util::shift(inst, 0, 3);
 
   switch (op){
