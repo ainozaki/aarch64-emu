@@ -19,7 +19,7 @@ const uint64_t GIC_SGI_BASE = GIC_REDIST + 0x10000;
 const uint64_t GICR_IGROUPR0 = GIC_SGI_BASE + 0x80;
 const uint64_t GICR_ISENABLER0 = GIC_SGI_BASE + 0x100;
 const uint64_t GICR_ICPENDR0 = GIC_SGI_BASE + 0x280;
-const uint64_t GICR_IPRIORITYR0 = GIC_SGI_BASE + 0x400;
+const uint64_t GICR_IPRIORITYR = GIC_SGI_BASE + 0x400;
 const uint64_t GICR_IGRPMODR0 = GIC_SGI_BASE + 0xd00;
 
 class Gic {

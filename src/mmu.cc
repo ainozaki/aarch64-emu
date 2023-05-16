@@ -186,6 +186,7 @@ uint64_t MMU::mmu_translate(uint64_t addr) {
   } else if (addr_sz >= g4kb_l3_start_bit) {
     paddr = l3_translate(addr, ttbrn);
   }
+  mmu_debug(addr);
 
   LOG_DEBUG("vaddr = 0x%lx, paddr = 0x%lx\n", addr, paddr);
 

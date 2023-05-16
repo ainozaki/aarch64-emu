@@ -39,8 +39,8 @@ void Gic::store(uint64_t addr, uint64_t value) {
     r_isenabler0 = value;
   } else if (addr == GICR_ICPENDR0) {
     r_icpendr0 = value;
-  } else if ((addr >= GICD_IPRIORITYR) && (addr <= GICD_IPRIORITYR + 0x1f)) {
-    int idx = (addr - GICD_IPRIORITYR) / 4;
+  } else if ((addr >= GICR_IPRIORITYR) && (addr <= GICR_IPRIORITYR + 0x1f)) {
+    int idx = (addr - GICR_IPRIORITYR) / 4;
     assert(idx < 8);
     r_ipriorityr[idx] = value;
   } else if (addr == GICR_IGRPMODR0) {
@@ -89,14 +89,15 @@ uint64_t Gic::load(uint64_t addr) {
     return r_isenabler0;
   } else if (addr == GICR_ICPENDR0) {
     return r_icpendr0;
-  } else if ((addr >= GICD_IPRIORITYR) && (addr <= GICD_IPRIORITYR + 0x1f)) {
-    int idx = (addr - GICD_IPRIORITYR) / 4;
+  } else if ((addr >= GICR_IPRIORITYR) && (addr <= GICR_IPRIORITYR + 0x1f)) {
+    int idx = (addr - GICR_IPRIORITYR) / 4;
     assert(idx < 8);
     return r_ipriorityr[idx];
   } else if (addr == GICR_IGRPMODR0) {
     return r_igrpmodr0;
   } else {
     printf("gic unknown load 0x%lx\n", addr);
+
     return 0;
   }
 }
