@@ -2,17 +2,8 @@
 
 #include <stdio.h>
 
-#define ENABLE_LOG_CPU 0
-#define ENABLE_LOG_DEBUG 0
+extern int log_cpu_on;
+extern int log_debug_on;
 
-#if ENABLE_LOG_CPU
-#define LOG_CPU(...) printf(__VA_ARGS__)
-#else
-#define LOG_CPU(...)
-#endif
-
-#if ENABLE_LOG_DEBUG
-#define LOG_DEBUG(...) printf(__VA_ARGS__)
-#else
-#define LOG_DEBUG(...)
-#endif
+#define LOG_CPU(...) if (log_cpu_on) {printf(__VA_ARGS__);}
+#define LOG_DEBUG(...) if (log_debug_on) {printf(__VA_ARGS__);}

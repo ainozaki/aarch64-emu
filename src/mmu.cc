@@ -39,15 +39,15 @@ void MMU::mmu_debug([[maybe_unused]] uint64_t addr) {
   LOG_DEBUG("========VADDR========\n");
   LOG_DEBUG("addr   = 0x%lx\n", addr);
   LOG_DEBUG("ttbrn   = 0x%lx\n", util::bit64(addr, 63));
-  LOG_DEBUG("L0_index = 0x%x\n",
+  LOG_DEBUG("L0_index = 0x%lx\n",
             util::shift(addr, g4kb_l0_start_bit, g4kb_l0_start_bit + 8));
-  LOG_DEBUG("L1_index = 0x%x\n",
+  LOG_DEBUG("L1_index = 0x%lx\n",
             util::shift(addr, g4kb_l1_start_bit, g4kb_l1_start_bit + 8));
-  LOG_DEBUG("L2_index = 0x%x\n",
+  LOG_DEBUG("L2_index = 0x%lx\n",
             util::shift(addr, g4kb_l2_start_bit, g4kb_l2_start_bit + 8));
-  LOG_DEBUG("L3_index = 0x%x\n",
+  LOG_DEBUG("L3_index = 0x%lx\n",
             util::shift(addr, g4kb_l3_start_bit, g4kb_l3_start_bit + 8));
-  LOG_DEBUG("offset  = 0x%x\n", util::shift(addr, 0, 11));
+  LOG_DEBUG("offset  = 0x%lx\n", util::shift(addr, 0, 11));
   LOG_DEBUG("ttbr0  = 0x%lx\n", ttbr0_el1);
   LOG_DEBUG("ttbr1  = 0x%lx\n", ttbr1_el1);
   LOG_DEBUG("======================\n");

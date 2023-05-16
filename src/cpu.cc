@@ -2173,7 +2173,7 @@ void Cpu::decode_conditional_compare_imm(uint32_t inst) {
         cpsr.C = (nzcv & 0b0010) >> 1;
         cpsr.V = nzcv & 0b0001;
       }
-      LOG_CPU("CCMP x%d(=0x%lx), #0x%lx, #nzcv(=0x%lx), cond%d\n", rn, xregs[rn], imm, nzcv, cond);
+      LOG_CPU("CCMP x%d(=0x%lx), #0x%lx, #nzcv(=0x%x), cond%d\n", rn, xregs[rn], imm, nzcv, cond);
       break;
     default:
       unallocated();
