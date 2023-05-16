@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <stdio.h>
 
+#include "log.h"
 #include "mem.h"
 
 namespace util {
@@ -19,7 +20,7 @@ uint64_t shift_with_type(uint64_t value, uint8_t type, uint8_t amount) {
     x = 64 - amount;
     return ((value >> amount) & mask(x)) | ((value >> x) << x);
   default:
-    fprintf(stderr, "Unknown shift type\n");
+    LOG_SYSTEM("Unknown shift type\n");
     return 0;
   }
 }

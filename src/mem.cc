@@ -23,7 +23,7 @@ void Mem::clean_mem() {
     free(text_);
   }
   free(mem_);
-  printf("mem: free mainmem\n");
+  LOG_SYSTEM("mem: free mainmem\n");
 }
 
 void Mem::show_stack(uint64_t sp) {
@@ -49,7 +49,7 @@ void Mem::store8(uint64_t addr, const uint8_t value) {
 void Mem::store16(uint64_t addr, const uint16_t value) {
   uint8_t *p;
   if (!(p = (uint8_t *)get_ptr(addr))) {
-    printf("cannot access to 0x%lx\n", addr);
+    LOG_SYSTEM("cannot access to 0x%lx\n", addr);
     return;
   }
   p[0] = value;
@@ -59,7 +59,7 @@ void Mem::store16(uint64_t addr, const uint16_t value) {
 void Mem::store32(uint64_t addr, const uint32_t value) {
   uint8_t *p;
   if (!(p = (uint8_t *)get_ptr(addr))) {
-    printf("cannot access to 0x%lx\n", addr);
+    LOG_SYSTEM("cannot access to 0x%lx\n", addr);
     return;
   }
   p[0] = value;
@@ -71,7 +71,7 @@ void Mem::store32(uint64_t addr, const uint32_t value) {
 void Mem::store64(uint64_t addr, const uint64_t value) {
   uint8_t *p;
   if (!(p = (uint8_t *)get_ptr(addr))) {
-    printf("cannot access to 0x%lx\n", addr);
+    LOG_SYSTEM("cannot access to 0x%lx\n", addr);
     return;
   }
   p[0] = value;
@@ -87,7 +87,7 @@ void Mem::store64(uint64_t addr, const uint64_t value) {
 uint8_t Mem::load8(uint64_t addr) {
   uint8_t *p;
   if (!(p = (uint8_t *)get_ptr(addr))) {
-    printf("cannot access to 0x%lx\n", addr);
+    LOG_SYSTEM("cannot access to 0x%lx\n", addr);
     return 0;
   }
   return *(uint8_t *)p;
@@ -96,7 +96,7 @@ uint8_t Mem::load8(uint64_t addr) {
 uint16_t Mem::load16(uint64_t addr) {
   uint8_t *p;
   if (!(p = (uint8_t *)get_ptr(addr))) {
-    printf("cannot access to 0x%lx\n", addr);
+    LOG_SYSTEM("cannot access to 0x%lx\n", addr);
     return 0;
   }
   return p[0] | p[1] << 8;
@@ -105,7 +105,7 @@ uint16_t Mem::load16(uint64_t addr) {
 uint32_t Mem::load32(uint64_t addr) {
   uint8_t *p;
   if (!(p = (uint8_t *)get_ptr(addr))) {
-    printf("cannot access to 0x%lx\n", addr);
+    LOG_SYSTEM("cannot access to 0x%lx\n", addr);
     return 0;
   }
   return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24 | uint64_t(p[4]) << 32;
@@ -114,7 +114,7 @@ uint32_t Mem::load32(uint64_t addr) {
 uint64_t Mem::load64(uint64_t addr) {
   uint8_t *p;
   if (!(p = (uint8_t *)get_ptr(addr))) {
-    printf("cannot access to 0x%lx\n", addr);
+    LOG_SYSTEM("cannot access to 0x%lx\n", addr);
     return 0;
   }
 
@@ -124,6 +124,6 @@ uint64_t Mem::load64(uint64_t addr) {
 }
 
 void Mem::debug_mem(uint64_t paddr) {
-  printf("0x%lx: %lx %lx %lx %lx\n", paddr, load64(paddr), load64(paddr + 8),
-         load64(paddr + 16), load64(paddr + 24));
+  LOG_SYSTEM("0x%lx: %lx %lx %lx %lx\n", paddr, load64(paddr),
+             load64(paddr + 8), load64(paddr + 16), load64(paddr + 24));
 }

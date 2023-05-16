@@ -37,7 +37,7 @@ void Uart::store(uint64_t addr, uint64_t value) {
     LOG_CPU("uart_imsc = 0x%lx\n", value);
     break;
   default:
-    printf("uart unsupported\n");
+    LOG_SYSTEM("uart unsupported\n");
   }
 }
 
@@ -45,7 +45,8 @@ uint64_t Uart::load(uint64_t addr) {
   uint64_t offset = addr & 0xfff;
   switch (offset) {
   case 0x000:
-    LOG_CPU("uart_dr load 0x%x\n", uart_dr);
+    LOG_SYSTEM("uart_dr load 0x%x\n", uart_dr);
+    std::cin >> uart_dr;
     return uart_dr;
   case 0x018:
     // LOG_CPU("uart_fr load 0x%x\n", uart_fr);
@@ -60,7 +61,7 @@ uint64_t Uart::load(uint64_t addr) {
     LOG_CPU("uart_imsc load 0x%x\n", uart_imsc);
     return uart_imsc;
   default:
-    printf("uart load unsupported\n");
+    LOG_SYSTEM("uart load unsupported\n");
     return 1;
   }
 }

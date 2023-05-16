@@ -43,7 +43,7 @@ uint64_t Bus::load(uint64_t address, MemAccessSize size) {
       assert(false);
     }
   } else {
-    printf("load unknown address: 0x%lx\n", address);
+    LOG_SYSTEM("load unknown address: 0x%lx\n", address);
     exit(0);
   }
   assert(false);
@@ -84,7 +84,7 @@ void Bus::store(uint64_t address, uint64_t value, MemAccessSize size) {
     }
     return;
   } else {
-    printf("store unknown address: 0x%lx\n", address);
+    LOG_SYSTEM("store unknown address: 0x%lx\n", address);
     exit(0);
   }
 }

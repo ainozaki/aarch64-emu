@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "log.h"
 #include "utils.h"
 
 Loader::Loader(int argc, char **argv, char **envp)
@@ -20,12 +21,12 @@ Loader::~Loader() {
 }
 
 int Loader::init() {
-  printf("Loading %s\n", filename_);
+  LOG_SYSTEM("Loading %s\n", filename_);
 
   // open ELF file
   fd_ = open(filename_, O_RDWR);
   if (!fd_) {
-    fprintf(stderr, "Cannot open %s\n", filename_);
+    LOG_SYSTEM("Cannot open %s\n", filename_);
     return EFAILED;
   }
   fstat(fd_, &sb_);
@@ -37,8 +38,8 @@ int Loader::init() {
     perror("mmap");
     return EFAILED;
   }
-  printf("\tfile_map_start: %p, size:%zx -> %zx\n", file_map_start_,
-         sb_.st_size, (sb_.st_size + 4095) & ~4095UL);
+  LOG_SYSTEM("\tfile_map_start: %p, size:%zx -> %zx\n", file_map_start_,
+             sb_.st_size, (sb_.st_size + 4095) & ~4095UL);
   eh_ = (Elf64_Ehdr *)file_map_start_;
   ph_tbl_ = (Elf64_Phdr *)((uint64_t)file_map_start_ + eh_->e_phoff);
   sh_tbl_ = (Elf64_Shdr *)((uint64_t)file_map_start_ + eh_->e_shoff);
@@ -55,7 +56,7 @@ int Loader::load() {
   // This emulator can load only static linked binary.
   const char *interp_str = get_interp();
   if (interp_str) {
-    printf("cannot load dynamic linked program\n");
+    LOG_SYSTEM("cannot load dynamic linked program\n");
     return EFAILED;
   }
 
@@ -68,9 +69,9 @@ int Loader::load() {
   }
   memset(ram_base, 0, RAM_SIZE);
   map_base = (uint64_t)ram_base;
-  printf("\tmap_base(host):0x%lx, RAM_SIZE:0x%x\n", map_base, RAM_SIZE);
+  LOG_SYSTEM("\tmap_base(host):0x%lx, RAM_SIZE:0x%x\n", map_base, RAM_SIZE);
 
-  printf("\ttext_start_paddr:0x%lx\n", text_start_paddr);
+  LOG_SYSTEM("\ttext_start_paddr:0x%lx\n", text_start_paddr);
 
   // load segment
   Elf64_Phdr *ph;
@@ -86,13 +87,13 @@ int Loader::load() {
     }
 
     // memcpy LOAD segment
-    printf("\tmemcpy:\n");
-    printf("map_base : 0x%lx\n", map_base);
-    printf("\t\tload (emu): 0x%lx-0x%lx, size:0x%lx\n", ph->p_paddr,
-           ph->p_paddr + ph->p_memsz, ph->p_memsz);
-    printf("\t\tmemcpy: dst:0x%lx, size:0x%lx\n",
-           map_base + ph->p_paddr - text_start_paddr, ph->p_memsz);
-    printf(
+    LOG_SYSTEM("\tmemcpy:\n");
+    LOG_SYSTEM("map_base : 0x%lx\n", map_base);
+    LOG_SYSTEM("\t\tload (emu): 0x%lx-0x%lx, size:0x%lx\n", ph->p_paddr,
+               ph->p_paddr + ph->p_memsz, ph->p_memsz);
+    LOG_SYSTEM("\t\tmemcpy: dst:0x%lx, size:0x%lx\n",
+               map_base + ph->p_paddr - text_start_paddr, ph->p_memsz);
+    LOG_SYSTEM(
         "\t\tmemcpy: src: file_map_start:%p, ph->p_offset:0x%lx, size:0x%lx\n",
         file_map_start_, ph->p_offset, ph->p_memsz);
     memcpy((void *)(map_base + ph->p_paddr - text_start_paddr),
@@ -100,11 +101,11 @@ int Loader::load() {
 
     // zero clear .bss section
     if (ph->p_memsz > ph->p_filesz) {
-      printf("\t\tzeroclear .bss (host):from:0x%lx, size:0x%lx\n",
-             map_base + ph->p_paddr + ph->p_filesz - text_start_paddr,
-             ph->p_memsz - ph->p_filesz);
-      printf("\t\tzeroclear .bss (emu) :from:0x%lx, size:0x%lx\n",
-             ph->p_paddr + ph->p_filesz, ph->p_memsz - ph->p_filesz);
+      LOG_SYSTEM("\t\tzeroclear .bss (host):from:0x%lx, size:0x%lx\n",
+                 map_base + ph->p_paddr + ph->p_filesz - text_start_paddr,
+                 ph->p_memsz - ph->p_filesz);
+      LOG_SYSTEM("\t\tzeroclear .bss (emu) :from:0x%lx, size:0x%lx\n",
+                 ph->p_paddr + ph->p_filesz, ph->p_memsz - ph->p_filesz);
       memset((void *)(map_base + ph->p_paddr + ph->p_filesz - text_start_paddr),
              0, ph->p_memsz - ph->p_filesz);
     }
@@ -114,7 +115,7 @@ int Loader::load() {
   // prepare stack
   init_sp = text_start_paddr + RAM_SIZE;
   init_sp = init_sp - (init_sp % 16) + 16;
-  printf("\tinit_sp: 0x%lx\n", init_sp);
+  LOG_SYSTEM("\tinit_sp: 0x%lx\n", init_sp);
   return ESUCCESS;
 }
 
