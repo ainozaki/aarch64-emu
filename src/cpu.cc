@@ -32,7 +32,7 @@ void Cpu::check_interrupt() {
   }
   if (bus.virtio.is_interrupting()) {
     bus.virtio.disk_access(this);
-    printf("Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx, pc=0x%lx\n", VBAR_EL1, VBAR_EL1 + 0x280, pc);
+    LOG_CPU("Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx, pc=0x%lx\n", VBAR_EL1, VBAR_EL1 + 0x280, pc);
     ELR_EL1 = pc;
     ICC_IAR1_EL1 = 0x30;
     // Interrupt to OS
@@ -1680,9 +1680,6 @@ void Cpu::decode_addsub_extended_reg(uint32_t inst) {
   op2 = ExtendValue(op2, extend_type, shift_amount);
   result = if_setflag ? add_imm_s(op1, op2, if_sub, cpsr, if_64bit)
                       : add_imm(op1, op2, if_sub);
-  if (pc == 0xffffff8040000fac) {
-    printf("subs 2\n");
-  }
   if (rd != 31) {
     xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
   }
@@ -1800,7 +1797,7 @@ void Cpu::decode_conditional_select(uint32_t inst) {
         xregs[rd] = xregs[rm];
       }
       if (pc == 0xffffff80400018cc){
-        printf("csel x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d, "
+        LOG_CPU("csel x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d, "
               "check_cond=%d, pc=0x%lx\n",
               rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond,
               check_b_flag(cond, cpsr), pc);
@@ -2056,7 +2053,6 @@ bool Cpu::check_b_flag(uint8_t cond, CPSR &cpsr_) {
     return cpsr_.V == 0;
     break;
   case 8:
-    // printf("C = %d, Z = %d\n", cpsr_.C, cpsr_.Z);
     return (cpsr_.C == 1) & (cpsr_.Z == 0);
     break;
   case 9:
@@ -2198,11 +2194,12 @@ void Cpu::decode_exception_generation(uint32_t inst) {
     }
     switch (LL) {
     case 1:
-      LOG_CPU("SVC: w7=%ld, w0=%ld, w1=0x%lx, w2=%ld, jump to 0x%lx\n", xregs[7], xregs[0],
-              xregs[1], xregs[2], VBAR_EL1 + 0x80 * 8);
       ELR_EL1 = pc + 4;
       ESR_EL1 |= (21 << 26);
+      sp = SP_EL1;
       set_pc(VBAR_EL1 + 0x80 * 8);
+      LOG_CPU("SVC: w7=%ld, w0=%ld, w1=0x%lx, pc=0x%lx, sp=0x%lx, jump to 0x%lx\n", xregs[7], xregs[0],
+              xregs[1], pc, sp, VBAR_EL1 + 0x80 * 8);
       return;
     case 2:
       LOG_CPU("HVC 0x%lx\n", imm16);
@@ -2507,10 +2504,10 @@ void Cpu::decode_system_register_move(uint32_t inst) {
             case 0:
               if (if_get){
                 xregs[rt] = SP_EL0;
-                LOG_CPU("mrs x%d, SP_EL0(=0x%lx)\n", rt, SP_EL0);
+                LOG_CPU("0x%lx: mrs x%d, SP_EL0(=0x%lx)\n", pc,rt, SP_EL0);
               }else {
                 SP_EL0 = xregs[rt];
-                LOG_CPU("msr SP_EL0, x%d(=0x%lx)\n", rt, SP_EL0);
+                LOG_CPU("0x%lx: msr SP_EL0, x%d(=0x%lx)\n", pc, rt, SP_EL0);
               }
               break;
             default:
@@ -2847,7 +2844,8 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
     break;
   case 4:
     if ((op3 == 0) & (Rn == 31) & (op4 == 0)){
-      LOG_CPU("eret to 0x%lx\n", ELR_EL1);
+      LOG_CPU("eret to 0x%lx, sp=0x%lx, pc=0x%lx\n", ELR_EL1, sp, pc);
+      SP_EL1 = sp;
       set_pc(ELR_EL1);
     }
     break;
@@ -2919,7 +2917,7 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
   case 0: // CBZ
     LOG_CPU("cbz ");
     if (pc == 0xffffff8040001098){
-      printf("cbz x%d(=0x%lx)\n", rt, xregs[rt]);
+      LOG_CPU("cbz x%d(=0x%lx)\n", rt, xregs[rt]);
     }
     if (if_64bit) {
       if_jump = xregs[rt] == 0;
@@ -2929,7 +2927,7 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
     break;
   case 1: // CBNZ
     if (pc == 0xffffff80400018d0){
-      printf("cbnz x%d(=0x%lx)\n", rt, xregs[rt]);
+      LOG_CPU("cbnz x%d(=0x%lx)\n", rt, xregs[rt]);
     }
     LOG_CPU("cbnz ");
     if (if_64bit) {
@@ -2982,7 +2980,7 @@ void Cpu::decode_test_and_branch_imm(uint32_t inst) {
 
   [[maybe_unused]] const char *name = op ? "tbnz" : "tbz";
   if (pc == 0xffffff80400054f0){
-    printf("%s x%d(=0x%lx), #%d, 0x%lx\n", name, rt, xregs[rt],bit_pos, pc + offset);
+    LOG_CPU("%s x%d(=0x%lx), #%d, 0x%lx\n", name, rt, xregs[rt],bit_pos, pc + offset);
   }
   LOG_CPU("%s x%d, #%d, 0x%lx\n", name, rt, bit_pos, pc + offset);
 
