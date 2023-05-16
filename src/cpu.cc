@@ -139,6 +139,13 @@ enum class ExtendType {
   SXTX,
 };
 
+const MemAccessSize mem_access_size_tbl[4] = {
+  MemAccessSize::Byte,
+  MemAccessSize::Hex,
+  MemAccessSize::Word,
+  MemAccessSize::DWord,
+};
+
 const ExtendType extendtype_tbl[8] = {
     ExtendType::UXTB, ExtendType::UXTH, ExtendType::UXTW, ExtendType::UXTX,
     ExtendType::SXTB, ExtendType::SXTH, ExtendType::SXTW, ExtendType::SXTX,
@@ -1027,22 +1034,28 @@ void Cpu::decode_ldst_reg_unscaled_immediate([[maybe_unused]] uint32_t inst) {
   address = (rn == 31) ? sp : xregs[rn];
   address += offset;
 
-  switch (size){
-    case 1:
-      data = load(address, MemAccessSize::Hex);
-      break;
-    case 2:
-      data = load(address, MemAccessSize::Word);
-      break;
-    case 3:
-      data = load(address, MemAccessSize::DWord);
-      break;
-    default:
-      unsupported();
-      break;
+  if (opc != 0){
+    switch (size){
+      case 1:
+        data = load(address, MemAccessSize::Hex);
+        break;
+      case 2:
+        data = load(address, MemAccessSize::Word);
+        break;
+      case 3:
+        data = load(address, MemAccessSize::DWord);
+        break;
+      default:
+        unsupported();
+        break;
+    }
   }
 
   switch (opc){
+    case 0:
+      store(address, xregs[rt], mem_access_size_tbl[size]);
+      LOG_CPU("STUR(size=%d)\n", size);
+      break;
     case 1:
       xregs[rt] = data;
       LOG_CPU("LDUR(size=%d) x%d, x%d, #0x%lx, address=0x%lx\n", size, rt, rn, imm, address);
