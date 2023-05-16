@@ -35,6 +35,7 @@ void Cpu::check_interrupt() {
     LOG_CPU("Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx, pc=0x%lx\n", VBAR_EL1, VBAR_EL1 + 0x280, pc);
     ELR_EL1 = pc;
     ICC_IAR1_EL1 = 0x30;
+    SP_EL0 = sp;
     // Interrupt to OS
     set_pc(VBAR_EL1 + 0x280);
   }
@@ -2209,6 +2210,7 @@ void Cpu::decode_exception_generation(uint32_t inst) {
     case 1:
       ELR_EL1 = pc + 4;
       ESR_EL1 |= (21 << 26);
+      SP_EL0 = sp;
       sp = SP_EL1;
       set_pc(VBAR_EL1 + 0x80 * 8);
       LOG_CPU("SVC: w7=%ld, w0=%ld, w1=0x%lx, pc=0x%lx, sp=0x%lx, jump to 0x%lx\n", xregs[7], xregs[0],
@@ -2857,9 +2859,10 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
     break;
   case 4:
     if ((op3 == 0) & (Rn == 31) & (op4 == 0)){
-      LOG_CPU("eret to 0x%lx, sp=0x%lx, pc=0x%lx\n", ELR_EL1, sp, pc);
       SP_EL1 = sp;
+      sp = SP_EL0;
       set_pc(ELR_EL1);
+      LOG_CPU("eret to 0x%lx, sp=0x%lx, pc=0x%lx\n", ELR_EL1, sp, pc);
     }
     break;
   default:
