@@ -35,25 +35,32 @@ void Cpu::check_interrupt() {
     if_interrupt = true;
     bus.virtio.disk_access(this);
     LOG_SYSTEM(
-        "Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx, "
+        "[Virtio] Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx, "
+        "pc=0x%lx, sp=0x%lx\n",
+        VBAR_EL1, VBAR_EL1 + 0x480, pc, sp);
+    ICC_IAR1_EL1 = 0x30;
+  } else if ((util::bit(pc, 63) == 0) && (timer_count % 100 == 0)) {
+    LOG_SYSTEM(
+        "[Timer] Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx, "
         "pc=0x%lx, sp=0x%lx\n",
         VBAR_EL1, VBAR_EL1 + 0x280, pc, sp);
-    ICC_IAR1_EL1 = 0x30;
-    set_pc(VBAR_EL1 + 0x280);
-  } else if ((util::bit(pc, 63) == 0) && (timer_count % 70 == 0)) {
     if_interrupt = true;
     LOG_SYSTEM("timer\n");
     ICC_IAR1_EL1 = 0x1b;
-    set_pc(VBAR_EL1 + 0x280);
   }
   if (if_interrupt) {
+    ELR_EL1 = pc;
     // Interrupt to OS
     if (el == 0) {
+      SPSR_EL1 = (SPSR_EL1 >> 3) << 3;
       SP_EL0 = sp;
-      sp = SP_EL1;
+      //sp = SP_EL1;
       el = 1;
+      set_pc(VBAR_EL1 + 0x480);
+    }else {
+      SPSR_EL1 = ((SPSR_EL1 >> 3) << 3) | 0b101;
+      set_pc(VBAR_EL1 + 0x280);
     }
-    ELR_EL1 = pc + 4;
   }
 }
 
@@ -2228,9 +2235,16 @@ void Cpu::decode_exception_generation(uint32_t inst) {
     case 1:
       ELR_EL1 = pc + 4;
       ESR_EL1 |= (21 << 26);
-      SP_EL0 = sp;
-      sp = SP_EL1;
-      set_pc(VBAR_EL1 + 0x80 * 8);
+      if (el == 0) {
+        SPSR_EL1 = (SPSR_EL1 >> 3) << 3;
+        SP_EL0 = sp;
+        sp = SP_EL1;
+        el = 1;
+        set_pc(VBAR_EL1 + 0x400);
+      }else {
+        SPSR_EL1 = ((SPSR_EL1 >> 3) << 3) | 0b101;
+        set_pc(VBAR_EL1 + 0x200);
+      }
       LOG_CPU("SVC: w7=%ld, w0=%ld, w1=0x%lx, pc=0x%lx, SP_EL0=0x%lx, "
               "SP_EL1=0x%lx, jump to 0x%lx\n",
               xregs[7], xregs[0], xregs[1], pc, SP_EL0, SP_EL1,
@@ -2871,10 +2885,13 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
   case 4:
     if ((op3 == 0) & (Rn == 31) & (op4 == 0)) {
       SP_EL1 = sp;
-      sp = SP_EL0;
       set_pc(ELR_EL1);
-      LOG_CPU("eret to 0x%lx, SP_EL1=0x%lx, SP_EL0=0x%lx, pc=0x%lx\n", ELR_EL1,
-              SP_EL1, SP_EL0, pc);
+      if (((SPSR_EL1 & 7) == 0) || (util::bit(pc, 63) == 0)){
+        el = 0;
+        sp = SP_EL0;
+      }
+      LOG_SYSTEM("eret to 0x%lx, sp=0x%lx, SP_EL1=0x%lx, SP_EL0=0x%lx, pc=0x%lx\n", ELR_EL1,
+              sp, SP_EL1, SP_EL0, pc);
     }
     break;
   default:

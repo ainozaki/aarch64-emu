@@ -17,6 +17,7 @@ public:
 
   Emulator(int argc, char **argv, char **envp, const std::string &disk);
   void execute_loop();
+  void log_pc(uint64_t addr, const char *msg);
   bool init_done_;
 
 private:
