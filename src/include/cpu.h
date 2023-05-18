@@ -23,7 +23,6 @@ public:
   Bus bus;
   MMU mmu;
   uint64_t pc;
-  CPSR cpsr; /* Current Program Status Register*/
 
   uint64_t xregs[32] = {0};
   uint64_t sp;
@@ -34,6 +33,7 @@ public:
   uint64_t SP_EL0;
   uint64_t SP_EL1;
   uint64_t ESR_EL1;
+  uint64_t timer_count;
 
   /* PSTATE */
   /*
@@ -46,6 +46,9 @@ public:
   0: not masked, 1: masked
   */
   uint64_t daif = 0x3c0;
+  // TODO: fix! CPSR used in armv7
+  CPSR cpsr;      /* Current Program Status Register*/
+  uint8_t el = 1; // Exception Level.
 
   // Interrupt
   uint64_t

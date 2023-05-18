@@ -26,20 +26,34 @@ Cpu::Cpu(uint64_t entry, uint64_t sp_base, uint64_t text_start,
 }
 
 void Cpu::check_interrupt() {
+  bool if_interrupt = false;
   if ((daif >> 9) & 0x1) {
     // Interrupt masked
     return;
   }
   if (bus.virtio.is_interrupting()) {
+    if_interrupt = true;
     bus.virtio.disk_access(this);
-    LOG_CPU("Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx, "
-            "pc=0x%lx\n",
-            VBAR_EL1, VBAR_EL1 + 0x280, pc);
-    ELR_EL1 = pc;
+    LOG_SYSTEM(
+        "Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx, "
+        "pc=0x%lx, sp=0x%lx\n",
+        VBAR_EL1, VBAR_EL1 + 0x280, pc, sp);
     ICC_IAR1_EL1 = 0x30;
-    SP_EL0 = sp;
-    // Interrupt to OS
     set_pc(VBAR_EL1 + 0x280);
+  } else if ((util::bit(pc, 63) == 0) && (timer_count % 70 == 0)) {
+    if_interrupt = true;
+    LOG_SYSTEM("timer\n");
+    ICC_IAR1_EL1 = 0x1b;
+    set_pc(VBAR_EL1 + 0x280);
+  }
+  if (if_interrupt) {
+    // Interrupt to OS
+    if (el == 0) {
+      SP_EL0 = sp;
+      sp = SP_EL1;
+      el = 1;
+    }
+    ELR_EL1 = pc + 4;
   }
 }
 
@@ -955,7 +969,6 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
   if (!postindex) {
     address += (int64_t)offset;
   }
-  LOG_CPU(",address=0x%lx\n", address);
 
   if (if_load) {
     if (if_32bit) {
@@ -987,6 +1000,7 @@ void Cpu::decode_ldst_register_pair(uint32_t inst) {
       xregs[rn] = address;
     }
   }
+  LOG_CPU(",address=0x%lx, sp=0x%lx\n", address, sp);
 }
 
 void Cpu::decode_ldst_register(uint32_t inst) {
@@ -2217,9 +2231,10 @@ void Cpu::decode_exception_generation(uint32_t inst) {
       SP_EL0 = sp;
       sp = SP_EL1;
       set_pc(VBAR_EL1 + 0x80 * 8);
-      LOG_CPU(
-          "SVC: w7=%ld, w0=%ld, w1=0x%lx, pc=0x%lx, sp=0x%lx, jump to 0x%lx\n",
-          xregs[7], xregs[0], xregs[1], pc, sp, VBAR_EL1 + 0x80 * 8);
+      LOG_CPU("SVC: w7=%ld, w0=%ld, w1=0x%lx, pc=0x%lx, SP_EL0=0x%lx, "
+              "SP_EL1=0x%lx, jump to 0x%lx\n",
+              xregs[7], xregs[0], xregs[1], pc, SP_EL0, SP_EL1,
+              VBAR_EL1 + 0x80 * 8);
       return;
     case 2:
       LOG_CPU("HVC 0x%lx\n", imm16);
@@ -2278,7 +2293,6 @@ void Cpu::decode_pstate(uint32_t inst) {
     unsupported();
     break;
   default:
-    LOG_CPU("msr immediate\n");
     switch (op1) {
     case 3:
       switch (op2) {
@@ -2511,9 +2525,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
               ELR_EL1 = xregs[rt];
               LOG_CPU("msr elr_el1, x%d(0x%lx)\n", rt, ELR_EL1);
             }
-            xregs[rt] = ELR_EL1;
-            LOG_CPU("mrs x%d, elr_el1, 0x%lx\n", rt, ELR_EL1);
-            break;
+            return;
           default:
             unsupported();
           }
@@ -2528,7 +2540,7 @@ void Cpu::decode_system_register_move(uint32_t inst) {
               SP_EL0 = xregs[rt];
               LOG_CPU("0x%lx: msr SP_EL0, x%d(=0x%lx)\n", pc, rt, SP_EL0);
             }
-            break;
+            return;
           default:
             unsupported();
           }
@@ -2742,11 +2754,6 @@ void Cpu::decode_system_register_move(uint32_t inst) {
     unsupported();
     break;
   }
-  if (if_get) {
-    LOG_CPU("mrs\n");
-  } else {
-    LOG_CPU("msr\n");
-  }
 }
 
 /*
@@ -2866,7 +2873,8 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
       SP_EL1 = sp;
       sp = SP_EL0;
       set_pc(ELR_EL1);
-      LOG_CPU("eret to 0x%lx, sp=0x%lx, pc=0x%lx\n", ELR_EL1, sp, pc);
+      LOG_CPU("eret to 0x%lx, SP_EL1=0x%lx, SP_EL0=0x%lx, pc=0x%lx\n", ELR_EL1,
+              SP_EL1, SP_EL0, pc);
     }
     break;
   default:
