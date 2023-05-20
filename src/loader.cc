@@ -27,7 +27,7 @@ int Loader::init() {
   fd_ = open(filename_, O_RDWR);
   if (!fd_) {
     LOG_SYSTEM("Cannot open %s\n", filename_);
-    return EFAILED;
+    exit(0);
   }
   fstat(fd_, &sb_);
 

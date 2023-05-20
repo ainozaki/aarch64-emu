@@ -20,7 +20,7 @@ Virtio::Virtio(const std::string &diskname) {
   std::ifstream fin(diskname, std::ios::binary);
   if (!fin) {
     std::cerr << "Cannot open file " << diskname << std::endl;
-    return;
+    exit(0);
   }
 
   fin.seekg(0, std::ios::end);

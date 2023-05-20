@@ -54,7 +54,7 @@ void Cpu::check_interrupt() {
     if (el == 0) {
       SPSR_EL1 = (SPSR_EL1 >> 3) << 3;
       SP_EL0 = sp;
-      //sp = SP_EL1;
+      sp = SP_EL1;
       el = 1;
       set_pc(VBAR_EL1 + 0x480);
     }else {
@@ -86,21 +86,18 @@ void Cpu::decode_start(uint32_t inst) {
   op1 = util::shift(inst, 25, 28);
   inst_ = inst;
 
-  /*
-  LOG_SYSTEM("0x%lx ", pc);
-  LOG_SYSTEM("pc 0x%lx\n", pc);
-  // LOG_SYSTEM("sp=0x%lx:\n", sp);
-  // LOG_SYSTEM("0x%lx: \t", pc);
-  LOG_SYSTEM("sp 0x%lx\n", sp);
-  //LOG_SYSTEM("cpsr 0x%x\n", cpsr);
-  LOG_SYSTEM("x0 0x%lx\n", xregs[0]);
-  LOG_SYSTEM("x1 0x%lx\n", xregs[1]);
-  LOG_SYSTEM("x2 0x%lx\n", xregs[2]);
-  LOG_SYSTEM("x3 0x%lx\n", xregs[3]);
-  LOG_SYSTEM("x19 0x%lx\n", xregs[19]);
-  LOG_SYSTEM("x20 0x%lx\n", xregs[20]);
-  LOG_SYSTEM("x29 0x%lx\n", xregs[29]);
-  LOG_SYSTEM("x30 0x%lx\n", xregs[30]);
+/*
+  LOG_CPU("0x%lx ", pc);
+  LOG_CPU("pc 0x%lx\n", pc);
+  LOG_CPU("sp 0x%lx\n", sp);
+  LOG_CPU("x0 0x%lx\n", xregs[0]);
+  LOG_CPU("x1 0x%lx\n", xregs[1]);
+  LOG_CPU("x2 0x%lx\n", xregs[2]);
+  LOG_CPU("x3 0x%lx\n", xregs[3]);
+  LOG_CPU("x19 0x%lx\n", xregs[19]);
+  LOG_CPU("x20 0x%lx\n", xregs[20]);
+  LOG_CPU("x29 0x%lx\n", xregs[29]);
+  LOG_CPU("x30 0x%lx\n", xregs[30]);
   if (mmu.if_mmu_enabled()) {
     bus.mem.debug_mem(mmu.mmu_translate(0xffffff8040016118));
   }
@@ -1743,13 +1740,13 @@ void Cpu::decode_addsub_extended_reg(uint32_t inst) {
 void Cpu::decode_logical_shifted_reg(uint32_t inst) {
   uint8_t opc, rd, rn, rm, imm6, shift;
   uint64_t op1, op2;
-  bool if_64bit;
+  bool if_64bit, if_not;
   // bool setflag, if_64bit, if_not;
 
   if_64bit = util::bit(inst, 31);
   opc = util::shift(inst, 29, 30);
   shift = util::shift(inst, 22, 23);
-  // if_not = util::bit(inst, 21);
+  if_not = util::bit(inst, 21);
   rm = util::shift(inst, 16, 20);
   imm6 = util::shift(inst, 10, 15);
   rn = util::shift(inst, 5, 9);
@@ -1768,6 +1765,8 @@ void Cpu::decode_logical_shifted_reg(uint32_t inst) {
   default:
     unsupported();
   }
+
+  op2 = if_not ? ~op2 : op2;
 
   uint64_t result;
   switch (opc) {
@@ -2890,7 +2889,7 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
         el = 0;
         sp = SP_EL0;
       }
-      LOG_SYSTEM("eret to 0x%lx, sp=0x%lx, SP_EL1=0x%lx, SP_EL0=0x%lx, pc=0x%lx\n", ELR_EL1,
+      LOG_CPU("eret to 0x%lx, sp=0x%lx, SP_EL1=0x%lx, SP_EL0=0x%lx, pc=0x%lx\n", ELR_EL1,
               sp, SP_EL1, SP_EL0, pc);
     }
     break;
