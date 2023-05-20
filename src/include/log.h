@@ -14,7 +14,10 @@ extern int log_debug_on;
   if (log_cpu_on) {                                                            \
     printf(__VA_ARGS__);                                                       \
   }
+/*
 #define LOG_DEBUG(...)                                                         \
   if (log_debug_on) {                                                          \
     printf(__VA_ARGS__);                                                       \
   }
+*/
+#define LOG_DEBUG(...) ;

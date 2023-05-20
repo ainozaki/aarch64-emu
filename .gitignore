@@ -9,3 +9,4 @@ tests/xv6/kernel
 *.txt
 log*
 fs.img
+ubuntu-kernel

@@ -49,10 +49,10 @@ Emulator::Emulator(int argc, char **argv, char **envp, const std::string &disk)
   return;
 }
 
-void Emulator::log_pc(uint64_t pc, const char *msg) {
+void Emulator::log_pc(uint64_t pc, const char *msg, uint64_t idx) {
   if (cpu->pc == pc) {
-    LOG_SYSTEM("##### %s: pc:0x%lx, sp:0x%lx, x7:0x%lx\n", msg, cpu->pc,
-               cpu->sp, cpu->xregs[7]);
+    LOG_SYSTEM("##### %ld %s: pc:0x%lx, sp:0x%lx, x7:0x%lx\n", idx, msg,
+               cpu->pc, cpu->sp, cpu->xregs[7]);
   }
 }
 
@@ -63,12 +63,9 @@ void Emulator::execute_loop() {
 
   uint32_t inst;
   int i = 0;
-  // int num_insts = 20000000;
-  //  int num_insts = 67905;
-  //  int num_insts = 67670;
-  int debugidx = 0;
 
   while (true) {
+    // log_cpu_on = 0;
     cpu->timer_count += 1;
     cpu->check_interrupt();
 
@@ -77,69 +74,98 @@ void Emulator::execute_loop() {
       LOG_SYSTEM("no instructions 0x%lx\n", cpu->pc);
       break;
     }
-    log_pc(0xffffff80400060e4, "el0sync");
-    log_pc(0xffffff8040006198, "el0irq");
-    log_pc(0xffffff8040005f84, "el1sync");
-    log_pc(0xffffff8040006034, "el1irq");
-    log_pc(0xffffff80400054d0, "switchuvm");
-    log_pc(0xffffff8040001f3c, "sched");
-    log_pc(0xffffff8040001ea0, "scheduler");
-    log_pc(0xffffff80400054d0, "sys_exec");
-    log_pc(0xffffff80400029b0, "syscall");
-    log_pc(0xffffff8040002a6c, "sys_fork");
-    log_pc(0xffffff8040001da0, "fork");
-    log_pc(0xffffff8040002a20, "sys_exit");
-    log_pc(0xffffff8040005220, "sys_open");
-    log_pc(0xffffff80400048b0, "exec");
-    log_pc(0xffffff8040001450, "switchuvm");
-    log_pc(0xffffff804000253c, "swtch");
-    log_pc(0xffffff8040006298, "timerintr");
-    log_pc(0xffffff8040001bf8, "allocproc");
-    log_pc(0xffffff8040000dec, "safestrcpy");
-    log_pc(0xffffff8040005c00, "svc");
-    log_pc(0xffffff8040006248, "eret");
-    log_pc(0xffffff8040005800, "alltraps");
-    log_pc(0xffffff8040001da0, "fork");
-    log_pc(0xffffff8040001ca8, "userinit");
-
-    if (cpu->pc == 0xffffff8040000500) {
-      // LOG_SYSTEM("panic\n");
-      // sleep(10);
-    }
-    if (log_cpu_on) {
-      LOG_SYSTEM("===%d 0x%lx ", i, cpu->pc);
-      ////LOG_SYSTEM("=== %d 0x%lx 0x%lx\n", i, cpu->pc,
-      /// cpu->load(0xffffff80400054d0,MemAccessSize::Word)); /LOG_SYSTEM("===
-      /// %d 0x%lx ", i, cpu->pc);
-      // f//LOG_SYSTEM(flog, "### 0x%lx 0x%lx 0x%lx\n", cpu->pc, cpu->sp,
-      // cpu->xregs[7]); LOG_SYSTEM("0x%lx 0x%lx 0x%lx, SP_EL1=0x%lx\n",
-      // cpu->pc, cpu->sp, cpu->xregs[7], cpu->SP_EL1);
-      /*
-      //LOG_SYSTEM("inst 0x%x\n", inst);
-      //LOG_SYSTEM("pc 0x%lx\n", cpu->pc);
-      // //LOG_SYSTEM("sp=0x%lx:\n", sp);
-      // //LOG_SYSTEM("0x%lx: \t", pc);
-      //LOG_SYSTEM("sp 0x%lx\n", cpu->sp);
-      ////LOG_SYSTEM("cpsr 0x%x\n", cpsr);
-      //LOG_SYSTEM("x0 0x%lx\n", cpu->xregs[0]);
-      //LOG_SYSTEM("x1 0x%lx\n", cpu->xregs[1]);
-      //LOG_SYSTEM("x2 0x%lx\n", cpu->xregs[2]);
-      //LOG_SYSTEM("x3 0x%lx\n", cpu->xregs[3]);
-      //LOG_SYSTEM("x19 0x%lx\n", cpu->xregs[19]);
-      //LOG_SYSTEM("x20 0x%lx\n", cpu->xregs[20]);
-      //LOG_SYSTEM("x29 0x%lx\n", cpu->xregs[29]);
-      //LOG_SYSTEM("x30 0x%lx\n", cpu->xregs[30]);
-      */
-    }
     /*
-    if (debugidx > 1000){
-      debug = false;
-    }
-    // f//LOG_SYSTEM(stderr, "%d 0x%lx 0x%lx 0x%lx  0x%lx 0x%lx 0x%lx 0x%lx\n",
-    i,
-    // cpu.pc, cpu.sp, cpu.xregs[0], cpu.xregs[1], cpu.xregs[19], cpu.xregs[29],
-    // cpu.xregs[30]);
+    log_pc(0xffffff80400060e4, "el0sync", i);
+    log_pc(0xffffff8040006198, "el0irq", i);
+    log_pc(0xffffff8040005f84, "el1sync", i);
+    log_pc(0xffffff8040006034, "el1irq", i);
+    log_pc(0xffffff80400054d0, "switchuvm", i);
+    log_pc(0xffffff8040001f3c, "sched", i);
+    log_pc(0xffffff8040001ea0, "scheduler", i);
+    log_pc(0xffffff8040001da0, "fork", i);
+    log_pc(0xffffff80400048b0, "exec", i);
+    log_pc(0xffffff8040001450, "switchuvm", i);
+    log_pc(0xffffff804000253c, "swtch", i);
+    log_pc(0xffffff8040006298, "timerintr", i);
+    log_pc(0xffffff8040001bf8, "allocproc", i);
+    log_pc(0xffffff8040000dec, "safestrcpy", i);
+    log_pc(0xffffff8040006248, "eret", i);
+    log_pc(0xffffff8040005800, "alltraps", i);
+    log_pc(0xffffff8040001da0, "fork", i);
+    log_pc(0xffffff8040005c00, "svc", i);
+    log_pc(0xffffff80400029b0, "syscall", i);
     */
+
+    /*
+        log_pc(0xffffff80400007c4,"uartinit", i);
+        log_pc(0xffffff8040006254,"timerinit", i);
+        log_pc(0xffffff8040002c14,"binit", i);
+        log_pc(0xffffff80400031cc,"fsinit", i);
+        log_pc(0xffffff8040004134,"fileinit", i);
+        log_pc(0xffffff8040000b48,"initlock", i);
+        log_pc(0xffffff8040000f84,"kvminithart", i);
+        log_pc(0xffffff80400013e0,"uvminit", i);
+        log_pc(0xffffff8040016578,"initproc", i);
+        log_pc(0xffffff804000630c,"virtio_disk_init", i);
+        log_pc(0xffffff8040002594,"trapinit", i);
+        log_pc(0xffffff804000688c,"gicv3inithart", i);
+        log_pc(0xffffff8040009298,"initcode", i);
+        log_pc(0xffffff8040002594,"trapinithart", i);
+        log_pc(0xffffff80400012cc,"kvminit", i);
+        log_pc(0xffffff8040000ab0,"kinit1", i);
+        log_pc(0xffffff804000078c,"printfinit", i);
+        log_pc(0xffffff8040001cb4,"userinit", i);
+        log_pc(0xffffff80400067ac,"gicv3init", i);
+        log_pc(0xffffff8040000430,"consoleinit", i);
+        log_pc(0xffffff804000400c,"initsleeplock", i);
+        log_pc(0xffffff8040003244,"iinit", i);
+        log_pc(0xffffff8040003d30,"initlog", i);
+        log_pc(0xffffff8040001a68,"procinit", i);
+        log_pc(0xffffff8040000aec,"kinit2", i);
+        */
+
+    log_pc(0xffffff8040004d68, "argfd", i);
+    log_pc(0xffffff804000292c, "argint", i);
+    log_pc(0xffffff8040002954, "argaddr", i);
+    log_pc(0xffffff8040004350, "fileread", i);
+
+    log_pc(0xffffff8040000500, "panic", i);
+    // log_pc(0xffffff80400009f8, "kfree", i);
+    log_pc(0xffffff8040004ecc, "sys_close", i);
+    log_pc(0xffffff8040002ab0, "sys_sbrk", i);
+    log_pc(0xffffff8040002a64, "sys_fork", i);
+    log_pc(0xffffff8040005370, "sys_mkdir", i);
+    log_pc(0xffffff8040004e1c, "sys_read", i);
+    log_pc(0xffffff8040002b90, "sys_kill", i);
+    log_pc(0xffffff8040004f10, "sys_fstat", i);
+    log_pc(0xffffff8040002af8, "sys_sleep", i);
+    log_pc(0xffffff8040004f54, "sys_link", i);
+    log_pc(0xffffff8040005218, "sys_open", i);
+    log_pc(0xffffff8040004e74, "sys_write", i);
+    log_pc(0xffffff8040004dd0, "sys_dup", i);
+    log_pc(0xffffff804000506c, "sys_unlink", i);
+    log_pc(0xffffff8040002bc4, "sys_uptime", i);
+    log_pc(0xffffff80400054c8, "sys_exec", i);
+    log_pc(0xffffff8040002a7c, "sys_wait", i);
+    log_pc(0xffffff8040002a18, "sys_exit", i);
+    log_pc(0xffffff80400055c8, "sys_pipe", i);
+    log_pc(0xffffff8040002a4c, "sys_getpid", i);
+    log_pc(0xffffff8040005440, "sys_chdir", i);
+    log_pc(0xffffff80400053c8, "sys_mknod", i);
+
+    log_pc(0xffffff80400160f8, "uart_tx_buf", i);
+    log_pc(0xffffff804000086c, "uartstart", i);
+    log_pc(0xffffff80400160e8, "uart_tx_r", i);
+    log_pc(0xffffff80400160f0, "uart_tx_w", i);
+    log_pc(0xffffff804000099c, "uartintr", i);
+    log_pc(0xffffff8040000970, "uartgetc", i);
+    log_pc(0xffffff80400160d0, "uart_tx_lock", i);
+    log_pc(0xffffff80400008ec, "uartputc", i);
+    log_pc(0xffffff804000081c, "uartputc_sync", i);
+
+    // printf("%d 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n", i, cpu->pc,
+    // cpu->sp, cpu->xregs[0], cpu->xregs[1], cpu->xregs[19], cpu->xregs[29],
+    // cpu->xregs[30]);
     cpu->decode_start(inst);
     i++;
   }

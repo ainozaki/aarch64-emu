@@ -69,7 +69,7 @@ run-test:
 	./$(TEST_TARGET)
 
 run:
-	./$(TARGET) ./tests/xv6/kernel
+	./$(TARGET) ./ubuntu-kernel
 
 format: $(SRC) $(HEADER) $(MAIN)
 	find ./ -type f -name "*.cc" -or -name "*.h" | xargs clang-format -i

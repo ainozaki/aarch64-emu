@@ -34,16 +34,16 @@ void Cpu::check_interrupt() {
   if (bus.virtio.is_interrupting()) {
     if_interrupt = true;
     bus.virtio.disk_access(this);
-    LOG_SYSTEM(
-        "[Virtio] Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx, "
-        "pc=0x%lx, sp=0x%lx\n",
-        VBAR_EL1, VBAR_EL1 + 0x480, pc, sp);
+    LOG_SYSTEM("[Virtio] Jump to exception vector table: vbar_el1=0x%lx + "
+               "0x280 = 0x%lx, "
+               "pc=0x%lx, sp=0x%lx\n",
+               VBAR_EL1, VBAR_EL1 + 0x480, pc, sp);
     ICC_IAR1_EL1 = 0x30;
   } else if ((util::bit(pc, 63) == 0) && (timer_count % 100 == 0)) {
-    LOG_SYSTEM(
-        "[Timer] Jump to exception vector table: vbar_el1=0x%lx + 0x280 = 0x%lx, "
-        "pc=0x%lx, sp=0x%lx\n",
-        VBAR_EL1, VBAR_EL1 + 0x280, pc, sp);
+    LOG_SYSTEM("[Timer] Jump to exception vector table: vbar_el1=0x%lx + 0x280 "
+               "= 0x%lx, "
+               "pc=0x%lx, sp=0x%lx\n",
+               VBAR_EL1, VBAR_EL1 + 0x280, pc, sp);
     if_interrupt = true;
     LOG_SYSTEM("timer\n");
     ICC_IAR1_EL1 = 0x1b;
@@ -57,7 +57,7 @@ void Cpu::check_interrupt() {
       sp = SP_EL1;
       el = 1;
       set_pc(VBAR_EL1 + 0x480);
-    }else {
+    } else {
       SPSR_EL1 = ((SPSR_EL1 >> 3) << 3) | 0b101;
       set_pc(VBAR_EL1 + 0x280);
     }
@@ -86,25 +86,25 @@ void Cpu::decode_start(uint32_t inst) {
   op1 = util::shift(inst, 25, 28);
   inst_ = inst;
 
-/*
-  LOG_CPU("0x%lx ", pc);
-  LOG_CPU("pc 0x%lx\n", pc);
-  LOG_CPU("sp 0x%lx\n", sp);
-  LOG_CPU("x0 0x%lx\n", xregs[0]);
-  LOG_CPU("x1 0x%lx\n", xregs[1]);
-  LOG_CPU("x2 0x%lx\n", xregs[2]);
-  LOG_CPU("x3 0x%lx\n", xregs[3]);
-  LOG_CPU("x19 0x%lx\n", xregs[19]);
-  LOG_CPU("x20 0x%lx\n", xregs[20]);
-  LOG_CPU("x29 0x%lx\n", xregs[29]);
-  LOG_CPU("x30 0x%lx\n", xregs[30]);
-  if (mmu.if_mmu_enabled()) {
-    bus.mem.debug_mem(mmu.mmu_translate(0xffffff8040016118));
-  }
-  else {
-    bus.mem.debug_mem(0x40016118);
-  }
-  */
+  /*
+    LOG_CPU("0x%lx ", pc);
+    LOG_CPU("pc 0x%lx\n", pc);
+    LOG_CPU("sp 0x%lx\n", sp);
+    LOG_CPU("x0 0x%lx\n", xregs[0]);
+    LOG_CPU("x1 0x%lx\n", xregs[1]);
+    LOG_CPU("x2 0x%lx\n", xregs[2]);
+    LOG_CPU("x3 0x%lx\n", xregs[3]);
+    LOG_CPU("x19 0x%lx\n", xregs[19]);
+    LOG_CPU("x20 0x%lx\n", xregs[20]);
+    LOG_CPU("x29 0x%lx\n", xregs[29]);
+    LOG_CPU("x30 0x%lx\n", xregs[30]);
+    if (mmu.if_mmu_enabled()) {
+      bus.mem.debug_mem(mmu.mmu_translate(0xffffff8040016118));
+    }
+    else {
+      bus.mem.debug_mem(0x40016118);
+    }
+    */
   const decode_func decode_inst_tbl[] = {
       &Cpu::decode_sme_encodings,
       &Cpu::decode_unallocated,
@@ -2240,7 +2240,7 @@ void Cpu::decode_exception_generation(uint32_t inst) {
         sp = SP_EL1;
         el = 1;
         set_pc(VBAR_EL1 + 0x400);
-      }else {
+      } else {
         SPSR_EL1 = ((SPSR_EL1 >> 3) << 3) | 0b101;
         set_pc(VBAR_EL1 + 0x200);
       }
@@ -2885,12 +2885,12 @@ void Cpu::decode_unconditional_branch_reg(uint32_t inst) {
     if ((op3 == 0) & (Rn == 31) & (op4 == 0)) {
       SP_EL1 = sp;
       set_pc(ELR_EL1);
-      if (((SPSR_EL1 & 7) == 0) || (util::bit(pc, 63) == 0)){
+      if (((SPSR_EL1 & 7) == 0) || (util::bit(pc, 63) == 0)) {
         el = 0;
         sp = SP_EL0;
       }
-      LOG_CPU("eret to 0x%lx, sp=0x%lx, SP_EL1=0x%lx, SP_EL0=0x%lx, pc=0x%lx\n", ELR_EL1,
-              sp, SP_EL1, SP_EL0, pc);
+      LOG_CPU("eret to 0x%lx, sp=0x%lx, SP_EL1=0x%lx, SP_EL0=0x%lx, pc=0x%lx\n",
+              ELR_EL1, sp, SP_EL1, SP_EL0, pc);
     }
     break;
   default:
