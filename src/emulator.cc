@@ -51,7 +51,6 @@ Emulator::Emulator(int argc, char **argv, char **envp, const std::string &disk)
   return;
 }
 
-
 // This function is executed in another thread for uart input
 void read_stdin(uint8_t *uart_rx_buff, uint8_t *uart_rx_idx) {
   while (1) {

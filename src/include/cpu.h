@@ -7,9 +7,7 @@
 #include "log.h"
 #include "mmu.h"
 
-struct CPSR {
-  char buff[27];
-  uint8_t Q : 1;
+struct NZCV {
   uint8_t V : 1;
   uint8_t C : 1;
   uint8_t Z : 1;
@@ -46,38 +44,52 @@ public:
   0: not masked, 1: masked
   */
   uint64_t daif = 0x3c0;
-  // TODO: fix! CPSR used in armv7
-  CPSR cpsr;      /* Current Program Status Register*/
-  uint8_t el = 1; // Exception Level.
+
+  /*
+  NZCV, condition flag
+  N[31]: negative
+  Z[30]: zero
+  C[29]: carry
+  V[28]: overflow
+  */
+  NZCV nzcv;
+
+  /*
+  Exception Level
+  */
+  uint8_t el = 1;
 
   // Interrupt
-  uint64_t
-      ICC_IGRPEN1_EL1; // Interrupt Controller Interrupt Group 1 Enable register
-  uint64_t ICC_PMR_EL1; // Interrupt Controller Interrupt Priority Mask Register
-  uint64_t ICC_SRE_EL1 =
-      0x7; // Interrupt Controller System Register Enable register (EL1)
+  // Interrupt Controller Interrupt Group 1 Enable register
+  uint64_t ICC_IGRPEN1_EL1;
+  // Interrupt Controller Interrupt Priority Mask Register
+  uint64_t ICC_PMR_EL1;
+  // Interrupt Controller System Register Enable register (EL1)
+  uint64_t ICC_SRE_EL1 = 0x7;
   uint64_t ICC_IAR1_EL1;
   uint64_t ICC_EOIR1_EL1;
   uint64_t SPSR_EL1;
   uint64_t ELR_EL1;
 
   // Timer
-  uint64_t CNTV_CTL_EL0 = 0; // Counter-timer Virtual Timer Control register
-  uint64_t CNTFRQ_EL0 = 0x3b9aca0; // Counter-timer Frequency register
-  uint64_t CNTV_TVAL_EL0 = 0; // Counter-timer Virtual Timer TimerValue register
+  // Counter-timer Virtual Timer Control register
+  uint64_t CNTV_CTL_EL0 = 0;
+  // Counter-timer Frequency register
+  uint64_t CNTFRQ_EL0 = 0x3b9aca0;
+  // Counter-timer Virtual Timer TimerValue register
+  uint64_t CNTV_TVAL_EL0 = 0;
 
   void check_interrupt();
   void cause_interrupt(uint64_t irq);
   uint32_t fetch();
   void decode_start(uint32_t inst);
-  void show_regs();
   void show_stack();
 
 private:
   uint32_t inst_;
   void increment_pc() { pc += 4; }
   void set_pc(uint64_t new_pc) { pc = new_pc; }
-  bool check_b_flag(uint8_t cond, CPSR &cpsr);
+  bool check_b_flag(uint8_t cond, NZCV &nzcv);
 
   uint64_t load(uint64_t address, MemAccessSize size);
   void store(uint64_t address, uint64_t value, MemAccessSize size);

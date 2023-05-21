@@ -88,26 +88,6 @@ void Cpu::decode_start(uint32_t inst) {
   uint8_t op1;
   op1 = util::shift(inst, 25, 28);
   inst_ = inst;
-
-  /*
-    LOG_CPU("0x%lx ", pc);
-    LOG_CPU("pc 0x%lx\n", pc);
-    LOG_CPU("sp 0x%lx\n", sp);
-    LOG_CPU("x0 0x%lx\n", xregs[0]);
-    LOG_CPU("x1 0x%lx\n", xregs[1]);
-    LOG_CPU("x2 0x%lx\n", xregs[2]);
-    LOG_CPU("x3 0x%lx\n", xregs[3]);
-    LOG_CPU("x19 0x%lx\n", xregs[19]);
-    LOG_CPU("x20 0x%lx\n", xregs[20]);
-    LOG_CPU("x29 0x%lx\n", xregs[29]);
-    LOG_CPU("x30 0x%lx\n", xregs[30]);
-    if (mmu.if_mmu_enabled()) {
-      bus.mem.debug_mem(mmu.mmu_translate(0xffffff8040016118));
-    }
-    else {
-      bus.mem.debug_mem(0x40016118);
-    }
-    */
   const decode_func decode_inst_tbl[] = {
       &Cpu::decode_sme_encodings,
       &Cpu::decode_unallocated,
@@ -127,28 +107,6 @@ void Cpu::decode_start(uint32_t inst) {
       &Cpu::decode_data_processing_float,
   };
   (this->*decode_inst_tbl[op1])(inst);
-}
-
-void Cpu::show_regs() {
-  std::cout << "=================================================" << std::endl;
-  LOG_SYSTEM("registers:\n");
-  for (int i = 0; i < 32; i += 4) {
-    LOG_SYSTEM("\tw%2d: 0x%16lx", i, xregs[i]);
-    LOG_SYSTEM("\tw%2d: 0x%16lx", i + 1, xregs[i + 1]);
-    LOG_SYSTEM("\tw%2d: 0x%16lx", i + 2, xregs[i + 2]);
-    LOG_SYSTEM("\tw%2d: 0x%16lx\n", i + 3, xregs[i + 3]);
-  }
-  LOG_SYSTEM("\tpc: 0x%lx\n", pc);
-  std::cout << "=================================================" << std::endl;
-}
-void Cpu::show_stack() {
-  std::cout << "=================================================" << std::endl;
-  LOG_SYSTEM("stack:\n");
-  for (int i = 0; i < 20; i++) {
-    LOG_SYSTEM("\tsp+0x%x: 0x%16lx\n", i * 8,
-               load(sp + 8 * i, MemAccessSize::DWord));
-  }
-  std::cout << "=================================================" << std::endl;
 }
 
 namespace {
@@ -534,7 +492,7 @@ static uint64_t add_imm(uint64_t x, uint64_t y, uint8_t carry_in) {
 }
 
 static uint32_t add_imm_s32(uint32_t x, uint32_t y, uint8_t carry_in,
-                            CPSR &cpsr) {
+                            NZCV &nzcv) {
   if (carry_in) {
     y = ~y;
   }
@@ -544,17 +502,17 @@ static uint32_t add_imm_s32(uint32_t x, uint32_t y, uint8_t carry_in,
   int64_t signed_sum = (int64_t)sx + (int64_t)sy + (uint64_t)carry_in;
   uint32_t result = unsigned_sum & util::mask(32);
 
-  cpsr.N = util::bit(result, 31);
-  cpsr.Z = result == 0;
-  cpsr.C = unsigned_sum != result;
-  cpsr.V = signed_sum != (int32_t)result;
+  nzcv.N = util::bit(result, 31);
+  nzcv.Z = result == 0;
+  nzcv.C = unsigned_sum != result;
+  nzcv.V = signed_sum != (int32_t)result;
   return result;
 }
 
-static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
+static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, NZCV &nzcv,
                           bool if_64bit) {
   if (!if_64bit) {
-    return add_imm_s32(x, y, carry_in, cpsr);
+    return add_imm_s32(x, y, carry_in, nzcv);
   }
   /*
   if (carry_in) {
@@ -565,14 +523,14 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
   uint128_t unsigned_sum = (uint128_t)x + (uint128_t)y + (uint128_t)carry_in;
   int128_t signed_sum = (int128_t)sx + (int128_t)sy + (uint128_t)carry_in;
   uint64_t result = unsigned_sum & 0xffffffffffffffff;
-  cpsr.N = util::bit64(result, 63);
-  cpsr.Z = result == 0;
+  nzcv.N = util::bit64(result, 63);
+  nzcv.Z = result == 0;
   if (carry_in) {
-    cpsr.C = (int64_t)x >= (int64_t)~y;
+    nzcv.C = (int64_t)x >= (int64_t)~y;
   } else {
-    cpsr.C = (int64_t)x > (int64_t)y;
+    nzcv.C = (int64_t)x > (int64_t)y;
   }
-  cpsr.V = signed_sum != (int64_t)result;
+  nzcv.V = signed_sum != (int64_t)result;
   return result;
   */
 
@@ -581,10 +539,10 @@ static uint64_t add_imm_s(uint64_t x, uint64_t y, uint8_t carry_in, CPSR &cpsr,
   bool top_x = util::bit(x, 63);
   bool top_y = util::bit(y, 63);
   bool top_r = util::bit(result, 63);
-  cpsr.Z = (result == 0);
-  cpsr.N = top_y;
-  cpsr.C = (top_x | top_y) & !top_r;
-  cpsr.V = (!(top_x ^ top_y)) & (top_r ^ top_x);
+  nzcv.Z = (result == 0);
+  nzcv.N = top_y;
+  nzcv.C = (top_x | top_y) & !top_r;
+  nzcv.V = (!(top_x ^ top_y)) & (top_r ^ top_x);
   return result;
 }
 
@@ -626,7 +584,7 @@ void Cpu::decode_add_sub_imm(uint32_t inst) {
   }
 
   if (if_setflag) {
-    result = add_imm_s(op1, imm, if_sub, cpsr, if_64bit);
+    result = add_imm_s(op1, imm, if_sub, nzcv, if_64bit);
     LOG_CPU("%ss x%d(=0x%lx), x%d(=0x%lx), #0x%lx, LSL %d\n", op, rd, xregs[rd],
             rn, xregs[rn], imm, if_shift * 12);
   } else {
@@ -734,13 +692,13 @@ void Cpu::decode_logical_imm(uint32_t inst) {
     LOG_CPU("ands x%d, x%d(=0x%lx), #%lx\n", rd, rn, xrn, imm);
     result = xrn & imm; /* ANDS */
     if (if_64bit) {
-      cpsr.N = (int64_t)result < 0;
+      nzcv.N = (int64_t)result < 0;
     } else {
-      cpsr.N = (int32_t)result < 0;
+      nzcv.N = (int32_t)result < 0;
     }
-    cpsr.Z = result == 0;
-    cpsr.C = 0;
-    cpsr.V = 0;
+    nzcv.Z = result == 0;
+    nzcv.C = 0;
+    nzcv.V = 0;
     if (rd == 31) {
       return;
     }
@@ -1655,10 +1613,10 @@ void Cpu::decode_addsub_shifted_reg(uint32_t inst) {
   op2 = util::shift_with_type(xregs[rm], shift_type, shift_amount);
 
   if (if_setflag) {
-    result = add_imm_s(op1, op2, if_sub, cpsr, if_64bit);
+    result = add_imm_s(op1, op2, if_sub, nzcv, if_64bit);
     if (pc == 0xffffff8040000fac) {
       // LOG_SYSTEM("subs op1=0x%lx, op2=0x%lx, if_sub=%d, cspr.c=%d\n", op1,
-      // op2, if_sub, cpsr.C);
+      // op2, if_sub, nzcv.C);
     }
     LOG_CPU("%ss x%d, x%d(=0x%lx), x%d(=0x%lx), %s #%d\n", op, rd, rn,
             xregs[rn], rm, xregs[rm], shift_type_strtbl[shift_type],
@@ -1716,7 +1674,7 @@ void Cpu::decode_addsub_extended_reg(uint32_t inst) {
   op1 = xregs[rn];
   op2 = if_op2_64bit ? xregs[rm] : util::clear_upper32(xregs[rm]);
   op2 = ExtendValue(op2, extend_type, shift_amount);
-  result = if_setflag ? add_imm_s(op1, op2, if_sub, cpsr, if_64bit)
+  result = if_setflag ? add_imm_s(op1, op2, if_sub, nzcv, if_64bit)
                       : add_imm(op1, op2, if_sub);
   if (rd != 31) {
     xregs[rd] = if_64bit ? result : util::set_lower32(xregs[rd], result);
@@ -1796,8 +1754,8 @@ void Cpu::decode_logical_shifted_reg(uint32_t inst) {
       break;
     }
     result = op1 & op2;
-    cpsr.N = util::bit(result, 63);
-    cpsr.Z = result == 0;
+    nzcv.N = util::bit(result, 63);
+    nzcv.Z = result == 0;
     xregs[rd] = if_64bit ? result : (result & util::mask(32));
     LOG_CPU("ands x%d, x%d(=0x%lx), x%d(=0x%lx)\n", rd, rn, op1, rm, op2);
     break;
@@ -1843,7 +1801,7 @@ void Cpu::decode_conditional_select(uint32_t inst) {
   case 0:
     switch (op2) {
     case 0:
-      if (check_b_flag(cond, cpsr)) {
+      if (check_b_flag(cond, nzcv)) {
         xregs[rd] = xregs[rn];
       } else {
         xregs[rd] = xregs[rm];
@@ -1852,15 +1810,15 @@ void Cpu::decode_conditional_select(uint32_t inst) {
         LOG_CPU("csel x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d, "
                 "check_cond=%d, pc=0x%lx\n",
                 rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond,
-                check_b_flag(cond, cpsr), pc);
+                check_b_flag(cond, nzcv), pc);
       }
       LOG_CPU("csel x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d, "
               "check_cond=%d\n",
               rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond,
-              check_b_flag(cond, cpsr));
+              check_b_flag(cond, nzcv));
       break;
     case 1:
-      result = check_b_flag(cond, cpsr) ? xregs[rn] : xregs[rm] + 1;
+      result = check_b_flag(cond, nzcv) ? xregs[rn] : xregs[rm] + 1;
       xregs[rd] = result;
       LOG_CPU("csinc x%d, x%d, x%d\n", rd, rn, rm);
       break;
@@ -1871,7 +1829,7 @@ void Cpu::decode_conditional_select(uint32_t inst) {
   case 1:
     switch (op2) {
     case 0:
-      if (check_b_flag(cond, cpsr)) {
+      if (check_b_flag(cond, nzcv)) {
         xregs[rd] = xregs[rn];
       } else {
         xregs[rd] = ~xregs[rm];
@@ -1879,10 +1837,10 @@ void Cpu::decode_conditional_select(uint32_t inst) {
       LOG_CPU("csinv x%d(=0x%lx), x%d(=0x%lx), x%d(=0x%lx), cond=%d, "
               "check_cond=%d\n",
               rd, xregs[rd], rn, xregs[rn], rm, xregs[rm], cond,
-              check_b_flag(cond, cpsr));
+              check_b_flag(cond, nzcv));
       break;
     case 1:
-      if (check_b_flag(cond, cpsr)) {
+      if (check_b_flag(cond, nzcv)) {
         result = xregs[rn];
       } else {
         result = ~xregs[rm] + 1;
@@ -2077,49 +2035,49 @@ void Cpu::decode_data_processing_3source(uint32_t inst) {
    consistently and is very unlikely to change direction."
                                  - same as B.cond in this emulator.
 */
-bool Cpu::check_b_flag(uint8_t cond, CPSR &cpsr_) {
+bool Cpu::check_b_flag(uint8_t cond, NZCV &nzcv_) {
   switch (cond) {
   case 0:
-    return cpsr_.Z == 1;
+    return nzcv_.Z == 1;
     break;
   case 1:
-    return cpsr_.Z == 0;
+    return nzcv_.Z == 0;
     break;
   case 2:
-    return cpsr_.C == 1;
+    return nzcv_.C == 1;
     break;
   case 3:
-    return cpsr_.C == 0;
+    return nzcv_.C == 0;
     break;
   case 4:
-    return cpsr_.N == 1;
+    return nzcv_.N == 1;
     break;
   case 5:
-    return cpsr_.N == 0;
+    return nzcv_.N == 0;
     break;
   case 6:
-    return cpsr_.V == 1;
+    return nzcv_.V == 1;
     break;
   case 7:
-    return cpsr_.V == 0;
+    return nzcv_.V == 0;
     break;
   case 8:
-    return (cpsr_.C == 1) & (cpsr_.Z == 0);
+    return (nzcv_.C == 1) & (nzcv_.Z == 0);
     break;
   case 9:
-    return (cpsr_.C == 0) | (cpsr_.Z == 1);
+    return (nzcv_.C == 0) | (nzcv_.Z == 1);
     break;
   case 10:
-    return cpsr_.N == cpsr_.V;
+    return nzcv_.N == nzcv_.V;
     break;
   case 11:
-    return cpsr_.N != cpsr_.V;
+    return nzcv_.N != nzcv_.V;
     break;
   case 12:
-    return (cpsr_.Z == 0) & (cpsr_.N == cpsr_.V);
+    return (nzcv_.Z == 0) & (nzcv_.N == nzcv_.V);
     break;
   case 13:
-    return (cpsr_.Z == 1) | (cpsr_.N != cpsr_.V);
+    return (nzcv_.Z == 1) | (nzcv_.N != nzcv_.V);
     break;
   case 14:
     return true;
@@ -2146,7 +2104,7 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst) {
   }
   switch (o0) {
   case 0:
-    if (check_b_flag(cond, cpsr)) {
+    if (check_b_flag(cond, nzcv)) {
       offset = signed_extend(imm19 << 2, 20);
       set_pc(pc + offset);
       LOG_CPU("B.cond: pc=0x%lx offset=0x%lx, cond=0x%x\n", pc + offset, offset,
@@ -2179,7 +2137,7 @@ void Cpu::decode_conditional_branch_imm(uint32_t inst) {
 
 */
 void Cpu::decode_conditional_compare_imm(uint32_t inst) {
-  uint8_t /*if_64bit, s, o2, o3 */ op, cond, rn, nzcv;
+  uint8_t /*if_64bit, s, o2, o3 */ op, cond, rn, nzcv_input;
   uint64_t imm;
 
   // if_64bit = util::bit(inst, 31);
@@ -2190,7 +2148,7 @@ void Cpu::decode_conditional_compare_imm(uint32_t inst) {
   // o2 = util::bit(inst, 10);
   rn = util::shift(inst, 5, 9);
   // o3 = util::bit(inst, 4);
-  nzcv = util::shift(inst, 0, 3);
+  nzcv_input = util::shift(inst, 0, 3);
 
   switch (op) {
   case 0:
@@ -2198,21 +2156,21 @@ void Cpu::decode_conditional_compare_imm(uint32_t inst) {
     unsupported();
     break;
   case 1:
-    if (check_b_flag(cond, cpsr)) {
-      CPSR cpsr_local;
-      add_imm_s(xregs[rn], imm, 1, cpsr_local, 1);
-      cpsr.N = cpsr_local.N;
-      cpsr.Z = cpsr_local.Z;
-      cpsr.C = cpsr_local.C;
-      cpsr.V = cpsr_local.V;
+    if (check_b_flag(cond, nzcv)) {
+      NZCV nzcv_local;
+      add_imm_s(xregs[rn], imm, 1, nzcv_local, 1);
+      nzcv.N = nzcv_local.N;
+      nzcv.Z = nzcv_local.Z;
+      nzcv.C = nzcv_local.C;
+      nzcv.V = nzcv_local.V;
     } else {
-      cpsr.N = (nzcv & 0b1000) >> 3;
-      cpsr.Z = (nzcv & 0b0100) >> 2;
-      cpsr.C = (nzcv & 0b0010) >> 1;
-      cpsr.V = nzcv & 0b0001;
+      nzcv.N = (nzcv_input & 0b1000) >> 3;
+      nzcv.Z = (nzcv_input & 0b0100) >> 2;
+      nzcv.C = (nzcv_input & 0b0010) >> 1;
+      nzcv.V = nzcv_input & 0b0001;
     }
     LOG_CPU("CCMP x%d(=0x%lx), #0x%lx, #nzcv(=0x%x), cond%d\n", rn, xregs[rn],
-            imm, nzcv, cond);
+            imm, nzcv_input, cond);
     break;
   default:
     unallocated();
