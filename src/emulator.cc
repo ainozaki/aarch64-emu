@@ -17,7 +17,7 @@
 #include "mem.h"
 #include "utils.h"
 
-int log_system_on = 1;
+int log_system_on = 0;
 int log_cpu_on = 0;
 int log_debug_on = 0;
 
@@ -70,7 +70,6 @@ void read_stdin(uint8_t *uart_rx_buff, uint8_t *uart_rx_idx) {
         break;
       }
     }
-    printf("idx=%d, value=%s", *uart_rx_idx, buff);
   }
 }
 
@@ -86,7 +85,7 @@ void Emulator::execute_loop() {
                                 &cpu->bus.uart.uart_rx_idx);
 
   while (true) {
-    log_cpu_on = 0;
+    // log_cpu_on = 0;
     cpu->timer_count += 1;
     cpu->check_interrupt();
 
@@ -189,19 +188,20 @@ void Emulator::execute_loop() {
     log_pc(0xffffff8040000318, "consoleintr", i);
     log_pc(0xffffff8040000430, "consoleinit", i);
 
-    if (cpu->pc >= 0xffffff8040000318 && cpu->pc <= 0xffffff804000042c) {
+    log_pc(0xd8, "getcmd", i);
+    log_pc(0x17c, "runcmd", i);
+    log_pc(0xae4, "parsecmd", i);
+    log_pc(0x8e0, "parseline", i);
+    log_pc(0x5d4, "peek", i);
+
+    if (cpu->pc == 0x5f4) {
       // log_cpu_on = 1;
     }
-    if (cpu->pc >= 0xffffff8040000970 && cpu->pc <= 0xffffff80400009f4) {
-      // log_cpu_on = 1;
-    }
+
     if (log_cpu_on) {
       printf("=== %d 0x%lx ", i, cpu->pc);
     }
 
-    // printf("%d 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n", i, cpu->pc,
-    // cpu->sp, cpu->xregs[0], cpu->xregs[1], cpu->xregs[19], cpu->xregs[29],
-    // cpu->xregs[30]);
     cpu->decode_start(inst);
     i++;
   }

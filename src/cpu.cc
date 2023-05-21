@@ -1775,12 +1775,12 @@ void Cpu::decode_logical_shifted_reg(uint32_t inst) {
   case 0:
     result = op1 & op2;
     xregs[rd] = result;
-    LOG_CPU("and x%d, x%d(0x%lx)\n", rd, rm, op2);
+    LOG_CPU("and x%d, x%d, x%d(0x%lx)\n", rd, rn, rm, op2);
     break;
   case 1:
     if ((shift == 0) && (imm6 == 0) && (rn == 31)) {
       xregs[rd] = op2;
-      LOG_CPU("mov x%d, x%d(0x%lx)\n", rd, rm, op2);
+      LOG_CPU("mov x%d, x%d, x%d(0x%lx)\n", rd, rn, rm, op2);
       break;
     }
     result = op1 | op2;
@@ -1788,6 +1788,18 @@ void Cpu::decode_logical_shifted_reg(uint32_t inst) {
                     ? result
                     : (~util::mask(32) & xregs[rd]) | (util::mask(32) & result);
     LOG_CPU("orr x%d, x%d(0x%lx) | x%d(0x%lx)\n", rd, rn, op1, rm, op2);
+    break;
+  case 3:
+    if (if_not) {
+      LOG_CPU("decode_logical_shifted_reg bics\n");
+      unsupported();
+      break;
+    }
+    result = op1 & op2;
+    cpsr.N = util::bit(result, 63);
+    cpsr.Z = result == 0;
+    xregs[rd] = if_64bit ? result : (result & util::mask(32));
+    LOG_CPU("ands x%d, x%d(=0x%lx), x%d(=0x%lx)\n", rd, rn, op1, rm, op2);
     break;
   default:
     LOG_CPU("decode_logical_shifted_reg\n");

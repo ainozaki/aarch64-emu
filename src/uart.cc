@@ -18,17 +18,13 @@ bool Uart::is_interrupting() {
   if (counter > 1000) {
     counter = 0;
     if (!(uart_imsc & rx_intr_mask)) {
-      // LOG_CPU("uart_imsc interrupt masked: 0x%x\n", uart_imsc);
       return false;
     }
     if (!(uart_icr & rx_intr_mask)) {
-      // LOG_CPU("uart_icr interrupt handling: 0x%x\n", uart_icr);
       return false;
     }
     if (uart_rx_idx != uart_rx_last_idx) {
       uart_dr = uart_rx_buff[uart_rx_last_idx++];
-      printf("uart enter 0x%x, last_idx=%d, idx=%d\n", uart_dr,
-             uart_rx_last_idx, uart_rx_idx);
       // uart_imsc &= ~rx_intr_mask;
       uart_icr &= ~rx_intr_mask;
       uart_fr &= 0xef;
@@ -82,7 +78,7 @@ uint64_t Uart::load(uint64_t addr) {
     uart_fr |= (1 << 4);
     return value;
   case 0x018:
-    // LOG_CPU("uart_fr load 0x%x\n", uart_fr);
+    LOG_CPU("uart_fr load 0x%x\n", uart_fr);
     return uart_fr;
   case 0x02c:
     LOG_CPU("uart lcr_h load 0x%x\n", uart_lcr_h);
