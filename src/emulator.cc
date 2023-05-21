@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <thread>
 #include <unistd.h>
 
 #include "cpu.h"
@@ -16,7 +17,7 @@
 #include "mem.h"
 #include "utils.h"
 
-int log_system_on = 0;
+int log_system_on = 1;
 int log_cpu_on = 0;
 int log_debug_on = 0;
 
@@ -56,13 +57,33 @@ void Emulator::log_pc(uint64_t pc, const char *msg, uint64_t idx) {
   }
 }
 
+void read_stdin(uint8_t *uart_rx_buff, uint8_t *uart_rx_idx) {
+  while (1) {
+    uint8_t idx = (*uart_rx_idx) % UART_RX_BUFF_LEN;
+    char *buff = (char *)uart_rx_buff + idx;
+    if (!fgets(buff, 10, stdin)) {
+      break;
+    }
+    for (uint8_t i = 0; i < 10; i++) {
+      *uart_rx_idx = *uart_rx_idx + 1;
+      if (*(buff + i) == '\n') {
+        break;
+      }
+    }
+    printf("idx=%d, value=%d", buff, *uart_rx_idx);
+  }
+}
+
 void Emulator::execute_loop() {
 
-  FILE *flog;
-  flog = fopen("sp_debug_emu.txt", "w");
+  // FILE *flog;
+  // flog = fopen("sp_debug_emu.txt", "w");
 
   uint32_t inst;
   int i = 0;
+
+  std::thread read_stdin_thread(read_stdin, cpu->bus.uart.uart_rx_buff,
+                                &cpu->bus.uart.uart_rx_idx);
 
   while (true) {
     // log_cpu_on = 0;
@@ -162,6 +183,21 @@ void Emulator::execute_loop() {
     log_pc(0xffffff80400160d0, "uart_tx_lock", i);
     log_pc(0xffffff80400008ec, "uartputc", i);
     log_pc(0xffffff804000081c, "uartputc_sync", i);
+
+    log_pc(0xffffff80400001e8, "consoleread", i);
+    log_pc(0xffffff8040000174, "consolewrite", i);
+    log_pc(0xffffff8040000318, "consoleintr", i);
+    log_pc(0xffffff8040000430, "consoleinit", i);
+
+    if (cpu->pc == 0xffffff8040000970) {
+      // log_cpu_on = 1;
+    }
+    if (cpu->pc == 0xffffff8040000318) {
+      log_cpu_on = 0;
+    }
+    if (log_cpu_on) {
+      printf("=== %d 0x%lx ", i, cpu->pc);
+    }
 
     // printf("%d 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n", i, cpu->pc,
     // cpu->sp, cpu->xregs[0], cpu->xregs[1], cpu->xregs[19], cpu->xregs[29],

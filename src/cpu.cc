@@ -26,41 +26,44 @@ Cpu::Cpu(uint64_t entry, uint64_t sp_base, uint64_t text_start,
 }
 
 void Cpu::check_interrupt() {
-  bool if_interrupt = false;
   if ((daif >> 9) & 0x1) {
     // Interrupt masked
     return;
   }
   if (bus.virtio.is_interrupting()) {
-    if_interrupt = true;
     bus.virtio.disk_access(this);
     LOG_SYSTEM("[Virtio] Jump to exception vector table: vbar_el1=0x%lx + "
                "0x280 = 0x%lx, "
                "pc=0x%lx, sp=0x%lx\n",
                VBAR_EL1, VBAR_EL1 + 0x480, pc, sp);
-    ICC_IAR1_EL1 = 0x30;
+    cause_interrupt(0x30);
   } else if ((util::bit(pc, 63) == 0) && (timer_count % 100 == 0)) {
     LOG_SYSTEM("[Timer] Jump to exception vector table: vbar_el1=0x%lx + 0x280 "
                "= 0x%lx, "
                "pc=0x%lx, sp=0x%lx\n",
                VBAR_EL1, VBAR_EL1 + 0x280, pc, sp);
-    if_interrupt = true;
-    LOG_SYSTEM("timer\n");
-    ICC_IAR1_EL1 = 0x1b;
+    cause_interrupt(0x1b);
+  } else if (bus.uart.is_interrupting()) {
+    LOG_SYSTEM("[Uart] Jump to exception vector table: vbar_el1=0x%lx + 0x280 "
+               "= 0x%lx, "
+               "pc=0x%lx, sp=0x%lx\n",
+               VBAR_EL1, VBAR_EL1 + 0x280, pc, sp);
+    cause_interrupt(0x21);
   }
-  if (if_interrupt) {
-    ELR_EL1 = pc;
-    // Interrupt to OS
-    if (el == 0) {
-      SPSR_EL1 = (SPSR_EL1 >> 3) << 3;
-      SP_EL0 = sp;
-      sp = SP_EL1;
-      el = 1;
-      set_pc(VBAR_EL1 + 0x480);
-    } else {
-      SPSR_EL1 = ((SPSR_EL1 >> 3) << 3) | 0b101;
-      set_pc(VBAR_EL1 + 0x280);
-    }
+}
+
+void Cpu::cause_interrupt(uint64_t irq) {
+  ELR_EL1 = pc;
+  ICC_IAR1_EL1 = irq;
+  if (el == 0) {
+    SPSR_EL1 = (SPSR_EL1 >> 3) << 3;
+    SP_EL0 = sp;
+    sp = SP_EL1;
+    el = 1;
+    set_pc(VBAR_EL1 + 0x480);
+  } else {
+    SPSR_EL1 = ((SPSR_EL1 >> 3) << 3) | 0b101;
+    set_pc(VBAR_EL1 + 0x280);
   }
 }
 

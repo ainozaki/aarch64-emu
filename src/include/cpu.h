@@ -67,6 +67,7 @@ public:
   uint64_t CNTV_TVAL_EL0 = 0; // Counter-timer Virtual Timer TimerValue register
 
   void check_interrupt();
+  void cause_interrupt(uint64_t irq);
   uint32_t fetch();
   void decode_start(uint32_t inst);
   void show_regs();
