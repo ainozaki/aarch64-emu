@@ -2,8 +2,6 @@
 
 #include <cstdint>
 
-#include "const.h"
-
 class Mem {
 public:
   uint8_t *mem_;

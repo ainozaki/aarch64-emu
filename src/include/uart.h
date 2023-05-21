@@ -2,8 +2,6 @@
 
 #include <cstdint>
 
-#include "const.h"
-
 const uint8_t UART_RX_BUFF_LEN = 64;
 
 class Uart {

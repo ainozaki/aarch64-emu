@@ -6,8 +6,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "const.h"
-
 const uint64_t STACK_SIZE = 1000 * 1000;
 const uint32_t RAM_SIZE = 128 * 1024 * 1024; // 128MB
 
@@ -41,6 +39,4 @@ private:
   bool use_paddr_;
 
   const char *get_interp() const;
-  uint64_t get_text_total_size() const;
-  uint64_t get_text_start_addr() const;
 };

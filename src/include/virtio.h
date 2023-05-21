@@ -7,8 +7,6 @@
 
 #include <stdint.h>
 
-#include "const.h"
-
 class Cpu;
 
 const uint64_t VIRTIO_MMIO = 0xa000000;

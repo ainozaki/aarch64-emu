@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 
-#include "const.h"
 #include "cpu.h"
 #include "loader.h"
 

@@ -27,45 +27,46 @@ int Loader::init() {
   fd_ = open(filename_, O_RDWR);
   if (!fd_) {
     LOG_SYSTEM("Cannot open %s\n", filename_);
-    exit(0);
+    return -1;
   }
   fstat(fd_, &sb_);
 
-  // make alias for ELF headers
+  // mmap ELF file
   if ((file_map_start_ = (char *)mmap(NULL, (sb_.st_size + 4095) & ~4095UL,
                                       PROT_READ | PROT_WRITE, MAP_PRIVATE, fd_,
                                       0)) == (char *)-1) {
     perror("mmap");
-    return EFAILED;
+    return -1;
   }
   LOG_SYSTEM("\tfile_map_start: %p, size:%zx -> %zx\n", file_map_start_,
              sb_.st_size, (sb_.st_size + 4095) & ~4095UL);
+
+  // parse ELF file
   eh_ = (Elf64_Ehdr *)file_map_start_;
   ph_tbl_ = (Elf64_Phdr *)((uint64_t)file_map_start_ + eh_->e_phoff);
   sh_tbl_ = (Elf64_Shdr *)((uint64_t)file_map_start_ + eh_->e_shoff);
   sh_name_ =
       (char *)((uint64_t)file_map_start_ + sh_tbl_[eh_->e_shstrndx].sh_addr);
-  return ESUCCESS;
+  return 0;
 }
 
 int Loader::load() {
-  // ELF check
-  // TODO
+  // TODO: ELF MAGIC check
 
   // interp check
   // This emulator can load only static linked binary.
   const char *interp_str = get_interp();
   if (interp_str) {
     LOG_SYSTEM("cannot load dynamic linked program\n");
-    return EFAILED;
+    return -1;
   }
 
-  // allocate RAM for emulator
+  // allocate RAM for emulator and 0 clear
   void *ram_base;
   if ((ram_base = mmap(NULL, RAM_SIZE, PROT_READ | PROT_EXEC | PROT_WRITE,
                        MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (void *)-1) {
     perror("mmap");
-    return EFAILED;
+    return -1;
   }
   memset(ram_base, 0, RAM_SIZE);
   map_base = (uint64_t)ram_base;
@@ -116,7 +117,7 @@ int Loader::load() {
   init_sp = text_start_paddr + RAM_SIZE;
   init_sp = init_sp - (init_sp % 16) + 16;
   LOG_SYSTEM("\tinit_sp: 0x%lx\n", init_sp);
-  return ESUCCESS;
+  return 0;
 }
 
 const char *Loader::get_interp() const {
@@ -126,32 +127,4 @@ const char *Loader::get_interp() const {
     }
   }
   return NULL;
-}
-
-uint64_t Loader::get_text_total_size() const {
-  uint64_t min_addr = (uint64_t)-1;
-  uint64_t max_addr = 0;
-  for (int i = 0; i < eh_->e_phnum; i++) {
-    if (ph_tbl_[i].p_type == PT_LOAD) {
-      if (use_paddr_) {
-        min_addr = std::min(ph_tbl_[i].p_paddr, min_addr);
-        max_addr = std::max(ph_tbl_[i].p_paddr + ph_tbl_[i].p_memsz, max_addr);
-      } else {
-        min_addr = std::min(ph_tbl_[i].p_vaddr, min_addr);
-        max_addr = std::max(ph_tbl_[i].p_vaddr + ph_tbl_[i].p_memsz, max_addr);
-      }
-    }
-  }
-  return max_addr - min_addr;
-}
-
-uint64_t Loader::get_text_start_addr() const {
-  uint64_t min_addr = (uint64_t)-1;
-  for (int i = 0; i < eh_->e_phnum; i++) {
-    if (ph_tbl_[i].p_type == PT_LOAD) {
-      min_addr = use_paddr_ ? std::min(ph_tbl_[i].p_paddr, min_addr)
-                            : std::min(ph_tbl_[i].p_vaddr, min_addr);
-    }
-  }
-  return min_addr;
 }
