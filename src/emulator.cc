@@ -70,7 +70,7 @@ void read_stdin(uint8_t *uart_rx_buff, uint8_t *uart_rx_idx) {
         break;
       }
     }
-    printf("idx=%d, value=%d", buff, *uart_rx_idx);
+    printf("idx=%d, value=%s", *uart_rx_idx, buff);
   }
 }
 
@@ -86,7 +86,7 @@ void Emulator::execute_loop() {
                                 &cpu->bus.uart.uart_rx_idx);
 
   while (true) {
-    // log_cpu_on = 0;
+    log_cpu_on = 0;
     cpu->timer_count += 1;
     cpu->check_interrupt();
 
@@ -189,11 +189,11 @@ void Emulator::execute_loop() {
     log_pc(0xffffff8040000318, "consoleintr", i);
     log_pc(0xffffff8040000430, "consoleinit", i);
 
-    if (cpu->pc == 0xffffff8040000970) {
+    if (cpu->pc >= 0xffffff8040000318 && cpu->pc <= 0xffffff804000042c) {
       // log_cpu_on = 1;
     }
-    if (cpu->pc == 0xffffff8040000318) {
-      log_cpu_on = 0;
+    if (cpu->pc >= 0xffffff8040000970 && cpu->pc <= 0xffffff80400009f4) {
+      // log_cpu_on = 1;
     }
     if (log_cpu_on) {
       printf("=== %d 0x%lx ", i, cpu->pc);

@@ -80,7 +80,7 @@ uint64_t Uart::load(uint64_t addr) {
     value = uart_dr;
     uart_dr = 0;
     uart_fr |= (1 << 4);
-    return uart_dr;
+    return value;
   case 0x018:
     // LOG_CPU("uart_fr load 0x%x\n", uart_fr);
     return uart_fr;

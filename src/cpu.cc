@@ -1015,7 +1015,6 @@ void Cpu::decode_ldst_register(uint32_t inst) {
   // op0 = util::shift(inst, 28, 31);
   op2 = util::shift(inst, 23, 24);
 
-  assert(op0 % 4 == 3);
   if (op2 >= 2) {
     decode_ldst_reg_immediate(inst);
   } else {
@@ -2963,9 +2962,6 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
   switch (op) {
   case 0: // CBZ
     LOG_CPU("cbz ");
-    if (pc == 0xffffff8040001098) {
-      LOG_CPU("cbz x%d(=0x%lx)\n", rt, xregs[rt]);
-    }
     if (if_64bit) {
       if_jump = xregs[rt] == 0;
     } else {
@@ -2973,9 +2969,6 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
     }
     break;
   case 1: // CBNZ
-    if (pc == 0xffffff80400018d0) {
-      LOG_CPU("cbnz x%d(=0x%lx)\n", rt, xregs[rt]);
-    }
     LOG_CPU("cbnz ");
     if (if_64bit) {
       if_jump = xregs[rt] != 0;
@@ -2985,7 +2978,7 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
     break;
   }
   offset = util::SIGN_EXTEND(imm19 << 2, 21);
-  LOG_CPU("x%d, 0x%lx\n", rt, pc + offset);
+  LOG_CPU("x%d(=0x%lx), 0x%lx\n", rt, xregs[rt], pc + offset);
   if (if_jump) {
     set_pc(pc + offset);
   } else {
@@ -3003,8 +2996,6 @@ void Cpu::decode_compare_and_branch_imm(uint32_t inst) {
 
          @op: 0->TBZ, 1->TBNZ
          @sh: 0->32bit, 1->64bit
-                                 @op: 0->CBZ, 1->CBNZ
-
 */
 void Cpu::decode_test_and_branch_imm(uint32_t inst) {
   uint64_t imm14, offset;
